@@ -127,7 +127,7 @@ class MotorSystem:
                 # Calculate the distance to move back to the origin
                 distance_to_move = origin[axis] - machine_status.realPos[i]
                 # Move each axis back to the origin
-                self.move(i, abs(distance_to_move), -1 if distance_to_move < 0 else 1, 100)
+                self.move(i, abs(distance_to_move)/self.scale_factor, -1 if distance_to_move < 0 else 1, 100)
 
     # def fetch_device_parameters(self):
     #     result = self.dll.FMC4030_Get_Device_Para(self.id, byref(self.device_params))
@@ -137,20 +137,38 @@ class MotorSystem:
     #     else:
     #         print("Failed to get device parameters")
 
+    # def fetch_device_parameters(self):
+    #     result = self.dll.FMC4030_Get_Device_Para(self.id, byref(self.device_params))
+    #     if result == 0:
+    #         # Using list comprehension to print array contents
+    #         lead_values = [self.device_params.lead[i] for i in range(MAX_AXIS)]
+    #         print(f"Lead: {lead_values}")
+
+    #         div_values = [self.device_params.div[i] for i in range(MAX_AXIS)]
+    #         print(f"Microstepping (div): {div_values}")
+
+    #         # Alternatively, for a more detailed output:
+    #         print("Lead values per axis:")
+    #         for i in range(MAX_AXIS):
+    #             print(f"Axis {i+1}: Lead = {self.device_params.lead[i]}, Microstepping (div) = {self.device_params.div[i]}")
+    #     else:
+    #         print("Failed to get device parameters")
+
     def fetch_device_parameters(self):
         result = self.dll.FMC4030_Get_Device_Para(self.id, byref(self.device_params))
         if result == 0:
-            # Using list comprehension to print array contents
-            lead_values = [self.device_params.lead[i] for i in range(MAX_AXIS)]
-            print(f"Lead: {lead_values}")
-
-            div_values = [self.device_params.div[i] for i in range(MAX_AXIS)]
-            print(f"Microstepping (div): {div_values}")
-
-            # Alternatively, for a more detailed output:
-            print("Lead values per axis:")
-            for i in range(MAX_AXIS):
-                print(f"Axis {i+1}: Lead = {self.device_params.lead[i]}, Microstepping (div) = {self.device_params.div[i]}")
+            print("Device Parameters:")
+            print(f"ID: {self.device_params.id}")
+            print(f"Bound232: {self.device_params.bound232}")
+            print(f"Bound485: {self.device_params.bound485}")
+            print(f"IP: {self.device_params.ip.decode('utf-8')}")
+            print(f"Port: {self.device_params.port}")
+            for axis in range(MAX_AXIS):
+                print(f"Axis {axis} Div: {self.device_params.div[axis]}")
+                print(f"Axis {axis} Lead: {self.device_params.lead[axis]}")
+                print(f"Axis {axis} Soft Limit Max: {self.device_params.softLimitMax[axis]}")
+                print(f"Axis {axis} Soft Limit Min: {self.device_params.softLimitMin[axis]}")
+                print(f"Axis {axis} Home Time: {self.device_params.homeTime[axis]}")
         else:
             print("Failed to get device parameters")
 
@@ -205,7 +223,7 @@ if __name__ == "__main__":
     # print(motor_system.get_machine_status())
 
     # Perform random movements
-    # motor_system.move(0, 10, 1, args.speed, status_callback)  # Move X axis
+    motor_system.move(0, 50, 1, args.speed, status_callback)  # Move X axis
     # motor_system.move(1, 50, -1, args.speed, status_callback)  # Move Y axis
     # motor_system.move(2, 15, -1, args.speed, status_callback)  # Move Z axis
 
