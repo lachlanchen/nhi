@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CNC and LED Control</title>
+</head>
+<body>
+    <button id="startButton">Start Sequence</button>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $("#startButton").click(function() {
+            $.post("/start", function(data) {
+                alert("Sequence started!");
+            });
+        });
+    </script>
+</body>
+</html>

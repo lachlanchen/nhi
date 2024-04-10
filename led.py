@@ -30,7 +30,7 @@ if __name__ == "__main__":
     try:
         while True:
             print("LED on")
-            led_control.led_on()
+            # led_control.led_on()
             time.sleep(2)  # Wait for 2 seconds
             
             print("LED off")
