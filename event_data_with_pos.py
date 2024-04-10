@@ -52,12 +52,12 @@ class EventDataWithPosition:
 
     def load_and_filter_events(self):
         axis_data = pd.read_csv(self.axis_csv_path)
-        # start_time = axis_data['system_time'].min()
-        # end_time = axis_data['system_time'].max()
+        start_time = axis_data['system_time'].min()
+        end_time = axis_data['system_time'].max()
 
-        # Use the first and last rows to determine the time range
-        start_time = axis_data.iloc[0]['system_time']
-        end_time = axis_data.iloc[-1]['system_time']
+        # # Use the first and last rows to determine the time range
+        # start_time = axis_data.iloc[0]['system_time']
+        # end_time = axis_data.iloc[-1]['system_time']
 
         event_data = pd.read_csv(self.event_csv_path)
 
