@@ -65,7 +65,7 @@ class GratingLightDispersionModel(nn.Module):
 
     def visualize_output(self, output_tensor, file_name_pattern='dispersed_frames/dispersed_light_{:04d}.png'):
         os.makedirs("dispersed_frames", exist_ok=True)
-        for i, frame in enumerate(output_tensor):
+        for i, frame in enumerate(output_tensor[::10]):
             # The visualize_and_save function expects a 3D tensor (C, H, W)
             # Adjust the dimension of frame for visualization
             frame_rgb = self.visualizer.visualize_and_save(frame.detach(), self.wavelengths.cpu(), file_name_pattern.format(i))
