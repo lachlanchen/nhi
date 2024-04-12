@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import pandas as pd
 from spectrum_visualizer import SpectrumVisualizer
 import os
+from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
 
 class GratingLightDispersionModel(nn.Module):
     def __init__(self, file_path, lambda_start=370, lambda_end=790, lambda_step=10, d_grating=1/(600*1e3), sensor_offset=0.05, device='cpu'):
@@ -12,14 +14,51 @@ class GratingLightDispersionModel(nn.Module):
         self.d_grating = d_grating
         self.sensor_offset = sensor_offset
         self.lambda_step = lambda_step
+        self.lambda_start = lambda_start
+        self.lambda_end = lambda_end
 
-        # Load y_positions from CSV
+        # Load led_axis_y_positions from CSV
         df = pd.read_csv(file_path)
-        self.y_positions = torch.tensor(df['axis_y_position_mm'].values / 1000, dtype=torch.float32, device=device)  # Convert to meters
+        self.led_axis_y_positions = torch.tensor(df['axis_y_position_mm'].values / 1000, dtype=torch.float32, device=device)  # Convert to meters
+        # define the left as minus axis
+        self.led_axis_y_positions = -self.led_axis_y_positions
 
-        # SPD wavelengths and light SPD
-        self.wavelengths = torch.arange(lambda_start, lambda_end + 1, lambda_step, device=device, dtype=torch.float32)
-        self.light_spd = nn.Parameter(torch.rand(len(self.wavelengths), device=device))
+        # # SPD wavelengths and light SPD
+        # self.wavelengths = torch.arange(lambda_start, lambda_end + 1, lambda_step, device=device, dtype=torch.float32)
+        # self.light_spd = nn.Parameter(torch.rand(len(self.wavelengths), device=device))
+
+        # Define initial SPD points
+        initial_spd_points = {
+            lambda_start: 0,
+            380: 0.0,  # Starting point
+            440: 0.8,  # Peak
+            470: 0.3,  # Valley
+            500: 0.8,  # Start of plateau
+            640: 1.0,  # Red rise
+            780: 0.0,  # Ending point
+            lambda_end: 0
+        }
+
+        # Create wavelength grid
+        self.wavelengths = torch.arange(self.lambda_start, self.lambda_end + 1, self.lambda_step, device=device, dtype=torch.float32)
+        
+        # Interpolate SPD
+        known_wavelengths = list(initial_spd_points.keys())
+        known_intensities = list(initial_spd_points.values())
+        interpolator = interp1d(known_wavelengths, known_intensities, kind='quadratic', bounds_error=False, fill_value="extrapolate")
+        interpolated_spd = torch.tensor(interpolator(self.wavelengths.numpy()), dtype=torch.float32, device=device)
+
+        # Convert SPD to logits that when passed through sigmoid will yield the interpolated SPD
+        interpolated_spd = torch.clamp(interpolated_spd, min=1e-6, max=1 - 1e-6)  # Avoid extreme values close to 0 or 1
+        spd_logits = torch.log(interpolated_spd / (1 - interpolated_spd))  # Inverse of sigmoid: logit(p) = log(p / (1 - p))
+
+        # Parameterize spd_logits to be optimized during training
+        self.spd_logits = nn.Parameter(spd_logits)
+
+        # Define light SPD as sigmoid of logits
+        self.light_spd = torch.sigmoid(self.spd_logits)
+
+        print("light_spd: ", self.light_spd)
 
         self.visualizer = SpectrumVisualizer('ciexyz31_1.txt')
 
@@ -28,7 +67,7 @@ class GratingLightDispersionModel(nn.Module):
     def forward(self):
         L_grating_to_LED = 0.1  # Distance from grating to LED in meters
         L_grating_to_sensor = 0.1  # Distance from grating to sensor in meters
-        theta_inc = torch.atan((self.sensor_offset - self.y_positions) / L_grating_to_LED)
+        theta_inc = torch.atan(self.led_axis_y_positions / L_grating_to_LED)
 
         # Screen positions in meters
         sensor_width_m = 4.32e-3  # Adjusted for sensor dimensions
@@ -71,9 +110,23 @@ class GratingLightDispersionModel(nn.Module):
                 # Adjust the dimension of frame for visualization
                 frame_rgb = self.visualizer.visualize_and_save(frame.detach(), self.wavelengths.cpu(), file_name_pattern.format(i))
 
+
+    def save_initial_spd(self, filename='initial_spd_plot.png'):
+        plt.figure(figsize=(10, 5))
+        plt.ylim(0, 1.2)
+        plt.plot(self.wavelengths.numpy(), torch.sigmoid(self.spd_logits).detach().numpy(), label='Initial SPD')
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Intensity')
+        plt.title('Spectral Power Distribution (SPD)')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(filename)
+        plt.close()
+
 if __name__ == "__main__":
     file_path = 'unique_timestamps_and_y_positions.csv'  # Adjust path as needed
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = GratingLightDispersionModel(file_path, device=device)
+    model.save_initial_spd('initial_spd_plot.png')
     dispersed_light = model.forward()
     model.visualize_output(dispersed_light)
