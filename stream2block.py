@@ -61,7 +61,7 @@ class EventDataTo3DBlock:
         print(f"Saved frames to {filename}.")
 
     def save_rotated_frames(self, filename):
-        rotated_frames = torch.rot90(self.frames, k=3, dims=[-2, -1])
+        rotated_frames = torch.rot90(self.frames, k=1, dims=[-2, -1])
         torch.save(rotated_frames, f"rotated_{filename}")
         print(f"Saved frames to {filename}.")
 
@@ -222,10 +222,10 @@ if __name__ == '__main__':
     csv_path = 'data/filtered_event_data_with_positions.csv'
     data_processor = EventDataTo3DBlock(csv_path)
     # data_processor.save_frames('frames_640x480.pt')
-    data_processor.save_rotated_frames('frames_640x480.pt')
-    # data_processor.show_middle_frame()
+    # data_processor.save_rotated_frames('frames_640x480.pt')
+    data_processor.show_middle_frame()
     # data_processor.convert_to_video()
-    # data_processor.save_all_frames_as_images("frames_high_resol")
+    # data_processor.save_all_frames_as_images("frames")
     # data_processor.frames_to_video("frames_high_resol", 'frames_high_resol_video_with_ffmpeg.mp4')
     # data_processor.frames_to_video("frames", 'frames_video_with_ffmpeg.mp4')
-    # data_processor.save_unique_timestamps_and_positions()
+    data_processor.save_unique_timestamps_and_positions()

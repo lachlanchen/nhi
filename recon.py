@@ -8,7 +8,8 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
 class GratingLightDispersionModel(nn.Module):
-    def __init__(self, file_path, lambda_start=370, lambda_end=790, lambda_step=10, d_grating=1/(600*1e3), sensor_offset=0.05, device='cpu'):
+    # def __init__(self, file_path, lambda_start=370, lambda_end=790, lambda_step=10, d_grating=1/(600*1e3), sensor_offset=0.05, device='cpu'):
+    def __init__(self, file_path, lambda_start=260, lambda_end=850, lambda_step=10, d_grating=1/(600*1e3), sensor_offset=0.05, device='cpu'):
         super(GratingLightDispersionModel, self).__init__()
         self.device = device
         self.d_grating = d_grating
@@ -21,7 +22,7 @@ class GratingLightDispersionModel(nn.Module):
         df = pd.read_csv(file_path)
         self.led_axis_y_positions = torch.tensor(df['axis_y_position_mm'].values / 1000, dtype=torch.float32, device=device)  # Convert to meters
         # define the left as minus axis
-        self.led_axis_y_positions = -self.led_axis_y_positions
+        # self.led_axis_y_positions = -self.led_axis_y_positions
 
         # # SPD wavelengths and light SPD
         # self.wavelengths = torch.arange(lambda_start, lambda_end + 1, lambda_step, device=device, dtype=torch.float32)
@@ -77,6 +78,8 @@ class GratingLightDispersionModel(nn.Module):
         # Calculate the wavelengths for each position based on diffraction
         lambda_diff_nm = self.d_grating * (torch.sin(theta_inc).unsqueeze(-1) + torch.sin(theta_diff)) * 1e9
 
+        # pd.DataFrame(lambda_diff_nm).to_csv("lambda_diff.csv")
+
         # Calculate the difference between each sensor wavelength and SPD wavelengths
         diff = torch.abs(lambda_diff_nm.unsqueeze(-1) - self.wavelengths.unsqueeze(0).unsqueeze(0))
         soft_onehot = F.softmax(-diff * 0.5, dim=-1)  # Apply softmax to determine weights
@@ -105,7 +108,7 @@ class GratingLightDispersionModel(nn.Module):
     def visualize_output(self, output_tensor, file_name_pattern='dispersed_frames/dispersed_light_{:04d}.png'):
         os.makedirs("dispersed_frames", exist_ok=True)
         for i, frame in enumerate(output_tensor):
-            if i%10 == 0:
+            if i%100 == 0:
                 # The visualize_and_save function expects a 3D tensor (C, H, W)
                 # Adjust the dimension of frame for visualization
                 frame_rgb = self.visualizer.visualize_and_save(frame.detach(), self.wavelengths.cpu(), file_name_pattern.format(i))
