@@ -1,5 +1,5 @@
 data*/*
-!data
+!data/*
 frames*/*
 dispersed_frames*/*
 *.pt
