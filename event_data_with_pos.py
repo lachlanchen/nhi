@@ -6,6 +6,7 @@ class EventDataWithPosition:
         self.axis_csv_path = axis_csv_path
         self.event_csv_path = event_csv_path
         self.motor_system = CNCMotorSystem(axis_csv_path)
+        self.motor_system.plot_and_save_fit_curve('fit_curve_plot.png')
         self.filtered_events = None
     
     # def load_and_filter_events(self):
