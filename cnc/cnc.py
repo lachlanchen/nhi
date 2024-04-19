@@ -106,7 +106,7 @@ class MotorSystem:
         self.close_device()
         self.open_device()
 
-    def move(self, axis, distance_mm, dir, speed, callback=None):
+    def move(self, axis, distance_mm, dir, speed, callback=None, record=True):
         # Adjust distance with scale factor and direction
         adjusted_distance = distance_mm * self.scale_factor * dir
         result = self.dll.FMC4030_Jog_Single_Axis(self.id, axis, c_float(adjusted_distance), c_float(speed), c_float(100), c_float(100), 1)
@@ -122,7 +122,8 @@ class MotorSystem:
         #     time.sleep(0.1)
 
         # Use an internal method as callback to monitor position during movement
-        self._monitor_axis_position(axis)
+        if record:
+            self._monitor_axis_position(axis)
 
     # def _monitor_axis_position(self, axis):
     #     """
@@ -143,13 +144,21 @@ class MotorSystem:
         csv_file_path = f"data/axis_{axis}_positions.csv"
         os.makedirs("data", exist_ok=True)
 
+        # Check if the file already exists to decide whether to write the header
+        file_exists = os.path.exists(csv_file_path)
+
+
         # Open the CSV file for writing
         with open(csv_file_path, mode='a', newline='') as file:
             # Create a CSV writer object
             writer = csv.writer(file)
 
             # Write the header to the CSV file
-            writer.writerow(['system_time', f'axis_{axis}_position_mm'])
+            # writer.writerow(['system_time', f'axis_{axis}_position_mm'])
+            # Write the header to the CSV file if it doesn't exist
+            if not file_exists:
+                writer.writerow(['system_time', f'axis_{axis}_position_mm'])
+
 
             print(f"Moving axis {axis}...")
             while self.dll.FMC4030_Check_Axis_Is_Stop(self.id, axis) == 0:

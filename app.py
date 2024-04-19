@@ -56,8 +56,10 @@ def start_sequence():
     motor_system = MotorSystem(dll_path)
 
     # Start LED
+    motor_system.move(1, 10, 1, 20, record=False) 
+    time.sleep(5)
     led_control.led_on()
-    time.sleep(3)
+    time.sleep(5)
 
     # Start recording events
     sensor.start_recording()
@@ -74,9 +76,12 @@ def start_sequence():
     # motor_system.move(1, 60, 1, 20)   # Move Y axis +50
     # motor_system.move(1, 30, -1, 20)  # Move Y axis -50
 
-    motor_system.move(1, 30, -1, 100)  # Move Y axis -50
-    motor_system.move(1, 60, 1, 100)   # Move Y axis +50
-    motor_system.move(1, 30, -1, 100)  # Move Y axis -50
+    motor_system.move(1, 40, -1, 50)  # Move Y axis -50
+    motor_system.move(1, 40, 1, 50)  # Move Y axis -50
+    # motor_system.move(1, 50, -1, 100)  # Move Y axis -50
+    # motor_system.move(1, 40, 1, 100)  # Move Y axis -50
+    # motor_system.move(1, 60, 1, 100)   # Move Y axis +50
+    # motor_system.move(1, 30, -1, 100)  # Move Y axis -50
     # Start the CNC movement sequence in a new thread
 
     
@@ -97,11 +102,14 @@ def start_sequence():
     # Stop recording
     sensor.stop_recording()
 
-    time.sleep(3)
+    time.sleep(5)
 
     # Turn off LED
     led_control.led_off()
 
+    time.sleep(5)
+
+    motor_system.move(1, 10, -1, 20, record=False) 
    
 
     # Print positions, events, and save to CSV
