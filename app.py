@@ -7,6 +7,8 @@ import csv
 from led import ArduinoLED
 from event_sensor import EventSensor
 from cnc.cnc import MotorSystem
+import tornado.autoreload
+
 
 # Global variables to store event data
 event_data = []
@@ -76,8 +78,8 @@ def start_sequence():
     # motor_system.move(1, 60, 1, 20)   # Move Y axis +50
     # motor_system.move(1, 30, -1, 20)  # Move Y axis -50
 
-    motor_system.move(1, 40, -1, 50)  # Move Y axis -50
-    motor_system.move(1, 40, 1, 50)  # Move Y axis -50
+    motor_system.move(1, 40, -1, 100)  # Move Y axis -50
+    motor_system.move(1, 40, 1, 100)  # Move Y axis -50
     # motor_system.move(1, 50, -1, 100)  # Move Y axis -50
     # motor_system.move(1, 40, 1, 100)  # Move Y axis -50
     # motor_system.move(1, 60, 1, 100)   # Move Y axis +50
@@ -140,4 +142,6 @@ if __name__ == "__main__":
     app = make_app()
     app.listen(8888)
     print("Server running on http://localhost:8888")
+    # Setup autoreload
+    tornado.autoreload.start()
     tornado.ioloop.IOLoop.current().start()
