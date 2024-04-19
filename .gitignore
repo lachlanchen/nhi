@@ -1,5 +1,6 @@
-data*/*
-!data/*
+# data*/*
+# !data/*
+archived*/*
 frames*/*
 dispersed_frames*/*
 *.pt
