@@ -9,8 +9,42 @@ import matplotlib.pyplot as plt
 import subprocess
 from spectrum_visualizer import SpectrumVisualizer
 
+class BinaryDiceLoss(nn.Module):
+    def __init__(self, epsilon=1e-6):
+        super(BinaryDiceLoss, self).__init__()
+        self.epsilon = epsilon
+
+    def forward(self, input, target):
+        input_flat = input.reshape(-1)
+        target_flat = target.reshape(-1)
+
+        intersection = (input_flat * target_flat).sum()
+        cardinality = input_flat.sum() + target_flat.sum()
+
+        dice_loss = 1 - (2. * intersection + self.epsilon) / (cardinality + self.epsilon)
+        return dice_loss
+
+class CombinedDiceMSELoss(nn.Module):
+    def __init__(self):
+        super(CombinedDiceMSELoss, self).__init__()
+        self.dice_loss = BinaryDiceLoss()
+        self.mse_loss = nn.MSELoss()  # Using PyTorch's built-in MSE loss
+
+    def forward(self, events_pred, events_target, polarity_pred, polarity_target):
+        # Calculate Dice loss for events
+        dice_loss = self.dice_loss(events_pred, events_target)
+
+        # Calculate MSE loss for polarity
+        mse_loss = self.mse_loss(polarity_pred, polarity_target)
+
+        # Combine losses
+        combined_loss = dice_loss + mse_loss  # You can also add weights here if needed
+        return combined_loss
+
+
+
 class GratingLightDispersionModel(nn.Module):
-    def __init__(self, file_path, lambda_start=260, lambda_end=850, lambda_step=10, d_grating=1/(600*1e3), sensor_offset=0.05, device='cpu'):
+    def __init__(self, file_path, lambda_start=260, lambda_end=870, lambda_step=10, d_grating=1/(600*1e3), sensor_offset=0.05, device='cpu'):
         """
         Initializes the Grating Light Dispersion Model with specified spectral and geometric parameters.
 
@@ -34,22 +68,33 @@ class GratingLightDispersionModel(nn.Module):
         self.H, self.W = 640, 480
 
         # Load LED axis y-positions from a CSV file and convert from millimeters to meters.
-        df = pd.read_csv(file_path)
-        self.led_axis_y_positions = torch.tensor(df['axis_y_position_mm'].values / 1000, dtype=torch.float32, device=device)
+        # df = pd.read_csv(file_path)
+        # self.led_axis_y_positions = torch.tensor(df['axis_y_position_mm'].values / 1000, dtype=torch.float32, device=device)
         
         # Generate wavelengths from lambda_start to lambda_end with a step of lambda_step.
         self.wavelengths = torch.arange(self.lambda_start, self.lambda_end + 1, self.lambda_step, device=device, dtype=torch.float32)
         
         # Define key spectral power distribution (SPD) points for interpolation.
+        # initial_spd_points = {
+        #     lambda_start: 0,
+        #     380: 0.0,
+        #     440: 0.8,
+        #     470: 0.3,
+        #     500: 0.8,
+        #     640: 1.0,
+        #     780: 0.0,
+        #     lambda_end: 0
+        # }
+
         initial_spd_points = {
-            lambda_start: 0,
-            380: 0.0,
-            440: 0.8,
-            470: 0.3,
-            500: 0.8,
+            lambda_start: 1.0,
+            380: 1.0,
+            440: 1.0,
+            470: 1.0,
+            500: 1.0,
             640: 1.0,
-            780: 0.0,
-            lambda_end: 0
+            780: 1.0,
+            lambda_end: 1.0
         }
 
         # Use scipy's interp1d to create a smooth SPD curve between defined points.
@@ -63,131 +108,217 @@ class GratingLightDispersionModel(nn.Module):
         
         # Convert interpolated SPD to logits to use as parameters for optimization.
         spd_logits = torch.log(interpolated_spd / (1 - interpolated_spd))
-        self.spd_logits = nn.Parameter(spd_logits)
-        self.light_spd = torch.sigmoid(self.spd_logits)
+        self.spd_logits = nn.Parameter(spd_logits,)
+        
         
         # Parameters for dynamic control during training or inference.
-        self.event_threshold = nn.Parameter(torch.tensor([1e-6], device=device))
+        event_threshold = 1e-2
+        event_threshold_logits = torch.log(torch.tensor([event_threshold / (1 - event_threshold)], device=device))
+        self.event_threshold_logits = nn.Parameter(event_threshold_logits)
+
         self.absorption_spectrum_logits = nn.Parameter(torch.zeros((self.H, self.W, len(self.wavelengths)), device=device))
         
         # self.spectrum2intensity = nn.Parameter(torch.full((len(self.wavelengths),), 1/len(self.wavelengths), device=self.device))
-        # Initialize spectrum-to-intensity conversion vector as trainable logits
-        uniform_value = 1.0 / len(self.wavelengths)
-        # Calculate initial logits from a uniform distribution
-        initial_logits = torch.log(torch.tensor([uniform_value / (1 - uniform_value)], device=device))
-        # Repeat the logits across the wavelength dimension
-        self.spectrum2intensity_logits = nn.Parameter(initial_logits.repeat(len(self.wavelengths)), requires_grad=False)
+        # # Initialize spectrum-to-intensity conversion vector as trainable logits
+        # uniform_value = 1.0 / len(self.wavelengths)
+        # # Calculate initial logits from a uniform distribution
+        # initial_logits = torch.log(torch.tensor([uniform_value / (1 - uniform_value)], device=device))
+        # # Repeat the logits across the wavelength dimension
+        # self.spectrum2intensity_logits = nn.Parameter(initial_logits.repeat(len(self.wavelengths)), requires_grad=False)
 
-        self.polarity_scale = nn.Parameter(torch.tensor([1.], device=device))  # Initial value of 100
+        # Initialize spectrum-to-intensity conversion vector as trainable logits
+        # Set initial logits to zero
+        # spectrum2intensity_logits = torch.zeros(len(self.wavelengths), device=self.device)
+        
+        # Make them a nn.Parameter so they can be trained
+        # self.spectrum2intensity_logits = nn.Parameter(spectrum2intensity_logits, requires_grad=False)
+
+
+        # self.polarity_scale = nn.Parameter(torch.tensor([3.], device=device))  # Initial value of 100
 
 
         # Visualizer for the light spectrum.
         self.visualizer = SpectrumVisualizer('ciexyz31_1.txt')
         
 
-    # def forward(self):
-    #     # Calculate angles of incidence and diffraction based on LED and sensor positions.
-    #     L_grating_to_LED = 0.1  # Distance from grating to LED source.
-    #     L_grating_to_sensor = 0.1  # Distance from grating to sensor.
-    #     theta_inc = torch.atan(self.led_axis_y_positions / L_grating_to_LED)
-    #     sensor_width_m = 4.32e-3  # Total width of the sensor in meters.
-    #     x_sensor = torch.linspace(-sensor_width_m / 2, sensor_width_m / 2, steps=self.W, device=self.device) + self.sensor_offset
-    #     theta_diff = torch.atan(x_sensor / L_grating_to_sensor)
+    
+    # def forward(self, input_data, batch_size=32):
+    #     self.led_axis_y_positions = input_data
 
-    #     # Calculate diffraction patterns based on the grating equation.
-    #     lambda_diff_nm = self.d_grating * (torch.sin(theta_inc).unsqueeze(-1) + torch.sin(theta_diff)) * 1e9
+    #     # We'll assume that total number of timestamps T can be divided evenly by batch_size for simplicity
+    #     H, W = self.H, self.W  # total timestamps, height, width
 
-    #     # Debugging: Print shapes of tensors to verify correct alignment
-    #     print("Theta_inc shape:", theta_inc.shape)
-    #     print("X_sensor shape:", x_sensor.shape)
-    #     print("Lambda_diff_nm shape:", lambda_diff_nm.shape)
+    #     T = input_data.shape[0]  # Assuming input_data is the data tensor with shape [T, H, W]
+    #     num_batches = (T + batch_size - 1) // batch_size  # This ensures that we cover all data
+        
+        
+    #     all_events = []
+    #     for i in range(num_batches):
+    #         start_idx = i * batch_size
+    #         end_idx = start_idx + batch_size + 1  # +1 to include one extra timestamp for diff calculation
 
-    #     # Calculate how closely each sensor position's wavelength matches available light SPD wavelengths.
-    #     diff = torch.abs(lambda_diff_nm.unsqueeze(-1) - self.wavelengths.unsqueeze(0).unsqueeze(0))
-    #     soft_onehot = F.softmax(-diff * 0.5, dim=-1)  # Convert differences to probabilities.
+    #         # Calculate angles of incidence and diffraction for the batch
+    #         theta_inc = torch.atan(self.led_axis_y_positions[start_idx:end_idx] / 0.1)
+    #         x_sensor = torch.linspace(-4.32e-3 / 2, 4.32e-3 / 2, steps=W, device=self.device) + self.sensor_offset
+    #         theta_diff = torch.atan(x_sensor / 0.1)
 
-    #     # Generate the light spectrum at each sensor position.
-    #     spectrum = soft_onehot * self.light_spd[None, None, :]
-    #     spectrum = spectrum.unsqueeze(1)[:32]
-    #     print("Spectrum shape:", spectrum.shape)
+    #         lambda_diff_nm = self.d_grating * (torch.sin(theta_inc).unsqueeze(-1) + torch.sin(theta_diff)) * 1e9
+    #         diff = torch.abs(lambda_diff_nm.unsqueeze(-1) - self.wavelengths.unsqueeze(0).unsqueeze(0))
+    #         soft_onehot = F.softmax(-diff * 0.5, dim=-1)
 
-    #     absorption_spectrum = torch.sigmoid(self.absorption_spectrum_logits).unsqueeze(0)  # Use unsqueeze to match dimensions
-    #     print("Absorption_spectrum shape:", absorption_spectrum.shape)
+    #         # Spectrum for the current batch
+    #         spectrum = soft_onehot * self.light_spd[None, None, :]
+    #         spectrum = spectrum.unsqueeze(1)
 
-    #     # modulated_spectrum = spectrum * absorption_spectrum  # Assumes broadcasting
-    #     # Using einsum for correctly broadcasting across the desired dimensions.
-    #     # 't' for time, 'h' for height, 'w' for width, 's' for spectral dimension
-    #     modulated_spectrum = torch.einsum('thws,ahws->tahws', spectrum, absorption_spectrum)
+    #         absorption_spectrum = torch.sigmoid(self.absorption_spectrum_logits).unsqueeze(0)
+    #         # modulated_spectrum = torch.einsum('thws,ahws->tahws', spectrum, absorption_spectrum)
+    #         modulated_spectrum = spectrum * absorption_spectrum
 
-    #     print("Modulated_spectrum shape:", modulated_spectrum.shape)
+    #         # print("modulated_spectrum.shape: ", modulated_spectrum.shape)
+
+    #         # Compute intensity
+    #         spectrum_to_intensity = torch.sigmoid(self.spectrum2intensity_logits)
+    #         intensity = torch.sum(modulated_spectrum * spectrum_to_intensity[None, None, None, :], dim=-1)
+
+    #         # Calculate gradient (events) and track gradients properly
+    #         intensity_diff = torch.diff(intensity, dim=0)  # differential over time
+    #         prob = torch.sigmoid(torch.abs(intensity_diff) - self.event_threshold)
+    #         sample = torch.bernoulli(prob)
+    #         is_events = (sample - prob).detach() + prob  # reparameterization trick for gradient tracking
+    #         polarity = torch.tanh(intensity_diff * torch.exp(self.polarity_scale))
+    #         all_events.append(is_events * polarity)
+
+    #     # Combine all batches
+    #     all_events = torch.cat(all_events, dim=0)  # should be [1049, H, W]
+
+    #     # print("all_events.shape: ", all_events.shape)
+    #     # print("all_events.max(): ", all_events.max())
+    #     # print("all_events.min(): ", all_events.min())
+
+    #     return all_events
 
 
-    #     # return  # Early return for debugging purposes
 
-    #     # Compute overall intensity by summing modulated spectrum, weighted by spectrum-to-intensity conversion factors.
-    #     self.spectrum_to_intensity = torch.sigmoid(self.spectrum2intensity_logits)
-    #     intensity = torch.sum(modulated_spectrum * self.spectrum_to_intensity[None, None, None, :], dim=-1)
+    def forward(self, input_data):
+        self.led_axis_y_positions = input_data
 
-    #     # Calculate temporal gradient of intensity to detect changes.
-    #     gradient = torch.diff(intensity, dim=0)
-    #     events = torch.bernoulli(torch.sigmoid(torch.abs(gradient) - self.event_threshold))* torch.sign(gradient)
+        # self.light_spd = torch.sigmoid(self.spd_logits)
+        # absorption_spectrum = torch.sigmoid(self.absorption_spectrum_logits).unsqueeze(0)
+        # spectrum_to_intensity = F.softmax(self.spectrum2intensity_logits, dim=0)
+        # event_threshold = torch.sigmoid(self.event_threshold_logits)
 
-    #     return events
 
-    def forward(self, input_data, batch_size=32):
+        # Print the Y positions of LEDs
+        # print("LED Y-axis positions:", self.led_axis_y_positions)
+        
+        # Calculate and print the light spectral power distribution (SPD)
+        self.light_spd = torch.sigmoid(self.spd_logits)
+        # print("Light SPD:", self.light_spd)
+        
+        # Calculate and print the absorption spectrum
+        absorption_spectrum = torch.sigmoid(self.absorption_spectrum_logits).unsqueeze(0)
+        # print("Absorption spectrum:", absorption_spectrum)
+        
+        # Calculate and print the spectrum to intensity conversion
+        # spectrum_to_intensity = F.softmax(self.spectrum2intensity_logits, dim=0)
+        # print("Spectrum to intensity:", spectrum_to_intensity)
+        
+        # Calculate and print the event threshold
+        event_threshold = torch.sigmoid(self.event_threshold_logits)
+        # print("Event threshold:", event_threshold)
+
+        # return
+
         # We'll assume that total number of timestamps T can be divided evenly by batch_size for simplicity
         H, W = self.H, self.W  # total timestamps, height, width
-
-        T = input_data.shape[0]  # Assuming input_data is the data tensor with shape [T, H, W]
-        num_batches = (T + batch_size - 1) // batch_size  # This ensures that we cover all data
         
+
+        # Calculate angles of incidence and diffraction for the batch
+        theta_inc = torch.atan(self.led_axis_y_positions / 0.1)
+        x_sensor = torch.linspace(-4.32e-3 / 2, 4.32e-3 / 2, steps=W, device=self.device) + self.sensor_offset
+        theta_diff = torch.atan(x_sensor / 0.1)
+
+        lambda_diff_nm = self.d_grating * (torch.sin(theta_inc).unsqueeze(-1) + torch.sin(theta_diff)) * 1e9
+        diff = torch.abs(lambda_diff_nm.unsqueeze(-1) - self.wavelengths.unsqueeze(0).unsqueeze(0))
+        soft_onehot = F.softmax(-diff * 1.0, dim=-1)
+
+        # Spectrum for the current batch
+        spectrum = soft_onehot * self.light_spd[None, None, :]
+        spectrum = spectrum.unsqueeze(1)
+
         
-        all_events = []
-        for i in range(num_batches):
-            start_idx = i * batch_size
-            end_idx = start_idx + batch_size + 1  # +1 to include one extra timestamp for diff calculation
+        # modulated_spectrum = torch.einsum('thws,ahws->tahws', spectrum, absorption_spectrum)
+        modulated_spectrum = spectrum * absorption_spectrum
 
-            # Calculate angles of incidence and diffraction for the batch
-            theta_inc = torch.atan(self.led_axis_y_positions[start_idx:end_idx] / 0.1)
-            x_sensor = torch.linspace(-4.32e-3 / 2, 4.32e-3 / 2, steps=W, device=self.device) + self.sensor_offset
-            theta_diff = torch.atan(x_sensor / 0.1)
+        # print("modulated_spectrum.shape: ", modulated_spectrum.shape)
 
-            lambda_diff_nm = self.d_grating * (torch.sin(theta_inc).unsqueeze(-1) + torch.sin(theta_diff)) * 1e9
-            diff = torch.abs(lambda_diff_nm.unsqueeze(-1) - self.wavelengths.unsqueeze(0).unsqueeze(0))
-            soft_onehot = F.softmax(-diff * 0.5, dim=-1)
+        # Compute intensity
+        # spectrum_to_intensity = torch.sigmoid(self.spectrum2intensity_logits)
+        # Apply softmax to the logits to get the spectrum_to_intensity values
+        
+        # intensity = torch.sum(modulated_spectrum * spectrum_to_intensity[None, None, None, :], dim=-1)
+        intensity = torch.mean(modulated_spectrum, dim=-1)
 
-            # Spectrum for the current batch
-            spectrum = soft_onehot * self.light_spd[None, None, :]
-            spectrum = spectrum.unsqueeze(1)
+        # Calculate gradient (events) and track gradients properly
+        intensity_diff = torch.diff(intensity, dim=0)  # differential over time
+        # self.event_threshold = torch.sigmoid(self.event_threshold_logits)
+        
+        # polarith_scale = torch.exp(self.polarity_scale)
+        # polarith_scale = self.polarity_scale
+        prob = torch.sigmoid(torch.log(torch.abs(intensity_diff) + event_threshold*1e-3) - torch.log(event_threshold))
 
-            absorption_spectrum = torch.sigmoid(self.absorption_spectrum_logits).unsqueeze(0)
-            # modulated_spectrum = torch.einsum('thws,ahws->tahws', spectrum, absorption_spectrum)
-            modulated_spectrum = spectrum * absorption_spectrum
+        # print(prob)
 
-            print("modulated_spectrum.shape: ", modulated_spectrum.shape)
-
-            # Compute intensity
-            spectrum_to_intensity = torch.sigmoid(self.spectrum2intensity_logits)
-            intensity = torch.sum(modulated_spectrum * spectrum_to_intensity[None, None, None, :], dim=-1)
-
-            # Calculate gradient (events) and track gradients properly
-            intensity_diff = torch.diff(intensity, dim=0)  # differential over time
-            prob = torch.sigmoid(torch.abs(intensity_diff) - self.event_threshold)
-            sample = torch.bernoulli(prob)
-            is_events = (sample - prob).detach() + prob  # reparameterization trick for gradient tracking
-            polarity = torch.tanh(intensity_diff * torch.exp(self.polarity_scale))
-            all_events.append(is_events * polarity)
-
-        # Combine all batches
-        all_events = torch.cat(all_events, dim=0)  # should be [1049, H, W]
-
-        print("all_events.shape: ", all_events.shape)
-        print("all_events.max(): ", all_events.max())
-        print("all_events.min(): ", all_events.min())
-
-        return all_events
+        sample = torch.bernoulli(prob)
+        events = (sample - prob).detach() + prob  # reparameterization trick for gradient tracking
+        polarity = torch.tanh(intensity_diff / event_threshold)
+        
+        # events = is_events * polarity
 
 
+        # print("all_events.shape: ", polarity.shape)
+        # print("all_events.max(): ", polarity.max())
+        # print("all_events.min(): ", polarity.min())
+
+        return events, polarity
+
+
+    def save_sample_spectrum(self, directory, epoch):
+        os.makedirs(directory, exist_ok=True)
+        # Sigmoid activation to convert logits to probabilities
+        absorption_spectrum = torch.sigmoid(self.absorption_spectrum_logits).detach()
+
+        # Permute dimensions to move the wavelength to the first dimension (channels)
+        # absorption_spectrum_permuted = absorption_spectrum.permute(2, 0, 1)  # New shape [len(wavelengths), H, W]
+        absorption_spectrum_permuted = absorption_spectrum  # New shape [len(wavelengths), H, W]
+
+
+        # Assuming the visualizer can handle the entire tensor as is
+        file_name = f"{directory}/spectrum_at_epoch_{epoch}.png"
+        # Here you pass the frame which now has dimensions [1, H, W]
+        self.visualizer.visualize_and_save(absorption_spectrum_permuted, self.wavelengths.cpu(), file_name)
+
+    def visualize_output(self, output_tensor, file_name_pattern='dispersed_frames/dispersed_light_{:04d}.png'):
+        os.makedirs("dispersed_frames", exist_ok=True)
+        for i, frame in enumerate(output_tensor):
+            # if i%10 == 0 and i>=3200:
+            if i%1 == 0:
+                # The visualize_and_save function expects a 3D tensor (C, H, W)
+                # Adjust the dimension of frame for visualization
+                frame_rgb = self.visualizer.visualize_and_save(frame.detach(), self.wavelengths.cpu(), file_name_pattern.format(i))
+
+
+    def save_initial_spd(self, filename='initial_spd_plot.png'):
+        plt.figure(figsize=(10, 5))
+        plt.ylim(0, 1.2)
+        plt.plot(self.wavelengths.cpu().numpy(), torch.sigmoid(self.spd_logits).detach().cpu().numpy(), label='Initial SPD')
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Intensity')
+        plt.title('Spectral Power Distribution (SPD)')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(filename)
+        plt.close()
 
 
     def save_all_frames_as_images(self, folder='frames_forward', frames=None):
@@ -252,31 +383,58 @@ if __name__ == "__main__":
 
 
     data = torch.load("rotated_frames_640x480.pt")
+    # Load LED axis y-positions from a CSV file and convert from millimeters to meters.
+    led_axis_y_positions_df = pd.read_csv("unique_timestamps_and_y_positions.csv")
+    led_axis_y_positions = torch.tensor(led_axis_y_positions_df['axis_y_position_mm'].values / 1000, dtype=torch.float32, device=device)
+    
 
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    outer_batch_size = 512
-    inner_batch_size = 32
+    loss_function = CombinedDiceMSELoss()
+    outer_batch_size = 32
+    
 
-    for epoch in range(1000):
+    for epoch in range(5000):
         running_loss = 0.0
-        num_outer_batches = (data.shape[0] + outer_batch_size - 1) // outer_batch_size
+        num_batches = (data.shape[0] + outer_batch_size - 1) // outer_batch_size
 
-        for i in range(0, data.shape[0], outer_batch_size):
-            end_idx = min(i + outer_batch_size, data.shape[0])
-            outer_batch_data = data[i:end_idx].to(device)
+        
 
-            # Call forward with smaller batch processing
-            predicted_events = model.forward(outer_batch_data)
-
-            # Assuming ground truth is prepared correctly for comparison
-            ground_truth = data[i:end_idx].to(device)  # Make sure sizes match
-            loss = F.mse_loss(predicted_events, ground_truth.float())
-            loss.backward()
-            optimizer.step()
+        for i in range(1, data.shape[0], outer_batch_size):
             optimizer.zero_grad()
+            
+            end_idx = min(i + outer_batch_size, data.shape[0])
+            led_positions_batch = led_axis_y_positions[i-1:end_idx].to(device)
+
+            predicted_events, predicted_polarity = model(led_positions_batch)
+
+            
+
+
+            # Ensure ground truth is aligned with the output from the model
+            ground_truth = data[i:end_idx].to(device)
+         
+
+            # print("Polarity Prediction Shape:", predicted_polarity.shape)
+            # print("Polarity Target Shape:", ground_truth.shape)
+
+            # loss = F.mse_loss(predicted_events, ground_truth.float())
+            # Assuming events_pred, events_target, polarity_pred, polarity_target, and num_classes_polarity are available
+
+            loss = loss_function(
+                predicted_events, torch.abs(ground_truth.float()), 
+                predicted_polarity, ground_truth.float(), 
+            )
+
+            
+            loss.backward(retain_graph=True)
+            optimizer.step()
 
             running_loss += loss.item()
 
-        print(f"Epoch {epoch+1}, Loss: {running_loss / num_outer_batches}")
+
+        if epoch % 100 == 0:
+            model.save_sample_spectrum("frames_sample_spectrum", epoch)
+
+        print(f"Epoch {epoch+1}, Loss: {running_loss}")
 
