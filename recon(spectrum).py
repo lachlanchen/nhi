@@ -67,7 +67,7 @@ class GratingLightDispersionModel(nn.Module):
 
     def forward(self):
         L_grating_to_LED = 0.1  # Distance from grating to LED in meters
-        L_grating_to_sensor = 0.1  # Distance from grating to sensor in meters
+        L_grating_to_sensor = 0.09  # Distance from grating to sensor in meters
         theta_inc = torch.atan(self.led_axis_y_positions / L_grating_to_LED)
 
         # Screen positions in meters
@@ -109,7 +109,7 @@ class GratingLightDispersionModel(nn.Module):
         os.makedirs("dispersed_frames", exist_ok=True)
         for i, frame in enumerate(output_tensor):
             # if i%10 == 0 and i>=3200:
-            if i%1 == 0:
+            if i%10 == 0:
                 # The visualize_and_save function expects a 3D tensor (C, H, W)
                 # Adjust the dimension of frame for visualization
                 frame_rgb = self.visualizer.visualize_and_save(frame.detach(), self.wavelengths.cpu(), file_name_pattern.format(i))
