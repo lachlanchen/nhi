@@ -3,9 +3,11 @@ import torch
 import matplotlib.pyplot as plt
 import os
 import argparse
+from matplotlib.animation import FuncAnimation
 import subprocess
 
-# Set up the device to use CPU as default
+# Set up the device to use CUDA if available
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device = 'cpu'
 
 class EventDataTo3DBlock:
@@ -47,16 +49,25 @@ class EventDataTo3DBlock:
         df = pd.read_csv(self.csv_path)
         unique_timestamps, indices = torch.unique(torch.tensor(df['event_timestamp'].astype('category').cat.codes), return_inverse=True)
         indices = indices.to(device)
-        
-        self.frames = torch.zeros((len(unique_timestamps), self.height, self.width), dtype=torch.uint8, device=device)
-        x = torch.tensor(df['x'].values, dtype=torch.int, device=device)
-        y = torch.tensor(df['y'].values, dtype=torch.int, device=device)
-        polarity = torch.tensor(df['polarity'].map({True: 1, False: -1}).values, dtype=torch.uint8, device=device)
-        self.frames.index_put_((indices, y, x), polarity, accumulate=True)
+
+        # Split processing into chunks to manage memory usage
+        chunk_size = len(unique_timestamps) // 4  # Adjust chunk size as needed
+        start_index = 0
+        self.frames = torch.zeros((len(unique_timestamps), self.height, self.width), dtype=torch.int, device=device)
+
+        while start_index < len(unique_timestamps):
+            end_index = min(start_index + chunk_size, len(unique_timestamps))
+            chunk_indices = indices[start_index:end_index]
+            x = torch.tensor(df.loc[start_index:end_index-1, 'x'].values, dtype=torch.long, device=device)
+            y = torch.tensor(df.loc[start_index:end_index-1, 'y'].values, dtype=torch.long, device=device)
+            polarity = torch.tensor(df.loc[start_index:end_index-1, 'polarity'].map({True: 1, False: -1}).values, dtype=torch.int, device=device)
+
+            self.frames[chunk_indices, y, x] = polarity
+            start_index += chunk_size
 
     def save_unique_timestamps_and_positions(self):
         df = pd.read_csv(self.csv_path)
-        unique_timestamps_positions = df[['event_timestamp', 'y']].drop_duplicates()
+        unique_timestamps_positions = df[['event_timestamp', 'axis_y_position_mm']].drop_duplicates()
         output_path = os.path.join(self.output_folder, 'unique_timestamps_and_y_positions.csv')
         unique_timestamps_positions.to_csv(output_path, index=False)
         print(f"Saved unique timestamps and Y positions to '{output_path}'.")
@@ -81,7 +92,7 @@ class EventDataTo3DBlock:
 
         print(f"Saved all frames as images in the {folder}/ directory.")
 
-    def frames_to_video(self, folder='frames', output_video='frames_video.mp4', fps=30):
+    def frames_to_video(self, folder='frames', output_video='frames_video_davis.mp4', fps=30):
         folder_path = os.path.join(self.output_folder, folder)
         video_path = os.path.join(self.output_folder, output_video)
         command = [
@@ -107,6 +118,7 @@ if __name__ == '__main__':
 
     # Determine output folder based on whether a specific output directory was provided
     output_folder = args.output_folder if args.output_folder is not None else os.path.dirname(args.csv_path)
+
 
     data_processor = EventDataTo3DBlock(args.csv_path, output_folder, *args.size if args.size else (None, None), args.model)
     # data_processor.save_unique_timestamps_and_positions()

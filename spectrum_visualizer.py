@@ -74,8 +74,12 @@ class SpectrumVisualizer:
         rgb = self.xyz_to_rgb(xyz)
 
         # Visualization and saving
+        # for screen
         # plt.figure(figsize=(20, 3.6))
-        plt.figure(figsize=(4.8, 6.4))
+        # for DVXplorer MINI 640x480
+        # plt.figure(figsize=(4.8, 6.4))
+        # for Davis346 346x260 (input tensor shape 260x346)
+        plt.figure(figsize=(3.5, 2.6))
         plt.imshow(rgb.numpy(), aspect='auto')
         plt.axis('off')
         plt.savefig(output_file, bbox_inches='tight', pad_inches=0)

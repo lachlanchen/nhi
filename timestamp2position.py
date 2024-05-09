@@ -25,9 +25,10 @@ class CNCMotorSystem:
         y = self.data['axis_1_position_mm']
         return interp1d(x, y, fill_value="extrapolate")
     
-    def predict_position(self, timestamp):
+    def predict_position(self, timestamp, offset=0):
         datetime_obj = datetime.strptime(timestamp, '%H:%M:%S.%f')
         microseconds = datetime_obj.microsecond + datetime_obj.second * 1000000 + datetime_obj.minute * 60000000 + datetime_obj.hour * 3600000000
+        microseconds += offset * 1000000
         return self.fitter(microseconds)
     
     # def move(self, axis, distance_mm, dir, speed, callback=None):
