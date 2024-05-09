@@ -8,9 +8,12 @@ class TensorAccumulator:
         self.device = self.tensor.device
 
     def centralize(self, tensor):
-        # Calculate mean across rows and subtract from tensor
-        mean_across_rows = tensor.mean(dim=1, keepdim=True)
-        return tensor - mean_across_rows
+        # Convert tensor to float before computing mean
+        tensor_float = tensor.float()
+        mean_across_rows = tensor_float.mean(dim=1, keepdim=True)
+        # Subtract mean and convert back to original dtype if needed
+        centralized_tensor = (tensor_float - mean_across_rows).type(tensor.dtype)
+        return centralized_tensor
 
     def accumulate_continuous(self, intervals):
         length, height, width = self.tensor.size()
@@ -42,7 +45,7 @@ class TensorAccumulator:
 def main():
     parser = argparse.ArgumentParser(description='Accumulate tensor values over intervals.')
     parser.add_argument('file_path', type=str, help='Path to the tensor file')
-    parser.add_argument('--intervals', type=int, default=1000, help='Number of intervals to split the tensor into')
+    parser.add_argument('--intervals', type=int, default=100, help='Number of intervals to split the tensor into')
     parser.add_argument('--centralize', action='store_true', help='Centralize the tensor by subtracting the mean across rows')
     parser.add_argument('--post', action='store_true', help='Apply centralization post accumulation')
     args = parser.parse_args()
