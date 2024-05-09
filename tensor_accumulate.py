@@ -7,6 +7,10 @@ class TensorAccumulator:
         self.tensor = torch.load(tensor_path)
         self.device = self.tensor.device
 
+    def centralize(self):
+        mean_across_rows = self.tensor.mean(dim=2, keepdim=True)
+        self.tensor -= mean_across_rows
+
     def accumulate_continuous(self, intervals):
         length, height, width = self.tensor.size()
         interval_length = length // intervals
@@ -37,13 +41,18 @@ def main():
     parser = argparse.ArgumentParser(description='Accumulate tensor values over intervals.')
     parser.add_argument('file_path', type=str, help='Path to the tensor file')
     parser.add_argument('--intervals', type=int, default=1000, help='Number of intervals to split the tensor into')
+    parser.add_argument('--centralize', action='store_true', help='Centralize the tensor by subtracting the mean across rows')
     args = parser.parse_args()
 
     file_path = args.file_path
     intervals = args.intervals
+    centralize = args.centralize
     file_dir = os.path.dirname(file_path)
     
     accumulator = TensorAccumulator(file_path)
+    if centralize:
+        accumulator.centralize()
+    
     continuous_accumulation = accumulator.accumulate_continuous(intervals)
     continuous_path = os.path.join(file_dir, 'continuous')
     os.makedirs(continuous_path, exist_ok=True)
