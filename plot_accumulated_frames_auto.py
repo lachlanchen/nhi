@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Plot and Save Frames from Accumulated Tensors')
     parser.add_argument('continuous_path', type=str, help='Path to the continuous accumulation tensor file')
     parser.add_argument('interval_path', type=str, help='Path to the interval accumulation tensor file')
-    parser.add_argument('--normalize', action='store_true', default=False, help='Normalize the tensor data before plotting (default: True)')
+    parser.add_argument('--normalize', action='store_true', help='Normalize the tensor data before plotting')
 
     args = parser.parse_args()
     main(args)

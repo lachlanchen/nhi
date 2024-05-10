@@ -10,7 +10,8 @@ class TensorAccumulator:
     def centralize(self, tensor):
         # Convert tensor to float before computing mean
         tensor_float = tensor.float()
-        mean_across_rows = tensor_float.mean(dim=1, keepdim=True)
+        # mean_across_rows = tensor_float.mean(dim=1, keepdim=True)
+        mean_across_rows, indices = tensor_float.median(dim=1, keepdim=True)
         # Subtract mean and convert back to original dtype if needed
         centralized_tensor = (tensor_float - mean_across_rows).type(tensor.dtype)
         return centralized_tensor
@@ -26,7 +27,7 @@ class TensorAccumulator:
             if (index + 1) % interval_length == 0 or index == length - 1:
                 interval_idx = (index + 1) // interval_length - 1
                 interval_results[interval_idx] = cumulative_sum.clone()
-                cumulative_sum.zero_()
+                # cumulative_sum.zero_()
 
         return interval_results
 
@@ -65,7 +66,8 @@ def main():
     if centralize and post_centralize:
         continuous_accumulation = accumulator.centralize(continuous_accumulation)
     
-    continuous_path = os.path.join(file_dir, 'continuous')
+    # continuous_path = os.path.join(file_dir, 'continuous')
+    continuous_path = file_dir
     os.makedirs(continuous_path, exist_ok=True)
     continuous_filename = f'continuous_accumulation_{intervals}_{"post" if post_centralize else "pre"}.pt'
     torch.save(continuous_accumulation, os.path.join(continuous_path, continuous_filename))
@@ -75,7 +77,8 @@ def main():
     if centralize and post_centralize:
         interval_accumulation = accumulator.centralize(interval_accumulation)
 
-    interval_path = os.path.join(file_dir, 'interval')
+    # interval_path = os.path.join(file_dir, 'interval')
+    interval_path = file_dir
     os.makedirs(interval_path, exist_ok=True)
     interval_filename = f'interval_accumulation_{intervals}_{"post" if post_centralize else "pre"}.pt'
     torch.save(interval_accumulation, os.path.join(interval_path, interval_filename))
