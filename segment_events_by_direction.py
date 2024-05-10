@@ -3,11 +3,12 @@ import numpy as np
 import os
 from tqdm import tqdm
 from pprint import pprint
+import argparse
 
 class EventSegmenter:
-    def __init__(self, csv_path, output_folder):
-        self.csv_path = csv_path
-        self.output_folder = output_folder
+    def __init__(self, base_folder):
+        self.csv_path = os.path.join(base_folder, 'filtered_event_data_with_positions.csv')
+        self.output_folder = os.path.join(base_folder, 'segmented_events')
         os.makedirs(self.output_folder, exist_ok=True)  # Ensure the output directory exists
 
     def load_data(self):
@@ -20,10 +21,8 @@ class EventSegmenter:
         # Calculate the difference to identify position changes
         pos_diff = data['axis_y_position_mm'].diff()
 
-        # pprint(pos_diff[:10])
-
         # Initialize variables
-        last_known_direction = np.sign(pos_diff[1])
+        last_known_direction = np.sign(pos_diff.iloc[1])
         change_indices = []
         directions = np.zeros(len(data))
 
@@ -45,10 +44,8 @@ class EventSegmenter:
         start_idx = 0
         segments = []
 
-        print("change_indices: ")
-        pprint(change_indices)
-
         for idx in change_indices:
+            # idx = idx + 1
             segment = data.iloc[start_idx:idx]
             segment_filename = f'segment_{start_idx}_{idx-1}.csv'
             segment.to_csv(os.path.join(self.output_folder, segment_filename), index=False)
@@ -66,8 +63,10 @@ class EventSegmenter:
 
 # Usage
 if __name__ == '__main__':
-    csv_path = 'data100/filtered_event_data_with_positions.csv'
-    output_folder = 'data100/segmented_events'
-    segmenter = EventSegmenter(csv_path, output_folder)
+    parser = argparse.ArgumentParser(description='Segment events by direction from a CSV file located in a specified folder')
+    parser.add_argument('base_folder', type=str, help='Base folder name containing the CSV file and where segmented events will be stored')
+    args = parser.parse_args()
+
+    segmenter = EventSegmenter(args.base_folder)
     segments = segmenter.segment_by_direction()
-    print(f"{len(segments)} segments created and saved in {output_folder}")
+    print(f"{len(segments)} segments created and saved in {args.base_folder}")
