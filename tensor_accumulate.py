@@ -8,12 +8,11 @@ class TensorAccumulator:
         self.device = self.tensor.device
 
     def centralize(self, tensor):
-        # Convert tensor to float before computing mean
+        # Convert tensor to float before computing median and its indices
         tensor_float = tensor.float()
-        # mean_across_rows = tensor_float.mean(dim=1, keepdim=True)
-        mean_across_rows, indices = tensor_float.median(dim=1, keepdim=True)
-        # Subtract mean and convert back to original dtype if needed
-        centralized_tensor = (tensor_float - mean_across_rows).type(tensor.dtype)
+        median_across_rows, indices = tensor_float.median(dim=1, keepdim=True)
+        # Subtract median and convert back to original dtype if needed
+        centralized_tensor = (tensor_float - median_across_rows).type(tensor.dtype)
         return centralized_tensor
 
     def accumulate_continuous(self, intervals):
@@ -27,7 +26,6 @@ class TensorAccumulator:
             if (index + 1) % interval_length == 0 or index == length - 1:
                 interval_idx = (index + 1) // interval_length - 1
                 interval_results[interval_idx] = cumulative_sum.clone()
-                # cumulative_sum.zero_()
 
         return interval_results
 
@@ -47,7 +45,7 @@ def main():
     parser = argparse.ArgumentParser(description='Accumulate tensor values over intervals.')
     parser.add_argument('file_path', type=str, help='Path to the tensor file')
     parser.add_argument('--intervals', type=int, default=100, help='Number of intervals to split the tensor into')
-    parser.add_argument('--centralize', action='store_true', help='Centralize the tensor by subtracting the mean across rows')
+    parser.add_argument('--centralize', action='store_true', help='Centralize the tensor by subtracting the median across rows')
     parser.add_argument('--post', action='store_true', help='Apply centralization post accumulation')
     args = parser.parse_args()
 
@@ -66,10 +64,12 @@ def main():
     if centralize and post_centralize:
         continuous_accumulation = accumulator.centralize(continuous_accumulation)
     
-    # continuous_path = os.path.join(file_dir, 'continuous')
     continuous_path = file_dir
     os.makedirs(continuous_path, exist_ok=True)
-    continuous_filename = f'continuous_accumulation_{intervals}_{"post" if post_centralize else "pre"}.pt'
+    centralize_suffix = ""
+    if centralize:
+        centralize_suffix = "_post" if post_centralize else "_pre"
+    continuous_filename = f'continuous_accumulation_{intervals}{centralize_suffix}.pt'
     torch.save(continuous_accumulation, os.path.join(continuous_path, continuous_filename))
     print('Continuous accumulation saved:', os.path.join(continuous_path, continuous_filename))
 
@@ -77,10 +77,9 @@ def main():
     if centralize and post_centralize:
         interval_accumulation = accumulator.centralize(interval_accumulation)
 
-    # interval_path = os.path.join(file_dir, 'interval')
     interval_path = file_dir
     os.makedirs(interval_path, exist_ok=True)
-    interval_filename = f'interval_accumulation_{intervals}_{"post" if post_centralize else "pre"}.pt'
+    interval_filename = f'interval_accumulation_{intervals}{centralize_suffix}.pt'
     torch.save(interval_accumulation, os.path.join(interval_path, interval_filename))
     print('Interval accumulation saved:', os.path.join(interval_path, interval_filename))
 
