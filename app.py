@@ -90,7 +90,7 @@ def start_sequence():
         recording_duration_sec=300
     )).start()
 
-    motor_speed = 100
+    motor_speed = 20
 
     # cnc_movement_sequence()
 
@@ -106,12 +106,12 @@ def start_sequence():
     # motor_system.move(1, 25, 1, motor_speed)  # Move Y axis -50
     # motor_system.move(1, 25, -1, motor_speed)  # Move Y axis -50
 
-    motor_system.move(1, 30, 1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 30, -1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 30, 1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 30, -1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 30, 1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 30, -1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
 
     # motor_system.move(1, 25, 1, motor_speed)  # Move Y axis -50
     # motor_system.move(1, 25, -1, motor_speed)  # Move Y axis -50
