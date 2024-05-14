@@ -7,15 +7,14 @@ from mpl_toolkits.mplot3d import proj3d
 import argparse
 
 class EventVisualizer:
-    def __init__(self, csv_file, sensor_size=(260, 346), sample_rate=1):
+    def __init__(self, csv_file, sensor_size=(260, 346)):
         self.sensor_size = sensor_size
-        self.sample_rate = sample_rate
         self.load_data(csv_file)
         self.process_data()
 
     def load_data(self, csv_file):
-        """Load event data from a CSV file with the specified sample rate."""
-        self.data = pd.read_csv(csv_file).iloc[::self.sample_rate]
+        """Load event data from a CSV file."""
+        self.data = pd.read_csv(csv_file).iloc[::1]
         
     def process_data(self):
         """Process the data to convert timestamps and polarities."""
@@ -31,7 +30,6 @@ class EventVisualizer:
     def plot_scatter_bos_rect(self, 
         view="default", polar=True, axis_ind="on", 
         alpha=0.1, alpha_k=0.02, plot=False, save=False, save_path=None, time_stretch=10.0):
-        """Plot a 3D scatter plot of the event data."""
         pos_loc = np.where(self.ps == 1)
         neg_loc = np.where(self.ps == 0)
         pos_xs, pos_ys, pos_ts = self.xs[pos_loc], self.ys[pos_loc], self.ts[pos_loc]
@@ -41,17 +39,12 @@ class EventVisualizer:
         ax = fig.add_subplot(111, projection='3d')
 
         if polar:
-            # Plot positive polarity events
             # ax.scatter(pos_xs, pos_ys, time_stretch * pos_ts / 1e6, c='r', alpha=alpha, marker=".")
-            # Plot negative polarity events
             # ax.scatter(neg_xs, neg_ys, time_stretch * neg_ts / 1e6, c='b', alpha=alpha, marker=".")
 
-            # Plot positive polarity events with swapped y and z axes
             ax.scatter(pos_xs, time_stretch * pos_ts / 1e6, pos_ys, c='r', alpha=alpha, marker=".")
-            # Plot negative polarity events with swapped y and z axes
             ax.scatter(neg_xs, time_stretch * neg_ts / 1e6, neg_ys, c='b', alpha=alpha, marker=".")
         
-        # Uncomment this to plot all events with x, y, z positions set to (xs, 0, ys)
         # ax.scatter(self.xs, np.zeros_like(self.xs), self.ys, c='k', alpha=alpha_k, marker=".")
 
         ax.set_xlim3d(0, self.sensor_size[1] - 1)
@@ -109,8 +102,6 @@ if __name__ == "__main__":
     parser.add_argument("--save_path", type=str, default=None, help="Path to save the plot image.")
     parser.add_argument("--plot", action="store_true", help="Display the plot.")
     parser.add_argument("--time_stretch", type=float, default=10.0, help="Factor to stretch the time axis.")
-    parser.add_argument("--sample_rate", type=int, default=1, help="Sampling rate for data.")
-    parser.add_argument("--alpha", type=float, default=0.1, help="Opacity of the points in the plot.")
 
     args = parser.parse_args()
 
@@ -118,14 +109,14 @@ if __name__ == "__main__":
         base_dir = os.path.dirname(args.csv_file)
         base_name = os.path.splitext(os.path.basename(args.csv_file))[0]
 
-    visualizer = EventVisualizer(args.csv_file, sample_rate=args.sample_rate)
+    visualizer = EventVisualizer(args.csv_file)
     
     if args.view:
         if args.save_path is None:
             save_path = os.path.join(base_dir, f"{base_name}_{args.view}.jpeg")
         else:
             save_path = args.save_path
-        visualizer.plot_scatter_bos_rect(view=args.view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch, alpha=args.alpha)
+        visualizer.plot_scatter_bos_rect(view=args.view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch)
     else:
         views = ["default", "vertical", "side", "r-side", "normal", "normal45", "lateral", "reverse"]
         for view in views:
@@ -133,4 +124,5 @@ if __name__ == "__main__":
                 save_path = os.path.join(base_dir, f"{base_name}_{view}.jpeg")
             else:
                 save_path = os.path.join(os.path.dirname(args.save_path), f"{base_name}_{view}.jpeg")
-            visualizer.plot_scatter_bos_rect(view=view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch, alpha=args.alpha)
+            visualizer.plot_scatter_bos_rect(view=view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch)
+
