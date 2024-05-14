@@ -2,21 +2,63 @@ import torch
 import numpy as np
 from pprint import pprint
 
+# class ShiftCalculator:
+#     def __init__(self, width=8, steps=346, lines_per_mm=600, distance=84, reverse=False):
+#         self.width = width
+#         self.steps = steps
+#         self.lines_per_mm = lines_per_mm
+#         self.distance = distance
+#         self.reverse = -1 if reverse else 1
+
+#     def compute_shift_vector(self):
+#         d = 1 / self.lines_per_mm  # mm per line
+#         theta_min = np.arctan((0 - self.width / 2) / self.distance)
+#         theta_max = np.arctan((self.width / 2) / self.distance)
+#         lambda_min = d * np.sin(theta_min)
+#         lambda_max = d * np.sin(theta_max)
+#         # return torch.linspace(lambda_min, lambda_max, self.steps) * self.reverse * 0.7 - 50 * 1e-6
+#         # 0.8 is equivalent to the 1.25 for factor_d
+#         return torch.linspace(lambda_min, lambda_max, self.steps) * self.reverse * 0.8 - 50 * 1e-6
+
 class ShiftCalculator:
-    def __init__(self, width=8, steps=346, lines_per_mm=600, distance=84, reverse=False):
-        self.width = width
-        self.steps = steps
-        self.lines_per_mm = lines_per_mm
-        self.distance = distance
-        self.reverse = -1 if reverse else 1
+    def __init__(self, width=8, steps=346, lines_per_mm=600, distance=84, reverse=False, adjustment_factor=.8, adjust_at='distance'):
+        self.width = width  # Width of the sensor in mm
+        self.steps = steps  # Number of discrete steps to calculate across the sensor
+        self.lines_per_mm = lines_per_mm  # Density of the grating lines per mm
+        self.original_distance = distance  # Store the original distance for reporting
+        self.distance = distance  # Distance from the grating to the sensor in mm
+        self.reverse = -1 if reverse else 1  # Reverse the direction of the wavelength range if needed
+        self.adjustment_factor = adjustment_factor  # Adjustment factor for scaling
+        self.adjust_at = adjust_at  # Determines whether the adjustment is at 'distance' or 'final'
+
+        # If adjustment is to be made at the distance, modify the distance and print the values
+        if self.adjust_at == 'distance':
+            print(f"Original Distance: {self.distance} mm")
+            self.distance = self.distance / self.adjustment_factor  # Apply adjustment by dividing the distance
+            print(f"Adjusted Distance: {self.distance} mm")
 
     def compute_shift_vector(self):
-        d = 1 / self.lines_per_mm  # mm per line
+        d = 1 / self.lines_per_mm  # Calculate grating spacing in mm
         theta_min = np.arctan((0 - self.width / 2) / self.distance)
         theta_max = np.arctan((self.width / 2) / self.distance)
-        lambda_min = d * np.sin(theta_min)
-        lambda_max = d * np.sin(theta_max)
-        return torch.linspace(lambda_min, lambda_max, self.steps) * self.reverse * 0.7 - 50 * 1e-6
+        lambda_min = d * np.sin(theta_min)  # Minimum wavelength at theta_min
+        lambda_max = d * np.sin(theta_max)  # Maximum wavelength at theta_max
+        
+        # Print the original min and max wavelengths if adjustment is at the final step
+        if self.adjust_at == 'final':
+            print(f"Original Min Wavelength: {lambda_min:e} m, Original Max Wavelength: {lambda_max:e} m")
+        
+        wavelengths = torch.linspace(lambda_min, lambda_max, self.steps) * self.reverse
+        
+        # Apply the adjustment at the final step and print the adjusted wavelengths
+        if self.adjust_at == 'final':
+            adjusted_wavelengths = wavelengths * self.adjustment_factor
+            print(f"Adjusted Min Wavelength: {adjusted_wavelengths.min():e} m, Adjusted Max Wavelength: {adjusted_wavelengths.max():e} m")
+            wavelengths = adjusted_wavelengths
+        
+        # Apply a constant offset to the wavelengths
+        return wavelengths - 50 * 1e-6  # Subtract 50 microns for calibration or other corrections
+
 
 class TensorShifter:
     def __init__(self, shift_vector):
