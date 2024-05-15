@@ -5,7 +5,7 @@ import time
 import os
 import csv
 from led import ArduinoLED
-from event_sensor import EventSensor
+from event_sensor import EventSensorIniVation as EventSensor
 from cnc.cnc import MotorSystem
 import tornado.autoreload
 from npy2video import npy_to_video
