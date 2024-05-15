@@ -46,7 +46,7 @@ def timestamp_to_formatted_string(timestamp_microseconds):
 
 
 
-class EventSensor:
+class EventSensorIniVation:
     def __init__(self):
         self.address = '127.0.0.1'
         self.port = int(os.getenv('DV_PORT', '7777'))
