@@ -5,7 +5,6 @@ from metavision_core.event_io import EventsIterator
 from metavision_sdk_base import EventCD
 from metavision_sdk_ui import Window, EventLoop
 
-print("xxx")
 
 def parse_args():
     """Parse command line arguments."""
@@ -29,15 +28,45 @@ class EVK5Sensor:
 
     def record_events(self, output_file_name):
         """Record events to a CSV file."""
+        recorded = False
+
         with open(output_file_name, 'w') as file:
             file.write("timestamp,x,y,polarity\n")
             for events in self.iterator:
+
+
+
                 if not self.running:
                     break
+
+                # evs = events
+                # print("----- New event buffer! -----")
+                # if evs.size == 0:
+                #     print("The current event buffer is empty.")
+                # else:
+                #     min_t = evs['t'][0]   # Get the timestamp of the first event of this callback
+                #     max_t = evs['t'][-1]  # Get the timestamp of the last event of this callback
+                #     global_max_t = max_t  # Events are ordered by timestamp, so the current last event has the highest timestamp
+
+                #     counter = evs.size  # Local counter
+                #     # global_counter += counter  # Increase global counter
+
+                #     print(f"There were {counter} events in this event buffer.")
+                #     # print(f"There were {global_counter} total events up to now.")
+                #     print(f"The current event buffer included events from {min_t} to {max_t} microseconds.")
+
+
                 for event in events:
                     print(event)
-                    timestamp, x, y, polarity = event
+                    x, y, polarity, timestamp = event
                     file.write(f"{timestamp},{x},{y},{polarity}\n")
+
+                    recorded = True
+                    break
+                    # break
+
+                if recorded:
+                    break
         print(f"Events recorded to {output_file_name}")
 
     def display_events(self):
