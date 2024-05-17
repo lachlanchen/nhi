@@ -18,6 +18,12 @@ event_data = []
 import os
 import shutil
 from datetime import datetime
+import time
+
+def print_timestamp(message, timestamp):
+    """Helper function to format and print the timestamp."""
+    print(f"{message}: {datetime.fromtimestamp(timestamp / 1e6).strftime('%H:%M:%S')}")
+
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -65,7 +71,9 @@ def start_sequence():
     dll_path = "cnc/FMC4030Lib-x64-20220329/FMC4030-Dll.dll"
     motor_system = MotorSystem(dll_path)
 
+
     # Start LED
+    led_control.led_off()
     motor_system.move(1, 15, 1, 20, record=False) 
     time.sleep(5)
     led_control.led_on()
@@ -88,7 +96,7 @@ def start_sequence():
     threading.Thread(target=lambda: sensor.record_events_and_frames_concurrently(
         'events_output', 
         'frames_output', 
-        recording_duration_sec=300
+        recording_duration_sec=500
     )).start()
 
     motor_speed = 100
@@ -145,8 +153,27 @@ def start_sequence():
 
     # sensor.record_events_with_auxiliary_data("event_data", motor_system.get_current_status)
 
+    # while motor_system.finish_time + 3 > sensor.current_event_timestamp:
+    #     pass
+
+    # Print before entering the loop
+    print_timestamp("Before loop start time", int(time.time() * 1e6))
+
+    # Continue checking until the sensor's current event timestamp surpasses the motor's finish time
+    while motor_system.finish_time  > sensor.current_event_timestamp:
+        # Update sensor timestamp to current time
+        # sensor.current_event_timestamp = int(time.time() * 1e6)  
+        # Print the current finish time and event timestamp inside the loop
+        print_timestamp("Motor system finish time", motor_system.finish_time)
+        print_timestamp("Sensor current event timestamp", sensor.current_event_timestamp)
+        # Small delay to prevent tight loop execution and allow readable output
+        time.sleep(10)  
+
+    # Print after exiting the loop
+    print_timestamp("After loop end time", int(time.time() * 1e6))
+
     # time.sleep(15)
-    time.sleep(300)
+    # time.sleep(15)
 
 
     # Stop recording

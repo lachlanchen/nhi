@@ -53,6 +53,7 @@ class MotorSystem:
         self.scale_factor = scale_factor  # Scale factor to adjust actual movement distance
         self.config_file = config_file
         self.config = configparser.ConfigParser()
+        self.finish_time = None
         self.load_config()
         self.open_device()
 
@@ -176,6 +177,8 @@ class MotorSystem:
 
                 # Sleep for a short duration to limit the rate of updates
                 time.sleep(0.001)
+
+        self.finish_time = time.time() * 1e6
 
         print(f"Position data saved to {csv_file_path}")
 
