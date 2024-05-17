@@ -14,7 +14,7 @@ def timestamp_to_formatted_string_with_timezone(timestamp_microseconds, timezone
     epoch_start = datetime(1970, 1, 1, tzinfo=pytz.utc)
     
     # Convert microseconds to a timedelta
-    time_since_epoch = timedelta(microseconds=timestamp_microseconds)
+    time_since_epoch = timedelta(microseconds=int(timestamp_microseconds))
     
     # Calculate the datetime by adding the timedelta to the epoch start
     event_datetime_utc = epoch_start + time_since_epoch
@@ -34,7 +34,7 @@ def timestamp_to_formatted_string(timestamp_microseconds):
     epoch_start = datetime(1970, 1, 1)
     
     # Convert microseconds to a timedelta
-    time_since_epoch = timedelta(microseconds=timestamp_microseconds)
+    time_since_epoch = timedelta(microseconds=int(timestamp_microseconds))
     
     # Calculate the datetime by adding the timedelta to the epoch start
     event_datetime = epoch_start + time_since_epoch

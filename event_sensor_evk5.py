@@ -1,113 +1,83 @@
+import os
+import csv
+import time
 import argparse
-import numpy as np
-import cv2
+from datetime import datetime, timedelta
+import pytz
 from metavision_core.event_io import EventsIterator
-from metavision_sdk_base import EventCD
-from metavision_sdk_ui import Window, EventLoop
-
+from event_sensor import timestamp_to_formatted_string_with_timezone
 
 def parse_args():
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Metavision EVK5 Sensor Handling.")
-    parser.add_argument('-i', '--input-event-file', default='', help="Path to input event file or camera serial number.")
+    parser = argparse.ArgumentParser(description="Process events from EVK5 sensor.")
+    parser.add_argument('-i', '--input', type=str, default='', help='Input path for the event data source.')
+    parser.add_argument('-d', '--duration', type=int, default=None, help='Recording duration in seconds, if applicable.')
+    parser.add_argument('-z', '--timezone', type=str, default='Asia/Hong_Kong', help='Timezone for timestamp conversion.')
+    parser.add_argument('-o', '--output', type=str, default='event_output.csv', help='Output CSV file name.')
     return parser.parse_args()
 
-class EVK5Sensor:
+# def timestamp_to_formatted_string_with_timezone(timestamp_microseconds, timezone='Asia/Hong_Kong'):
+#     epoch_start = datetime(1970, 1, 1, tzinfo=pytz.utc)
+#     time_since_epoch = timedelta(microseconds=timestamp_microseconds)
+#     event_datetime_utc = epoch_start + time_since_epoch
+#     timezone_obj = pytz.timezone(timezone)
+#     event_datetime_tz = event_datetime_utc.astimezone(timezone_obj)
+#     return event_datetime_tz.strftime("%H:%M:%S.%f")
+
+class EventSensorEVK5:
     def __init__(self, input_path=''):
-        """Initialize the sensor with either a file path or a live camera."""
-        self.iterator = EventsIterator(input_path=input_path, delta_t=1000)
-        self.running = False
+        self.input_path = input_path
+        self.recording_enabled = False
+        self.iterator = EventsIterator(input_path=self.input_path, delta_t=1000)
 
     def start_recording(self):
-        """Start recording events."""
-        self.running = True
+        self.recording_enabled = True
 
     def stop_recording(self):
-        """Stop recording events."""
-        self.running = False
+        self.recording_enabled = False
 
-    def record_events(self, output_file_name):
-        """Record events to a CSV file."""
-        recorded = False
+    def record_events_with_auxiliary_data(self, output_file_name, recording_duration_sec=None, timezone='Asia/Hong_Kong'):
+        events_data = []  # Memory storage for event data
+        data_directory = 'data'
+        if not os.path.exists(data_directory):
+            os.makedirs(data_directory)
 
-        with open(output_file_name, 'w') as file:
-            file.write("timestamp,x,y,polarity\n")
-            for events in self.iterator:
+        output_file_path = os.path.join(data_directory, output_file_name)
+        start_time = time.time() 
+        start_timestamp = int(start_time * 1e6)
 
-
-
-                if not self.running:
-                    break
-
-                # evs = events
-                # print("----- New event buffer! -----")
-                # if evs.size == 0:
-                #     print("The current event buffer is empty.")
-                # else:
-                #     min_t = evs['t'][0]   # Get the timestamp of the first event of this callback
-                #     max_t = evs['t'][-1]  # Get the timestamp of the last event of this callback
-                #     global_max_t = max_t  # Events are ordered by timestamp, so the current last event has the highest timestamp
-
-                #     counter = evs.size  # Local counter
-                #     # global_counter += counter  # Increase global counter
-
-                #     print(f"There were {counter} events in this event buffer.")
-                #     # print(f"There were {global_counter} total events up to now.")
-                #     print(f"The current event buffer included events from {min_t} to {max_t} microseconds.")
-
-
-                for event in events:
-                    print(event)
-                    x, y, polarity, timestamp = event
-                    file.write(f"{timestamp},{x},{y},{polarity}\n")
-
-                    recorded = True
-                    break
-                    # break
-
-                if recorded:
-                    break
-        print(f"Events recorded to {output_file_name}")
-
-    def display_events(self):
-        """Display events using OpenCV."""
-        window_name = "EVK5 Event Display"
-        cv2.namedWindow(window_name)
-        while self.running:
-            EventLoop.poll_and_dispatch()  # Necessary to keep the window responsive
-            events = next(self.iterator)
-            frame = np.zeros((self.iterator.height, self.iterator.width, 3), dtype=np.uint8)
-            for event in events:
-                color = (255, 255, 255) if event.p else (0, 0, 255)
-                frame[event.y, event.x] = color
-            cv2.imshow(window_name, frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                self.stop_recording()
-
-    def process_events(self):
-        """Process events and print basic statistics."""
-        global_counter = 0
-        global_max_t = 0
         for events in self.iterator:
-            if not self.running:
+            if not self.recording_enabled:
                 break
-            min_t = events['t'][0]  # Timestamp of the first event
-            max_t = events['t'][-1]  # Timestamp of the last event
-            global_max_t = max_t
-            counter = len(events)
-            global_counter += counter
-            print(f"Processed {counter} events, total {global_counter}. Range: {min_t} to {max_t}")
-        print(f"Total events: {global_counter}")
 
-def main():
-    args = parse_args()
-    sensor = EVK5Sensor(input_path=args.input_event_file)
-    sensor.start_recording()
-    # Choose one of the following based on your need
-    sensor.record_events('output_events.csv')
-    # sensor.display_events()
-    # sensor.process_events()
-    sensor.stop_recording()
+            system_timestamp_microseconds = int(time.time() * 1e6)
+            system_timestamp_formatted = timestamp_to_formatted_string_with_timezone(system_timestamp_microseconds, timezone)
+            
+            for event in events:
+                x, y, polarity, timestamp = event  # Assuming the event is a tuple (x, y, polarity, timestamp)
+                event_timestamp_formatted = timestamp_to_formatted_string_with_timezone(timestamp+start_timestamp, timezone)
+
+                events_data.append([event_timestamp_formatted, system_timestamp_formatted, x, y, polarity])
+
+            if recording_duration_sec is not None and time.time() - start_time > recording_duration_sec:
+                break
+
+        # After recording, save all data to CSV
+        with open(output_file_path, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["event_timestamp", "system_timestamp", "x", "y", "polarity"])
+            writer.writerows(events_data)
+        
+        print(f"Events recorded to {output_file_path}")
+
+    def record_events_and_frames_concurrently(self, event_file_name, frame_file_name, recording_duration_sec=None):
+        self.record_events_with_auxiliary_data(event_file_name, recording_duration_sec=recording_duration_sec)
+
+    def start_event_processing(self, output_file_name, recording_duration_sec, timezone):
+        self.start_recording()
+        self.record_events_with_auxiliary_data(output_file_name, recording_duration_sec, timezone)
+        self.stop_recording()
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    sensor = EventSensorEVK5(input_path=args.input)
+    sensor.start_event_processing(args.output, args.duration, args.timezone)

@@ -5,7 +5,8 @@ import time
 import os
 import csv
 from led import ArduinoLED
-from event_sensor import EventSensorIniVation as EventSensor
+# from event_sensor import EventSensorIniVation as EventSensor
+from event_sensor_evk5 import EventSensorEVK5 as EventSensor
 from cnc.cnc import MotorSystem
 import tornado.autoreload
 from npy2video import npy_to_video
@@ -90,7 +91,7 @@ def start_sequence():
         recording_duration_sec=300
     )).start()
 
-    motor_speed = 20
+    motor_speed = 100
 
     # cnc_movement_sequence()
 
@@ -144,7 +145,8 @@ def start_sequence():
 
     # sensor.record_events_with_auxiliary_data("event_data", motor_system.get_current_status)
 
-    time.sleep(15)
+    # time.sleep(15)
+    time.sleep(300)
 
 
     # Stop recording
@@ -169,7 +171,7 @@ def start_sequence():
 
     npy_file_path = r'data/frames_output.npy'
     output_video_path = r'data/frames_output.mp4'
-    npy_to_video(npy_file_path, output_video_path)
+    # npy_to_video(npy_file_path, output_video_path)
 
 def save_events_to_csv():
     # Placeholder for the function to save event data to CSV
