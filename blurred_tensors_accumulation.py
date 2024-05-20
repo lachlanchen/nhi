@@ -22,7 +22,7 @@ class TensorAccumulator:
         median_across_rows = tensor_float.mean(dim=1, keepdim=True)
         # median_across_rows, indices = tensor_float.median(dim=1, keepdim=True)
         centralized_tensor = (tensor_float - median_across_rows).type(tensor.dtype)
-        centralized_tensor = torch.abs(centralized_tensor)
+        # centralized_tensor = torch.abs(centralized_tensor)
         # centralized_tensor = centralized_tensor / (centralized_tensor.max()+1e-6)
         return centralized_tensor
 
