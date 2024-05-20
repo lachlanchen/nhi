@@ -54,6 +54,7 @@ class SpectrumVisualizer:
         rgb = torch.matmul(xyz, M.T)
         # rgb = torch.clamp(rgb, 0, 1)  # Clamp to [0, 1] to deal with out-of-gamut colors
         rgb = (rgb - rgb.min())/(rgb.max() - rgb.min())
+        # rgb /= rgb.max() + 1e-6
         return rgb
 
     def visualize_rgb(self, rgb):

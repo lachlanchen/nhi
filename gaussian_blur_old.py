@@ -18,36 +18,33 @@ class GaussianBlur:
         y = y.repeat(1, self.kernel_size)
         kernel = torch.exp(-0.5 * (x**2 + y**2) / self.sigma**2)
         kernel = kernel / kernel.sum()
-        return kernel.view(1, 1, self.kernel_size, self.kernel_size).to(torch.float16)
+        return kernel.view(1, 1, self.kernel_size, self.kernel_size)
 
     def apply_gaussian_blur(self, tensor):
         num_frames, height, width = tensor.shape
         kernel = self.create_gaussian_kernel()
 
-        # Ensure tensor is of type float16
-        if tensor.dtype != torch.float16:
-            tensor = tensor.to(torch.float16)
+        # Ensure tensor is of type float32
+        if tensor.dtype != torch.float32:
+            tensor = tensor.float()
 
         # Apply Gaussian blur in chunks
-        blurred_tensors = []
+        blurred_tensor = torch.empty_like(tensor)
         for i in tqdm(range(0, num_frames, self.chunk_size), desc="Applying Gaussian Blur"):
             end_idx = min(i + self.chunk_size, num_frames)
             chunk = tensor[i:end_idx].unsqueeze(1)  # Add channel dimension
             blurred_chunk = F.conv2d(chunk, kernel, padding=self.kernel_size // 2)
-            blurred_tensors.append(blurred_chunk.squeeze(1))  # Remove channel dimension
+            blurred_tensor[i:end_idx] = blurred_chunk.squeeze(1)  # Remove channel dimension
 
-        return blurred_tensors
+        return blurred_tensor
 
     def process_file(self, file_name):
         file_path = self.folder_path / file_name
         tensor = torch.load(file_path)
-        blurred_tensors = self.apply_gaussian_blur(tensor)
-
-        # Save the blurred tensor in segments
-        for i, blurred_tensor in enumerate(blurred_tensors):
-            blurred_file_path = self.folder_path / "blurred_franmes" / f"blurred_{file_name}_part_{i}.pt"
-            torch.save(blurred_tensor, blurred_file_path)
-            print(f"Blurred tensor segment saved to {blurred_file_path}")
+        blurred_tensor = self.apply_gaussian_blur(tensor)
+        blurred_file_path = self.folder_path / f"blurred_{file_name}"
+        torch.save(blurred_tensor, blurred_file_path)
+        print(f"Blurred tensor saved to {blurred_file_path}")
 
     def run(self):
         self.process_file('frames_260_346.pt')

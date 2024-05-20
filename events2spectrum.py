@@ -127,8 +127,8 @@ class EventsSpectrumReconstructor:
 
 if __name__ == "__main__":
     visualizer = SpectrumVisualizer('ciexyz31_1.txt')
-    data_folder = 'data100/segmented_events/'
-    event_files = [('continuous_accumulation_100.pt', 1),
-                   ('interval_accumulation_100.pt', 1)]
+    data_folder = 'data100/segmented_events/blurred_frames/'
+    event_files = [('continuous_accumulation_22_pre.pt', 1),
+                   ('interval_accumulation_22_pre.pt', 1)]
     reconstructor = EventsSpectrumReconstructor(visualizer, data_folder, event_files)
     reconstructor.process_events()
