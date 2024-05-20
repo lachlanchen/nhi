@@ -3,8 +3,9 @@ import os
 import argparse
 
 class TensorAccumulator:
-    def __init__(self, folder_path):
+    def __init__(self, folder_path, n_sigma=1.0):
         self.folder_path = folder_path
+        self.n_sigma = n_sigma
         self.tensor_files = sorted(
             [f for f in os.listdir(folder_path) if f.startswith('blurred_frames_260_346.pt_part_') and f.endswith('.pt')],
             key=lambda x: int(x.split('_')[-1].split('.')[0])
@@ -17,14 +18,38 @@ class TensorAccumulator:
         tensor = torch.load(file_path)
         return tensor.sum(dim=0)
 
+    def rescale(self, tensor):
+        tensor_min = tensor.min()
+        tensor_max = tensor.max()
+        return (tensor - tensor_min) / (tensor_max - tensor_min)
+
     def centralize(self, tensor):
+        # Step 1: Rescale the whole tensor to [0, 1]
+        tensor = self.rescale(tensor)
+        
+        # Step 2: Current centralization
         tensor_float = tensor.float()
-        median_across_rows = tensor_float.mean(dim=1, keepdim=True)
-        # median_across_rows, indices = tensor_float.median(dim=1, keepdim=True)
-        centralized_tensor = (tensor_float - median_across_rows).type(tensor.dtype)
-        # centralized_tensor = torch.abs(centralized_tensor)
-        # centralized_tensor = centralized_tensor / (centralized_tensor.max()+1e-6)
-        return centralized_tensor
+        mean_across_columns = tensor_float.mean(dim=1, keepdim=True)
+        centralized_tensor = (tensor_float - mean_across_columns).type(tensor.dtype)
+
+        # Step 3: Create mask based on n_sigma
+        std_across_columns = tensor_float.std(dim=1, keepdim=True)
+        mask = (torch.abs(centralized_tensor) <= self.n_sigma * std_across_columns).float()
+
+        # Step 4: Adjust non-masked and masked regions
+        non_masked_region = centralized_tensor * (1 - mask)
+        # non_masked_min = non_masked_region.min()
+        # adjusted_non_masked = non_masked_region - non_masked_min
+        adjusted_non_masked = non_masked_region
+        adjusted_masked = mask
+
+        # Combine adjusted regions
+        adjusted_tensor = adjusted_non_masked * (1 - mask) + adjusted_masked * mask
+
+        # Step 5: Rescale the tensor back to [0, 1]
+        final_tensor = self.rescale(adjusted_tensor)
+
+        return final_tensor
 
     def accumulate_continuous(self, intervals):
         length, height, width = self.tensor.size()
@@ -56,16 +81,18 @@ def main():
     parser = argparse.ArgumentParser(description='Accumulate tensor values over intervals.')
     parser.add_argument('folder_path', type=str, help='Path to the folder containing partitioned tensor files')
     parser.add_argument('--intervals', type=int, default=100, help='Number of intervals to split the tensor into')
-    parser.add_argument('--centralize', action='store_true', help='Centralize the tensor by subtracting the median across rows')
+    parser.add_argument('--centralize', action='store_true', help='Centralize the tensor by subtracting the mean across rows')
     parser.add_argument('--post', action='store_true', help='Apply centralization post accumulation')
+    parser.add_argument('--n_sigma', type=float, default=1.0, help='Number of standard deviations for masking')
     args = parser.parse_args()
 
     folder_path = args.folder_path
     intervals = args.intervals
     centralize = args.centralize
     post_centralize = args.post
+    n_sigma = args.n_sigma
 
-    accumulator = TensorAccumulator(folder_path)
+    accumulator = TensorAccumulator(folder_path, n_sigma)
     
     if centralize and not post_centralize:
         accumulator.tensor = accumulator.centralize(accumulator.tensor)
@@ -95,4 +122,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
