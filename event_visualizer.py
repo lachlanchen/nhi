@@ -30,7 +30,7 @@ class EventVisualizer:
 
     def plot_scatter_bos_rect(self, 
         view="default", polar=True, axis_ind="on", 
-        alpha=0.1, alpha_k=0.02, plot=False, save=False, save_path=None, time_stretch=10.0):
+        alpha=0.1, alpha_k=0.02, plot=False, save=False, save_path=None, time_stretch=10.0, zoom=1.0):
         """Plot a 3D scatter plot of the event data."""
         pos_loc = np.where(self.ps == 1)
         neg_loc = np.where(self.ps == 0)
@@ -72,20 +72,26 @@ class EventVisualizer:
 
         ax.get_proj = short_proj
 
-        ax.set_box_aspect([self.sensor_size[1] / self.sensor_size[0], 2, 1.0])
+        ax.set_box_aspect([self.sensor_size[1] / self.sensor_size[0], 2, 1.0], zoom=zoom)
 
         view_settings = {
             "vertical": (0, 90),
+            "horizontal": (90, 0),
+            "lateral": (90, 90),
             "side": (30, 18),
             "r-side": (-30, 18),
+            "reverse": (-60, 18),
             "normal": (64, 18),
             "normal45": (45, 0),
-            "lateral": (90, 90),
-            "reverse": (-60, 18),
             # "default": (135, 60)  # Rotated 90 degrees left from the previous default
             "default": (30, -30)  # Rotated 90 degrees left from the previous default
         }
-        ax.view_init(*view_settings.get(view, (45, -135)))
+        elev, azim = view_settings.get(view, (30, -30))
+
+        ax.view_init(elev, azim)
+        
+        # Apply zoom effect by adjusting the camera position
+        # ax.dist = 10 / zoom  # Default distance is 10, adjust for zoom
 
         plt.axis(axis_ind)
 
@@ -111,6 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--time_stretch", type=float, default=10.0, help="Factor to stretch the time axis.")
     parser.add_argument("--sample_rate", type=int, default=1, help="Sampling rate for data.")
     parser.add_argument("--alpha", type=float, default=0.1, help="Opacity of the points in the plot.")
+    parser.add_argument("--zoom", type=float, default=1.0, help="Zoom factor for the plot.")
 
     args = parser.parse_args()
 
@@ -125,12 +132,12 @@ if __name__ == "__main__":
             save_path = os.path.join(base_dir, f"{base_name}_{args.view}.jpeg")
         else:
             save_path = args.save_path
-        visualizer.plot_scatter_bos_rect(view=args.view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch, alpha=args.alpha)
+        visualizer.plot_scatter_bos_rect(view=args.view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch, alpha=args.alpha, zoom=args.zoom)
     else:
-        views = ["default", "vertical", "side", "r-side", "normal", "normal45", "lateral", "reverse"]
+        views = ["default", "vertical", "horizontal", "side", "r-side", "normal", "normal45", "lateral", "reverse"]
         for view in views:
             if args.save_path is None:
                 save_path = os.path.join(base_dir, f"{base_name}_{view}.jpeg")
             else:
                 save_path = os.path.join(os.path.dirname(args.save_path), f"{base_name}_{view}.jpeg")
-            visualizer.plot_scatter_bos_rect(view=view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch, alpha=args.alpha)
+            visualizer.plot_scatter_bos_rect(view=view, plot=args.plot, save=args.save, save_path=save_path, time_stretch=args.time_stretch, alpha=args.alpha, zoom=args.zoom)
