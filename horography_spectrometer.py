@@ -189,31 +189,31 @@ class HorographySpectrometer:
 
         tensor_old = tensor
         tensor = self.rescale(tensor)
-        self.visualize(tensor_old, tensor, "rescaled")
+        self.multi_level_visualization(tensor_old, tensor, description="rescaled")
 
         tensor_old = tensor
         tensor = self.exponentiate(tensor, k=3)
-        self.visualize(tensor_old, tensor, "exponentiated")
+        self.multi_level_visualization(tensor_old, tensor, description="exponentiated")
 
         tensor_old = tensor
         tensor = self.permute(tensor)
-        self.visualize(tensor_old, tensor, "permuted")
+        self.multi_level_visualization(tensor_old, tensor, description="permuted")
 
         tensor_old = tensor
         tensor = self.centralize(tensor)
-        self.visualize(tensor_old, tensor, "centralized")
+        self.multi_level_visualization(tensor_old, tensor, description="centralized")
 
         tensor_old = tensor
         tensor = self.compute_absolute(tensor)
-        self.visualize(tensor_old, tensor, "absolute")
+        self.multi_level_visualization(tensor_old, tensor, description="absolute")
 
         tensor_old = tensor
         tensor = self.shift(tensor)
-        self.visualize(tensor_old, tensor, "shifted")
+        self.multi_level_visualization(tensor_old, tensor, description="shifted")
 
         tensor_old = tensor
         tensor = self.smooth_surface(tensor)
-        self.visualize(tensor_old, tensor, "smoothed")
+        self.multi_level_visualization(tensor_old, tensor, description="smoothed")
 
         print("Processing complete. Output saved in:", self.output_folder)
 
