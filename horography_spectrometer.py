@@ -78,6 +78,23 @@ class HorographySpectrometer:
         accumulated_tensor = accumulator.accumulate_continuous(self.intervals)
         return accumulated_tensor
 
+    def rescale(self, tensor):
+        return tensor / tensor.max()
+
+    def exponentiate(self, tensor, k):
+        return torch.exp(tensor * k)
+
+    def permute(self, tensor, order=(1, 2, 0)):
+        return tensor.permute(order)
+
+    def centralize(self, tensor):
+        mean = tensor.mean(dim=(1, 2), keepdim=True)
+        return tensor - mean
+
+    def compute_absolute(self, tensor):
+        return torch.abs(tensor)
+
+
     def shift(self, tensor):
         shifted_tensor = self.tensor_shifter.apply_shift(tensor)
         # self.visualize(tensor[0], shifted_tensor[0], 'shift')  # Visualize the first frame before and after shift
@@ -134,37 +151,71 @@ class HorographySpectrometer:
         return tensor_smooth
 
 
+    # def process(self):
+    #     print("Starting processing of tensor data...")
+    #     tensor_acc = self.load_and_accumulate()
+
+    #     T, H, W = tensor_acc.shape
+
+
+    #     tensor_rescaled = tensor_acc / tensor_acc.max()
+
+    #     k = 3
+    #     tensor_exp = torch.exp(tensor_rescaled * k)
+
+    #     tensor_per = tensor_exp.permute(1, 2, 0)  # Ensure correct dimension order for processing
+
+
+    #     tensor_mean = torch.mean(tensor_per[:H//2], axis=0, keepdim=True)
+    #     tensor_centralized = tensor_per - tensor_mean
+    #     self.multi_level_visualization(tensor_per, tensor_centralized, description="centralize")
+
+    #     tensor_abs = torch.abs(tensor_centralized)
+    #     self.multi_level_visualization(tensor_centralized, tensor_abs, description="abs")
+
+
+    #     tensor_shift = self.shift(tensor_abs)
+    #     # Additional steps like smoothing or further processing would go here, with visualization at each step
+    #     self.multi_level_visualization(tensor_abs, tensor_shift, description="shift")
+    #     print("Processing shift complete. Output saved in:", self.output_folder)
+
+    #     tensor_smooth = self.smooth_surface(tensor_shift)  # Smooth each frame
+    #     self.multi_level_visualization(tensor_shift, tensor_smooth, description="smooth")
+    #     print("Processing smooth complete. Output saved in:", self.output_folder)
+
     def process(self):
         print("Starting processing of tensor data...")
-        tensor_acc = self.load_and_accumulate()
+        tensor = self.load_and_accumulate()
 
-        T, H, W = tensor_acc.shape
+        tensor_old = tensor
+        tensor = self.rescale(tensor)
+        self.visualize(tensor_old, tensor, "rescaled")
 
+        tensor_old = tensor
+        tensor = self.exponentiate(tensor, k=3)
+        self.visualize(tensor_old, tensor, "exponentiated")
 
-        tensor_rescaled = tensor_acc / tensor_acc.max()
+        tensor_old = tensor
+        tensor = self.permute(tensor)
+        self.visualize(tensor_old, tensor, "permuted")
 
-        k = 3
-        tensor_exp = torch.exp(tensor_rescaled * k)
+        tensor_old = tensor
+        tensor = self.centralize(tensor)
+        self.visualize(tensor_old, tensor, "centralized")
 
-        tensor_per = tensor_exp.permute(1, 2, 0)  # Ensure correct dimension order for processing
+        tensor_old = tensor
+        tensor = self.compute_absolute(tensor)
+        self.visualize(tensor_old, tensor, "absolute")
 
+        tensor_old = tensor
+        tensor = self.shift(tensor)
+        self.visualize(tensor_old, tensor, "shifted")
 
-        tensor_mean = torch.mean(tensor_per[:H//2], axis=0, keepdim=True)
-        tensor_centralized = tensor_per - tensor_mean
-        self.multi_level_visualization(tensor_per, tensor_centralized, description="centralize")
+        tensor_old = tensor
+        tensor = self.smooth_surface(tensor)
+        self.visualize(tensor_old, tensor, "smoothed")
 
-        # tensor_abs = torch.abs(tensor_centralized)
-        # self.multi_level_visualization(tensor_centralized, tensor_abs, description="abs")
-
-
-        tensor_shift = self.shift(tensor_abs)
-        # Additional steps like smoothing or further processing would go here, with visualization at each step
-        self.multi_level_visualization(tensor_abs, tensor_shift, description="shift")
-        print("Processing shift complete. Output saved in:", self.output_folder)
-
-        tensor_smooth = self.smooth_surface(tensor_shift)  # Smooth each frame
-        self.multi_level_visualization(tensor_shift, tensor_smooth, description="smooth")
-        print("Processing smooth complete. Output saved in:", self.output_folder)
+        print("Processing complete. Output saved in:", self.output_folder)
 
 
 def main():
