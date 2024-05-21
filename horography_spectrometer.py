@@ -8,6 +8,7 @@ from tensor_shifter import ShiftCalculator, TensorShifter  # Ensure these classe
 import shutil
 import datetime
 from scipy.interpolate import griddata
+from tqdm import tqdm
 
 class HorographySpectrometer:
     def __init__(self, file_path, intervals=1000, magic_code='otter'):
@@ -36,39 +37,6 @@ class HorographySpectrometer:
             # Copy the tensor file to the new directory
             shutil.copy(self.file_path, new_file_path)
         return new_file_path, output_folder
-
-    def load_and_accumulate(self):
-        accumulator = TensorAccumulator(self.file_path)
-        accumulated_tensor = accumulator.accumulate_continuous(self.intervals)
-        return accumulated_tensor
-
-    def shift(self, tensor):
-        shifted_tensor = self.tensor_shifter.apply_shift(tensor)
-        # self.visualize(tensor[0], shifted_tensor[0], 'shift')  # Visualize the first frame before and after shift
-        return shifted_tensor
-
-
-    def smooth_surface(self, tensor):
-        """ Applies smoothing using grid data interpolation for each frame in the tensor."""
-        timestamps, height, width = tensor.shape
-        x = np.arange(width)
-        y = np.arange(height)
-        x, y = np.meshgrid(x, y)
-
-        smoothed_tensor = torch.zeros_like(tensor)
-
-        for i in range(timestamps):
-            # Convert tensor to numpy for interpolation
-            frame = tensor[i].numpy()
-            # Flatten the arrays for griddata input
-            points = np.vstack((y.ravel(), x.ravel())).T
-            values = frame.ravel()
-
-            # Interpolate using cubic spline
-            grid_z = griddata(points, values, (y, x), method='cubic')
-            smoothed_tensor[i] = torch.from_numpy(grid_z)
-
-        return smoothed_tensor
 
     def visualize(self, original, processed, description, vis_folder):
         plt.figure(figsize=(12, 6))
@@ -101,6 +69,41 @@ class HorographySpectrometer:
         for axis in range(3):  # Assuming tensor is 3D
             self.visualize_along_axis(tensor_old, tensor_new, axis, n_steps, vis_folder)
 
+    def load_and_accumulate(self):
+        accumulator = TensorAccumulator(self.file_path)
+        accumulated_tensor = accumulator.accumulate_continuous(self.intervals)
+        return accumulated_tensor
+
+    def shift(self, tensor):
+        shifted_tensor = self.tensor_shifter.apply_shift(tensor)
+        # self.visualize(tensor[0], shifted_tensor[0], 'shift')  # Visualize the first frame before and after shift
+        return shifted_tensor
+
+
+    def smooth_surface(self, tensor):
+        """ Applies smoothing using grid data interpolation for each frame in the tensor."""
+        timestamps, height, width = tensor.shape
+        x = np.arange(width)
+        y = np.arange(height)
+        x, y = np.meshgrid(x, y)
+
+        smoothed_tensor = torch.zeros_like(tensor)
+
+        for i in tqdm(range(timestamps)):
+            # Convert tensor to numpy for interpolation
+            frame = tensor[i].numpy()
+            # Flatten the arrays for griddata input
+            points = np.vstack((y.ravel(), x.ravel())).T
+            values = frame.ravel()
+
+            # Interpolate using cubic spline
+            grid_z = griddata(points, values, (y, x), method='cubic')
+            smoothed_tensor[i] = torch.from_numpy(grid_z)
+
+        return smoothed_tensor
+
+    
+
 
 
     def process(self):
@@ -110,11 +113,11 @@ class HorographySpectrometer:
         tensor_shift = self.shift(tensor_per)
         # Additional steps like smoothing or further processing would go here, with visualization at each step
         self.multi_level_visualization(tensor_per, tensor_shift, description="shift")
-        print("Processing complete. Output saved in:", self.output_folder)
+        print("Processing shift complete. Output saved in:", self.output_folder)
 
         tensor_smooth = self.smooth_surface(tensor_shift)  # Smooth each frame
         self.multi_level_visualization(tensor_shift, tensor_smooth, description="smooth")
-        print("Processing complete. Output saved in:", self.output_folder)
+        print("Processing smooth complete. Output saved in:", self.output_folder)
 
 
 def main():
