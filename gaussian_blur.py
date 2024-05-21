@@ -6,7 +6,7 @@ from tqdm import tqdm
 import os
 
 class GaussianBlur:
-    def __init__(self, folder_path, kernel_size=5, sigma=3.0, chunk_size=1000):
+    def __init__(self, folder_path, kernel_size=5, sigma=1.0, chunk_size=1000):
         self.folder_path = Path(folder_path)
         self.kernel_size = kernel_size
         self.sigma = sigma
@@ -43,7 +43,7 @@ class GaussianBlur:
         file_path = self.folder_path / file_name
         tensor = torch.load(file_path)
         blurred_tensors = self.apply_gaussian_blur(tensor)
-        blurred_folder = self.folder_path / "blurred_franmes"
+        blurred_folder = self.folder_path / "blurred_frames"
         os.makedirs(blurred_folder, exist_ok=True)
         # Save the blurred tensor in segments
         for i, blurred_tensor in enumerate(blurred_tensors):

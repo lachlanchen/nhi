@@ -7,6 +7,7 @@ from tensor_shifter import ShiftCalculator, TensorShifter
 
 from scipy.interpolate import interp1d
 import torch.nn.functional as F
+import cv2
 
 class EventsSpectrumReconstructor:
     def __init__(self, visualizer, data_folder, event_files):
@@ -85,12 +86,17 @@ class EventsSpectrumReconstructor:
             return interpolated_reshaped.numpy()  # Convert back to numpy array
         return interpolated_reshaped
 
+    def rescale(self, tensor):
+        tensor_min = tensor.min()
+        tensor_max = tensor.max()
+        return (tensor - tensor_min) / (tensor_max - tensor_min)
 
     def process_events(self):
         shift_calculator = ShiftCalculator(width=8, steps=346, lines_per_mm=600, distance=84)
         shift_vector = shift_calculator.compute_shift_vector()
         tensor_shifter = TensorShifter(shift_vector)
 
+        outputs = []
         for event_file, scan_dir in self.event_files:
             events = self.load_event(event_file)[::scan_dir]
             events_permuted = events.permute(1, 2, 0)  # Ensure correct dimension order for processing
@@ -121,9 +127,57 @@ class EventsSpectrumReconstructor:
             plt.savefig(f"{self.data_folder}/{event_file.replace('.pt', '_spectrum.png')}")
 
             output_file_path = f"{self.data_folder}/{event_file.replace('.pt', '_visualized.png')}"
-            self.visualizer.visualize_and_save(1-shifted_absorption, wavelengths, output_file_path)
+            output = self.visualizer.visualize_and_save(1-shifted_absorption, wavelengths, output_file_path)
+            outputs.append(output)
 
             print(f"Processed and saved spectrum visualization for {event_file} to {output_file_path}")
+
+
+
+        # cv2.imwrite(f"{self.data_folder}/continuous_minus_interval.png", self.rescale((self.rescale(outputs[0])-self.rescale(outputs[1])).numpy())*255)
+        return outputs
+
+    def apply_gaussian_blur(self, outputs):
+        blurred_outputs = []
+        for output in outputs:
+            # Convert tensor to numpy array and scale to 0-255
+            output_image = (output.numpy() * 255).astype(np.uint8)
+            # Apply Gaussian blur
+            blurred_image = cv2.GaussianBlur(output_image, (5, 5), 1)
+            blurred_outputs.append(blurred_image)
+
+        # Calculate blurred difference
+        blurred_difference = blurred_outputs[0].astype(float) - blurred_outputs[1].astype(float)
+        # Rescale to 0-255
+        blurred_difference = np.clip((blurred_difference - blurred_difference.min()) / (blurred_difference.max() - blurred_difference.min()) * 255, 0, 255).astype(np.uint8)
+
+        # Save images
+        cv2.imwrite(f"{self.data_folder}/blurred_output0.png", blurred_outputs[0])
+        cv2.imwrite(f"{self.data_folder}/blurred_output1.png", blurred_outputs[1])
+        cv2.imwrite(f"{self.data_folder}/blurred_difference.png", blurred_difference)
+
+        return blurred_outputs[0], blurred_outputs[1], blurred_difference
+
+    def apply_denoise_and_difference(self, outputs):
+        denoised_outputs = []
+        for output in outputs:
+            # Convert tensor to numpy array and scale to 0-255
+            output_image = (output.numpy() * 255).astype(np.uint8)
+            # Apply non-local means denoising
+            denoised_image = cv2.fastNlMeansDenoisingColored(output_image, None, 10, 10, 7, 21)
+            denoised_outputs.append(denoised_image)
+
+        # Calculate denoised difference
+        denoised_difference = denoised_outputs[0].astype(float) - denoised_outputs[1].astype(float)
+        # Rescale to 0-255
+        denoised_difference = np.clip((denoised_difference - denoised_difference.min()) / (denoised_difference.max() - denoised_difference.min()) * 255, 0, 255).astype(np.uint8)
+
+        # Save images
+        cv2.imwrite(f"{self.data_folder}/denoised_output0.png", denoised_outputs[0])
+        cv2.imwrite(f"{self.data_folder}/denoised_output1.png", denoised_outputs[1])
+        cv2.imwrite(f"{self.data_folder}/denoised_difference.png", denoised_difference)
+
+        return denoised_outputs[0], denoised_outputs[1], denoised_difference
 
 if __name__ == "__main__":
     visualizer = SpectrumVisualizer('ciexyz31_1.txt')
@@ -131,4 +185,6 @@ if __name__ == "__main__":
     event_files = [('continuous_accumulation_22_post.pt', 1),
                    ('interval_accumulation_22_post.pt', 1)]
     reconstructor = EventsSpectrumReconstructor(visualizer, data_folder, event_files)
-    reconstructor.process_events()
+    outputs = reconstructor.process_events()
+    o0_blurred, o1_blurred, diff_blurred = reconstructor.apply_gaussian_blur(outputs)
+    o0_denoised, o1_denoised, diff_denoised = reconstructor.apply_denoise_and_difference(outputs)

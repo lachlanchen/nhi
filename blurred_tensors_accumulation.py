@@ -1,6 +1,7 @@
 import torch
 import os
 import argparse
+import torch.nn.functional as F
 
 class TensorAccumulator:
     def __init__(self, folder_path, n_sigma=1.0):
@@ -14,6 +15,24 @@ class TensorAccumulator:
         self.tensor = torch.stack(self.summed_tensors, dim=0)
         self.device = self.tensor.device
 
+        self.gaussian_blur()
+
+    def gaussian_blur(self, kernel_size=5, sigma=1):
+        # Create a Gaussian kernel
+        if kernel_size % 2 == 0:
+            kernel_size += 1  # Ensure kernel size is odd
+        radius = kernel_size // 2
+        kernel_range = torch.arange(-radius, radius + 1, dtype=torch.float32, device=self.device)
+        x = kernel_range.reshape(1, -1).repeat(kernel_size, 1)
+        y = kernel_range.reshape(-1, 1).repeat(1, kernel_size)
+        kernel = torch.exp(-(x**2 + y**2) / (2 * sigma**2))
+        kernel /= kernel.sum()  # Normalize the kernel
+
+        # Apply the Gaussian kernel
+        padded_tensor = F.pad(self.tensor.float(), (radius, radius, radius, radius), mode='reflect')
+        blurred_tensor = F.conv2d(padded_tensor.unsqueeze(1), kernel.unsqueeze(0).unsqueeze(0), padding=0)
+        return blurred_tensor.squeeze(1)
+
     def sum_tensor_file(self, file_path):
         tensor = torch.load(file_path)
         return tensor.sum(dim=0)
@@ -26,14 +45,17 @@ class TensorAccumulator:
     def centralize(self, tensor):
         # Step 1: Rescale the whole tensor to [0, 1]
         tensor = self.rescale(tensor)
+        # tensor = torch.exp(tensor)
+        T, H, W = tensor.shape
         
         # Step 2: Current centralization
         tensor_float = tensor.float()
-        mean_across_columns = tensor_float.mean(dim=1, keepdim=True)
+        mean_across_columns = tensor_float[:,:H//2].mean(dim=1, keepdim=True)
+        # mean_across_columns,indices = tensor_float[:,:H//2].median(dim=1, keepdim=True)
         centralized_tensor = (tensor_float - mean_across_columns).type(tensor.dtype)
 
         # Step 3: Create mask based on n_sigma
-        std_across_columns = tensor_float.std(dim=1, keepdim=True)
+        std_across_columns = tensor_float[:,:H//2].std(dim=1, keepdim=True)
         mask = (torch.abs(centralized_tensor) <= self.n_sigma * std_across_columns).float()
 
         # Step 4: Adjust non-masked and masked regions
@@ -41,7 +63,7 @@ class TensorAccumulator:
         # non_masked_min = non_masked_region.min()
         # adjusted_non_masked = non_masked_region - non_masked_min
         adjusted_non_masked = non_masked_region
-        adjusted_masked = mask
+        adjusted_masked = mask 
 
         # Combine adjusted regions
         adjusted_tensor = adjusted_non_masked * (1 - mask) + adjusted_masked * mask
