@@ -9,6 +9,7 @@ import shutil
 import datetime
 from scipy.interpolate import griddata
 from tqdm import tqdm
+import torch.nn.functional as F
 
 class HorographySpectrometer:
     def __init__(self, file_path, intervals=1000, magic_code='otter'):
@@ -41,11 +42,13 @@ class HorographySpectrometer:
     def visualize(self, original, processed, description, vis_folder):
         plt.figure(figsize=(12, 6))
         plt.subplot(1, 2, 1)
-        plt.imshow(original.numpy(), cmap='hot')
+        # plt.imshow(original.numpy(), cmap='hot')
+        plt.imshow(original.numpy(), cmap='gray')
         plt.title('Original')
         plt.colorbar()
         plt.subplot(1, 2, 2)
-        plt.imshow(processed.numpy(), cmap='hot')
+        # plt.imshow(processed.numpy(), cmap='hot')
+        plt.imshow(processed.numpy(), cmap='gray')
         plt.title('Processed')
         plt.colorbar()
         plt.suptitle(f'Visualization of Changes: {description}')
@@ -56,7 +59,7 @@ class HorographySpectrometer:
         steps = np.linspace(0, tensor_old.shape[axis] - 1, n_steps, dtype=int)
         axis_folder = os.path.join(vis_folder, f'axis_{axis}')
         os.makedirs(axis_folder, exist_ok=True)
-        for step in steps:
+        for step in tqdm(steps):
             slice_description = f'step_{step}'
             self.visualize(tensor_old[:, :, step] if axis == 2 else tensor_old[:, step] if axis == 1 else tensor_old[step],
                            tensor_new[:, :, step] if axis == 2 else tensor_new[:, step] if axis == 1 else tensor_new[step],
@@ -71,6 +74,7 @@ class HorographySpectrometer:
 
     def load_and_accumulate(self):
         accumulator = TensorAccumulator(self.file_path)
+        # accumulated_tensor = accumulator.accumulate_interval(self.intervals)
         accumulated_tensor = accumulator.accumulate_continuous(self.intervals)
         return accumulated_tensor
 
@@ -80,7 +84,7 @@ class HorographySpectrometer:
         return shifted_tensor
 
 
-    def smooth_surface(self, tensor):
+    def smooth_surface_griddata(self, tensor):
         """ Applies smoothing using grid data interpolation for each frame in the tensor."""
         timestamps, height, width = tensor.shape
         x = np.arange(width)
@@ -103,16 +107,59 @@ class HorographySpectrometer:
         return smoothed_tensor
 
     
+    # def smooth_surface(self, tensor):
+    #     # define a iterative logic that moving average H and centralize over H, then moving average W and centralize over W
+    #     # avoid coupling
+    #     # a separate function for each sub task 
 
+    def smooth_surface(self, tensor):
+        """Smooths the surface by applying a moving average over the height and width, then centralizes it."""
+        original_dtype = tensor.dtype  # Store the original data type of the tensor
+        if original_dtype != torch.float32:
+            tensor = tensor.to(torch.float32)  # Convert tensor to float32 for processing
+
+        # Moving average over height
+        kernel_size = 5  # Example kernel size
+        tensor_smooth = F.avg_pool2d(tensor, (kernel_size, 1), stride=1, padding=(kernel_size//2, 0))
+
+        # Moving average over width
+        tensor_smooth = F.avg_pool2d(tensor_smooth, (1, kernel_size), stride=1, padding=(0, kernel_size//2))
+
+        # Centralize each frame
+        tensor_smooth -= tensor_smooth.mean(dim=[1, 2], keepdim=True)
+
+        if original_dtype != torch.float32:
+            tensor_smooth = tensor_smooth.to(original_dtype)  # Convert back to the original data type
+
+        return tensor_smooth
 
 
     def process(self):
         print("Starting processing of tensor data...")
         tensor_acc = self.load_and_accumulate()
-        tensor_per = tensor_acc.permute(1, 2, 0)  # Ensure correct dimension order for processing
-        tensor_shift = self.shift(tensor_per)
+
+        T, H, W = tensor_acc.shape
+
+
+        tensor_rescaled = tensor_acc / tensor_acc.max()
+
+        k = 3
+        tensor_exp = torch.exp(tensor_rescaled * k)
+
+        tensor_per = tensor_exp.permute(1, 2, 0)  # Ensure correct dimension order for processing
+
+
+        tensor_mean = torch.mean(tensor_per[:H//2], axis=0, keepdim=True)
+        tensor_centralized = tensor_per - tensor_mean
+        self.multi_level_visualization(tensor_per, tensor_centralized, description="centralize")
+
+        # tensor_abs = torch.abs(tensor_centralized)
+        # self.multi_level_visualization(tensor_centralized, tensor_abs, description="abs")
+
+
+        tensor_shift = self.shift(tensor_abs)
         # Additional steps like smoothing or further processing would go here, with visualization at each step
-        self.multi_level_visualization(tensor_per, tensor_shift, description="shift")
+        self.multi_level_visualization(tensor_abs, tensor_shift, description="shift")
         print("Processing shift complete. Output saved in:", self.output_folder)
 
         tensor_smooth = self.smooth_surface(tensor_shift)  # Smooth each frame
