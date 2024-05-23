@@ -186,5 +186,5 @@ if __name__ == "__main__":
                    ('interval_accumulation_22_post.pt', 1)]
     reconstructor = EventsSpectrumReconstructor(visualizer, data_folder, event_files)
     outputs = reconstructor.process_events()
-    o0_blurred, o1_blurred, diff_blurred = reconstructor.apply_gaussian_blur(outputs)
-    o0_denoised, o1_denoised, diff_denoised = reconstructor.apply_denoise_and_difference(outputs)
+    # o0_blurred, o1_blurred, diff_blurred = reconstructor.apply_gaussian_blur(outputs)
+    # o0_denoised, o1_denoised, diff_denoised = reconstructor.apply_denoise_and_difference(outputs)
