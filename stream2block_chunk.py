@@ -22,6 +22,8 @@ class EventDataTo3DBlock:
             self.height, self.width = 260, 346  # Davis
         elif model == 'X':
             self.height, self.width = 480, 640  # Dvxplorer
+        elif model == 'E':
+            self.height, self.width = 720, 1280  # Dvxplorer
         elif height is not None and width is not None:
             self.height, self.width = height, width
         else:
@@ -51,7 +53,7 @@ class EventDataTo3DBlock:
         indices = indices.to(device)
 
         # Split processing into chunks to manage memory usage
-        chunk_size = len(unique_timestamps) // 4  # Adjust chunk size as needed
+        chunk_size = len(unique_timestamps) // 10000  # Adjust chunk size as needed
         start_index = 0
         self.frames = torch.zeros((len(unique_timestamps), self.height, self.width), dtype=torch.int, device=device)
 
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('csv_path', help='Path to the CSV file containing event data.')
     parser.add_argument('-output', dest='output_folder', default=None, help='Output folder for results. Default is the same as the CSV path.')
     parser.add_argument('-size', nargs=2, type=int, help='Specify video width and height as W H.')
-    parser.add_argument('-model', choices=['D', 'X'], help='Specify camera model: D for Davis, X for Dvxplorer.')
+    parser.add_argument('-model', choices=['D', 'X', 'E'], help='Specify camera model: D for Davis, X for Dvxplorer.')
 
     args = parser.parse_args()
 

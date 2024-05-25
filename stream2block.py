@@ -20,11 +20,14 @@ class EventDataTo3DBlock:
             self.height, self.width = 260, 346  # Davis
         elif model == 'X':
             self.height, self.width = 480, 640  # Dvxplorer
+        elif model == "E":
+            self.height, self.width = 720, 1280  # Dvxplorer
+
         elif height is not None and width is not None:
             self.height, self.width = height, width
         else:
-            # self.set_dynamic_dimensions()
-            pass
+            self.set_dynamic_dimensions()
+            # pass
 
         self.cache_path = os.path.join(self.output_folder, f'frames_{self.height}_{self.width}.pt')
         if os.path.exists(self.cache_path) and use_cache:
@@ -101,7 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('csv_path', help='Path to the CSV file containing event data.')
     parser.add_argument('-output', dest='output_folder', default=None, help='Output folder for results. Default is the same as the CSV path.')
     parser.add_argument('-size', nargs=2, type=int, help='Specify video width and height as W H.')
-    parser.add_argument('-model', choices=['D', 'X'], help='Specify camera model: D for Davis, X for Dvxplorer.')
+    parser.add_argument('-model', choices=['D', 'X', 'E'], help='Specify camera model: D for Davis, X for Dvxplorer.')
 
     args = parser.parse_args()
 
@@ -109,6 +112,6 @@ if __name__ == '__main__':
     output_folder = args.output_folder if args.output_folder is not None else os.path.dirname(args.csv_path)
 
     data_processor = EventDataTo3DBlock(args.csv_path, output_folder, *args.size if args.size else (None, None), args.model)
-    # data_processor.save_unique_timestamps_and_positions()
+    data_processor.save_unique_timestamps_and_positions()
     # data_processor.save_all_frames_as_images()
     # data_processor.frames_to_video()
