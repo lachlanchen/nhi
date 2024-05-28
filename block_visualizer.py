@@ -23,7 +23,7 @@ class BlockVisualizer:
         x, y, t = positions[2], positions[1], positions[0]  # Extract positions
 
         z = tensor_sampled[t, y, x].float().numpy()
-        colors = ['red' if val < 0 else 'blue' for val in z]
+        colors = ['blue' if val < 0 else 'red' for val in z]
 
         fig = plt.figure("Tensor Data Visualization", figsize=(40, 20))
         ax = fig.add_subplot(111, projection='3d')

@@ -56,7 +56,7 @@ class EventDataAccumulator:
         self.frames = torch.zeros((len(unique_intervals), self.height, self.width), dtype=torch.float32, device=device)
         x = torch.tensor(df['x'].values, dtype=torch.int64, device=device)
         y = torch.tensor(df['y'].values, dtype=torch.int64, device=device)
-        polarity = torch.tensor(df['polarity'].map({0: 1, 1: -1}).values, dtype=torch.float32, device=device)
+        polarity = torch.tensor(df['polarity'].map({0: -1, 1: 1}).values, dtype=torch.float32, device=device)
         self.frames.index_put_((indices, y, x), polarity, accumulate=True)
 
         print("self.frames.max(): ", self.frames.max())
@@ -83,10 +83,10 @@ class EventDataAccumulator:
             # Check if there are any positive or negative values to plot
             if len(pos_vals) > 0:
                 pos_alpha = np.clip(np.abs(pos_vals) / max_val, 0, 1) * alpha_scalar
-                plt.scatter(pos_x, pos_y, color='blue', alpha=pos_alpha, s=1)
+                plt.scatter(pos_x, pos_y, color='red', alpha=pos_alpha, s=1)
             if len(neg_vals) > 0:
                 neg_alpha = np.clip(np.abs(neg_vals) / max_val, 0, 1) * alpha_scalar
-                plt.scatter(neg_x, neg_y, color='red', alpha=neg_alpha, s=1)
+                plt.scatter(neg_x, neg_y, color='blue', alpha=neg_alpha, s=1)
 
             output_path = os.path.join(image_folder, f'frame_{i:04d}.png')
             plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
@@ -146,5 +146,6 @@ if __name__ == '__main__':
 
     if args.save_frames:
         # data_processor.save_frames_as_images(alpha_scalar=args.alpha_scalar)
-        data_processor.frames_to_video_with_filename()        
+        # data_processor.frames_to_video_with_filename()
+        pass        
 
