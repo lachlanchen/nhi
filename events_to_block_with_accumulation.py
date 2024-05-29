@@ -16,6 +16,8 @@ class EventDataAccumulator:
         self.accumulation_time = accumulation_time  # in milliseconds
         os.makedirs(self.output_folder, exist_ok=True)
 
+        csv_basename = os.path.basename(csv_path).replace('.csv', '')
+
         if model == 'D':
             self.height, self.width = 260, 346  # Davis
         elif model == 'X':
@@ -27,7 +29,10 @@ class EventDataAccumulator:
         else:
             self.set_dynamic_dimensions()
 
-        self.cache_path = os.path.join(self.output_folder, f'frames_{self.height}_{self.width}.pt')
+        self.cache_path = os.path.join(
+            self.output_folder, 
+            f'{csv_basename}_frames_{self.height}_{self.width}_accumulation_{self.accumulation_time}ms.pt'
+        )
         if os.path.exists(self.cache_path) and use_cache and not force:
             print("Loading frames from cache.")
             self.frames = torch.load(self.cache_path).to(device)
@@ -63,7 +68,7 @@ class EventDataAccumulator:
         print("self.frames.min(): ", self.frames.min())
 
     def save_frames_as_images(self, alpha_scalar=0.7):
-        image_folder = os.path.join(self.output_folder, 'events_frames')
+        image_folder = os.path.join(self.output_folder, f'{os.path.basename(self.csv_path).replace(".csv", "")}_events_frames_{self.accumulation_time}ms')
         os.makedirs(image_folder, exist_ok=True)
 
         max_val = torch.max(torch.abs(self.frames)).item()
@@ -94,9 +99,12 @@ class EventDataAccumulator:
 
         print(f"Saved frames as images in {image_folder} directory.")
 
-    def frames_to_video(self, folder='events_frames', output_video='frames_video_with_ffmpeg.mp4', fps=60):
-        folder_path = os.path.join(self.output_folder, folder)
-        output_path = os.path.join(self.output_folder, output_video)
+    def frames_to_video(self, folder=None, output_video=None, fps=60):
+        csv_basename = os.path.basename(self.csv_path).replace('.csv', '')
+        folder_name = folder or f'{csv_basename}_events_frames_{self.accumulation_time}ms'
+        output_video_name = output_video or f'{csv_basename}_frames_video_with_ffmpeg_{self.accumulation_time}ms.mp4'
+        folder_path = os.path.join(self.output_folder, folder_name)
+        output_path = os.path.join(self.output_folder, output_video_name)
         command = [
             'ffmpeg', '-y',
             '-framerate', str(fps),
@@ -109,14 +117,17 @@ class EventDataAccumulator:
         subprocess.run(command, check=True)
         print(f"Compiled frames into video: {output_path}")
 
-    def frames_to_video_with_filename(self, folder='events_frames', output_video='frames_video_with_ffmpeg.mp4', fps=30):
-        folder_path = os.path.join(self.output_folder, folder)
-        output_path = os.path.join(self.output_folder, output_video)
+    def frames_to_video_with_filename(self, folder=None, output_video=None, fps=30):
+        csv_basename = os.path.basename(self.csv_path).replace('.csv', '')
+        folder_name = folder or f'{csv_basename}_events_frames_{self.accumulation_time}ms'
+        output_video_name = output_video or f'{csv_basename}_frames_video_with_ffmpeg_{self.accumulation_time}ms.mp4'
+        folder_path = os.path.join(self.output_folder, folder_name)
+        output_path = os.path.join(self.output_folder, output_video_name)
         command = [
             'ffmpeg', '-y',
             '-framerate', str(fps),
             '-i', os.path.join(folder_path, 'frame_%04d.png'),
-            '-vf', f'scale=800:600,drawtext=text=\'{output_video}\':fontcolor=white:fontsize=24:x=10:y=10',
+            '-vf', f'scale=800:600,drawtext=text=\'{output_video_name}\':fontcolor=white:fontsize=24:x=10:y=10',
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
             output_path
@@ -147,5 +158,4 @@ if __name__ == '__main__':
     if args.save_frames:
         # data_processor.save_frames_as_images(alpha_scalar=args.alpha_scalar)
         # data_processor.frames_to_video_with_filename()
-        pass        
-
+        pass
