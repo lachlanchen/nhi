@@ -92,19 +92,21 @@ class EventsSpectrumReconstructor:
         return (tensor - tensor_min) / (tensor_max - tensor_min)
 
     def process_events(self):
-        shift_calculator = ShiftCalculator(width=8, steps=346, lines_per_mm=600, distance=84)
-        shift_vector = shift_calculator.compute_shift_vector()
-        tensor_shifter = TensorShifter(shift_vector)
+        # shift_calculator = ShiftCalculator(width=8, steps=346, lines_per_mm=600, distance=84)
+        # shift_vector = shift_calculator.compute_shift_vector()
+        # tensor_shifter = TensorShifter(shift_vector)
 
         outputs = []
         for event_file, scan_dir in self.event_files:
             events = self.load_event(event_file)[::scan_dir]
             events_permuted = events.permute(1, 2, 0)  # Ensure correct dimension order for processing
             target_dim = 401
-            events_interpolated = self.interpolate_spectrum_quadratic(events_permuted, target_dim)
+            # events_interpolated = self.interpolate_spectrum_quadratic(events_permuted, target_dim)
+            events_interpolated = events_permuted
             wavelengths = np.linspace(380, 780, events_interpolated.shape[-1])
             absorption = self.calculate_absorption(events_interpolated)
-            shifted_absorption = tensor_shifter.apply_shift(absorption)
+            # shifted_absorption = tensor_shifter.apply_shift(absorption)
+            shifted_absorption = absorption
 
             H, W = shifted_absorption.shape[0], shifted_absorption.shape[1]
             points = [
