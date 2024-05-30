@@ -16,16 +16,16 @@ Min indices for Reverse Correlation:
 Reverse Correlation values at mins:
 -0.001708691823296249, -0.001708691823296249, -0.0016308191698044538, -0.0016308191698044538, -0.0016185179119929671, -0.0016185179119929671
 
-Peak indices for Leading Region Correlation:
+Peak indices for ending Region Correlation:
 2786, 2786, 3485, 3485, 4187, 4187
 
-Leading Region Correlation values at peaks:
+ending Region Correlation values at peaks:
 0.0018082365859299898, 0.0018082365859299898, 0.0018393144709989429, 0.0018393144709989429, 0.0017697856528684497, 0.0017697856528684497
 
-Min indices for Leading Region Correlation:
+Min indices for ending Region Correlation:
 2945, 2945, 3649, 3649, 4350, 4350
 
-Leading Region Correlation values at mins:
+ending Region Correlation values at mins:
 -0.0016185179119929671, -0.0016185179119929671, -0.0016308191698044538, -0.0016308191698044538, -0.001708691823296249, -0.001708691823296249
 
 Full periods (Autocorrelation):
@@ -40,9 +40,12 @@ Full periods (Reverse Correlation):
 Half periods (Reverse Correlation):
 0.0, 351.0, 0.0, 349.5, 0.0
 
-Full periods (Leading Region Correlation):
+Full periods (ending Region Correlation):
 0, 699, 0, 702, 0
 
-Half periods (Leading Region Correlation):
+Half periods (ending Region Correlation):
 0.0, 349.5, 0.0, 351.0, 0.0
 
+
+start: 284
+end:811

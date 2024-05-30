@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
+import subprocess
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Calculate and plot autocorrelation of tensor data along time dimension.')
@@ -32,10 +33,10 @@ def calculate_autocorrelation(tensor):
         autocorrelation.append(autocorr.item())
     return autocorrelation
 
-def calculate_reverse_correlation(tensor):
+def calculate_reverse_original_correlation(tensor):
     reverse_tensor = torch.flip(tensor, [0])  # Reverse along the time dimension
     time_dim = tensor.shape[0]
-    reverse_correlation = []
+    reverse_original_correlation = []
 
     for lag in tqdm(range(-time_dim + 1, time_dim), desc="Calculating reverse correlation"):
         if lag == 0:
@@ -44,30 +45,29 @@ def calculate_reverse_correlation(tensor):
             corr = torch.mean(reverse_tensor[:-lag] * tensor[lag:])
         else:
             corr = torch.mean(reverse_tensor[-lag:] * tensor[:lag])
-        reverse_correlation.append(corr.item())
-    return reverse_correlation
+        reverse_original_correlation.append(corr.item())
+    return reverse_original_correlation
 
-def calculate_leading_region_correlation(tensor):
+def calculate_original_reverse_correlation(tensor):
     reverse_tensor = torch.flip(tensor, [0])  # Reverse along the time dimension
     time_dim = tensor.shape[0]
-    leading_region_correlation = []
+    original_reverse_correlation = []
 
-    for lag in tqdm(range(-time_dim + 1, time_dim), desc="Calculating leading region correlation"):
+    for lag in tqdm(range(-time_dim + 1, time_dim), desc="Calculating ending region correlation"):
         if lag == 0:
             corr = torch.mean(tensor * reverse_tensor)
         elif lag > 0:
             corr = torch.mean(tensor[:-lag] * reverse_tensor[lag:])
         else:
             corr = torch.mean(tensor[-lag:] * reverse_tensor[:lag])
-        leading_region_correlation.append(corr.item())
-    return leading_region_correlation
+        original_reverse_correlation.append(corr.item())
+    return original_reverse_correlation
 
 def find_peaks_with_threshold(correlation, threshold=0.004):
     peaks = [i for i in range(1, len(correlation) - 1) if correlation[i] > threshold and correlation[i] > correlation[i - 1] and correlation[i] > correlation[i + 1]]
     return peaks
 
 def find_peaks_and_mins_with_threshold(correlation, threshold_max=0.0015, threshold_min=-0.0015, period=0):
-# def find_peaks_and_mins_with_threshold(correlation, threshold_max=0.00, threshold_min=-0.00, period=0):
     peaks = []
     mins = []
     period = period // 2
@@ -83,33 +83,18 @@ def find_peaks_and_mins_with_threshold(correlation, threshold_max=0.0015, thresh
             mins.append(min_idx)
     return peaks, mins
 
-# def find_peaks_and_mins_with_threshold(correlation, threshold_max=0.0015, threshold_min=-0.0015, period=0):
-#     peaks = []
-#     mins = []
-#     half_period = period // 2
-#     for i in range(half_period, len(correlation), half_period):
-#         segment = correlation[i-half_period:i+half_period]
-#         peak = max(segment, default=0)
-#         min_val = min(segment, default=0)
-#         peak_idx = i - half_period + np.argmax(segment)
-#         min_idx = i - half_period + np.argmin(segment)
-#         peaks.append(peak_idx)
-#         mins.append(min_idx)
-#     return peaks, mins
-
-
-def plot_correlations(lags, autocorrelation, reverse_correlation, leading_region_correlation, peaks_auto, peaks_reverse, mins_reverse, peaks_leading, mins_leading, output_path):
+def plot_correlations(lags, autocorrelation, reverse_original_correlation, original_reverse_correlation, peaks_auto, peaks_reverse, mins_reverse, peaks_original_reverse, mins_original_reverse, output_path):
     plt.figure(figsize=(10, 6))
     plt.xlim(-2600, 2600)
     plt.ylim(-0.0025, 0.01)
     plt.plot(lags, autocorrelation, label='Autocorrelation', alpha=0.5)
-    plt.plot(lags, reverse_correlation, label='Reverse Correlation', alpha=0.5)
-    plt.plot(lags, leading_region_correlation, label='Leading Region Correlation', alpha=0.5)
+    plt.plot(lags, reverse_original_correlation, label='Reverse Original Correlation', alpha=0.5)
+    plt.plot(lags, original_reverse_correlation, label='Original Reverse Correlation', alpha=0.5)
     plt.scatter([lags[p] for p in peaks_auto], [autocorrelation[p] for p in peaks_auto], color='red', marker='o', label='Peaks Autocorrelation', alpha=0.5)
-    plt.scatter([lags[p] for p in peaks_reverse], [reverse_correlation[p] for p in peaks_reverse], color='blue', marker='x', label='Peaks Reverse Correlation', alpha=0.5)
-    plt.scatter([lags[m] for m in mins_reverse], [reverse_correlation[m] for m in mins_reverse], color='blue', marker='x', label='Mins Reverse Correlation', alpha=0.5)
-    plt.scatter([lags[p] for p in peaks_leading], [leading_region_correlation[p] for p in peaks_leading], color='green', marker='s', label='Peaks Leading Region Correlation', alpha=0.5)
-    plt.scatter([lags[m] for m in mins_leading], [leading_region_correlation[m] for m in mins_leading], color='green', marker='s', label='Mins Leading Region Correlation', alpha=0.5)
+    plt.scatter([lags[p] for p in peaks_reverse], [reverse_original_correlation[p] for p in peaks_reverse], color='blue', marker='x', label='Peaks Reverse Correlation', alpha=0.5)
+    plt.scatter([lags[m] for m in mins_reverse], [reverse_original_correlation[m] for m in mins_reverse], color='blue', marker='x', label='Mins Reverse Correlation', alpha=0.5)
+    plt.scatter([lags[p] for p in peaks_original_reverse], [original_reverse_correlation[p] for p in peaks_original_reverse], color='green', marker='s', label='Peaks ending Region Correlation', alpha=0.5)
+    plt.scatter([lags[m] for m in mins_original_reverse], [original_reverse_correlation[m] for m in mins_original_reverse], color='green', marker='s', label='Mins ending Region Correlation', alpha=0.5)
 
     plt.title('Autocorrelation and Reverse Correlation along time dimension')
     plt.xlabel('Lag')
@@ -120,7 +105,7 @@ def plot_correlations(lags, autocorrelation, reverse_correlation, leading_region
     plt.close()
     print(f"Saved autocorrelation and reverse correlation plot to {output_path}")
 
-def save_periods_info(peaks_auto, peaks_reverse, mins_reverse, peaks_leading, mins_leading, lags, autocorrelation, reverse_correlation, leading_region_correlation, output_path):
+def save_periods_info(peaks_auto, peaks_reverse, mins_reverse, peaks_original_reverse, mins_original_reverse, lags, autocorrelation, reverse_original_correlation, original_reverse_correlation, output_path, start, end):
     with open(output_path, 'w') as f:
         f.write("Peak indices for Autocorrelation:\n")
         f.write(", ".join(map(str, peaks_auto)) + "\n\n")
@@ -130,22 +115,22 @@ def save_periods_info(peaks_auto, peaks_reverse, mins_reverse, peaks_leading, mi
         f.write("Peak indices for Reverse Correlation:\n")
         f.write(", ".join(map(str, peaks_reverse)) + "\n\n")
         f.write("Reverse Correlation values at peaks:\n")
-        f.write(", ".join(map(str, [reverse_correlation[p] for p in peaks_reverse])) + "\n\n")
+        f.write(", ".join(map(str, [reverse_original_correlation[p] for p in peaks_reverse])) + "\n\n")
         
         f.write("Min indices for Reverse Correlation:\n")
         f.write(", ".join(map(str, mins_reverse)) + "\n\n")
         f.write("Reverse Correlation values at mins:\n")
-        f.write(", ".join(map(str, [reverse_correlation[m] for m in mins_reverse])) + "\n\n")
+        f.write(", ".join(map(str, [reverse_original_correlation[m] for m in mins_reverse])) + "\n\n")
 
-        f.write("Peak indices for Leading Region Correlation:\n")
-        f.write(", ".join(map(str, peaks_leading)) + "\n\n")
-        f.write("Leading Region Correlation values at peaks:\n")
-        f.write(", ".join(map(str, [leading_region_correlation[p] for p in peaks_leading])) + "\n\n")
+        f.write("Peak indices for ending Region Correlation:\n")
+        f.write(", ".join(map(str, peaks_original_reverse)) + "\n\n")
+        f.write("ending Region Correlation values at peaks:\n")
+        f.write(", ".join(map(str, [original_reverse_correlation[p] for p in peaks_original_reverse])) + "\n\n")
 
-        f.write("Min indices for Leading Region Correlation:\n")
-        f.write(", ".join(map(str, mins_leading)) + "\n\n")
-        f.write("Leading Region Correlation values at mins:\n")
-        f.write(", ".join(map(str, [leading_region_correlation[m] for m in mins_leading])) + "\n\n")
+        f.write("Min indices for ending Region Correlation:\n")
+        f.write(", ".join(map(str, mins_original_reverse)) + "\n\n")
+        f.write("ending Region Correlation values at mins:\n")
+        f.write(", ".join(map(str, [original_reverse_correlation[m] for m in mins_original_reverse])) + "\n\n")
 
         if len(peaks_auto) > 1:
             periods_auto = np.diff([lags[p] for p in peaks_auto])
@@ -163,21 +148,86 @@ def save_periods_info(peaks_auto, peaks_reverse, mins_reverse, peaks_leading, mi
             f.write("Half periods (Reverse Correlation):\n")
             f.write(", ".join(map(str, half_periods_reverse)) + "\n\n")
 
-        if len(peaks_leading) > 1:
-            periods_leading = np.diff([lags[p] for p in peaks_leading])
-            half_periods_leading = periods_leading / 2
-            f.write("Full periods (Leading Region Correlation):\n")
-            f.write(", ".join(map(str, periods_leading)) + "\n\n")
-            f.write("Half periods (Leading Region Correlation):\n")
-            f.write(", ".join(map(str, half_periods_leading)) + "\n\n")
+        if len(peaks_original_reverse) > 1:
+            periods_original_reverse = np.diff([lags[p] for p in peaks_original_reverse])
+            half_periods_original_reverse = periods_original_reverse / 2
+            f.write("Full periods (ending Region Correlation):\n")
+            f.write(", ".join(map(str, periods_original_reverse)) + "\n\n")
+            f.write("Half periods (ending Region Correlation):\n")
+            f.write(", ".join(map(str, half_periods_original_reverse)) + "\n\n")
 
         if len(peaks_auto) <= 1:
             f.write("Not enough peaks to determine periods (Autocorrelation).\n")
         if len(peaks_reverse) <= 1:
             f.write("Not enough peaks to determine periods (Reverse Correlation).\n")
-        if len(peaks_leading) <= 1:
-            f.write("Not enough peaks to determine periods (Leading Region Correlation).\n")
+        if len(peaks_original_reverse) <= 1:
+            f.write("Not enough peaks to determine periods (ending Region Correlation).\n")
+        
+        f.write(f"\nstart: {start}\nend:{end}")
     print(f"Saved periods information to {output_path}")
+
+def calculate_value(first_peak_auto, first_peak_reverse, period):
+    return first_peak_auto - first_peak_reverse, first_peak_reverse
+
+def generate_video(tensor, autocorrelation, reverse_original_correlation, original_reverse_correlation, output_dir, tensor_filename):
+    tensor = tensor.mean(dim=1)
+    time_dim = tensor.shape[0]
+    height_dim = tensor.shape[1]
+    max_abs_val = torch.max(torch.abs(tensor)).item()
+
+    video_folder = os.path.join(output_dir, f"{tensor_filename}_video_frames")
+    os.makedirs(video_folder, exist_ok=True)
+
+    for lag in tqdm(range(-time_dim + 1, time_dim, 10), desc="Generating video frames"):
+        fig, axs = plt.subplots(2, 1, figsize=(16, 8))
+
+        # Tensor projection plot
+        combined_tensor = np.zeros((height_dim, time_dim * 3))
+        combined_tensor[:, time_dim:time_dim*2] += tensor.cpu().numpy().T
+        combined_tensor[:, time_dim+lag:2*time_dim+lag] += tensor.cpu().numpy().T
+        # if lag >= 0:
+        #     combined_tensor[:, time_dim+lag:2*time_dim+lag] = tensor.cpu().numpy().T
+        # else:
+        #     combined_tensor[:, time_dim+lag:2*time_dim+lag] = tensor.cpu().numpy().T
+        #     # combined_tensor[:, time_dim:time_dim-lag] = tensor[lag:].cpu().numpy().T
+
+        axs[0].imshow(combined_tensor, cmap='bwr', vmin=-max_abs_val, vmax=max_abs_val, aspect='auto')
+        axs[0].set_title(f'Tensor Projection with Lag {lag}')
+        axs[0].set_xlabel('Time')
+        axs[0].set_ylabel('Height')
+        axs[0].axvline(x=time_dim, color='k', linestyle='--')
+        axs[0].axvline(x=2*time_dim, color='k', linestyle='--')
+        axs[0].axvline(x=2*time_dim+lag, color='r', linestyle='--')
+
+
+        # Correlation plot
+        lags = np.arange(-time_dim + 1, time_dim)
+        axs[1].plot(lags, autocorrelation, label='Autocorrelation', alpha=0.5)
+        axs[1].plot(lags, reverse_original_correlation, label='Reverse Original Correlation', alpha=0.5)
+        axs[1].plot(lags, original_reverse_correlation, label='Original Reverse Correlation', alpha=0.5)
+        axs[1].axvline(x=lag, color='r', linestyle='--', label='Current Lag')
+        axs[1].set_title('Correlation with Current Lag')
+        axs[1].set_xlabel('Lag')
+        axs[1].set_ylabel('Correlation')
+        axs[1].legend()
+        axs[1].grid(True)
+
+        frame_filename = os.path.join(video_folder, f'frame_{lag + time_dim:04d}.png')
+        plt.savefig(frame_filename, bbox_inches='tight')
+        plt.close()
+
+    # Compile video using ffmpeg
+    video_path = os.path.join(output_dir, f"{tensor_filename}_correlation_video.mp4")
+    command = [
+        'ffmpeg', '-y',
+        '-framerate', '30',
+        '-i', os.path.join(video_folder, 'frame_%04d.png'),
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        video_path
+    ]
+    subprocess.run(command, check=True)
+    print(f"Compiled video saved to {video_path}")
 
 if __name__ == '__main__':
     args = parse_args()
@@ -185,8 +235,8 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     tensor = load_tensor(args.tensor_path, args.sample_rate, device)
     autocorrelation = calculate_autocorrelation(tensor)
-    reverse_correlation = calculate_reverse_correlation(tensor)
-    leading_region_correlation = calculate_leading_region_correlation(tensor)
+    reverse_original_correlation = calculate_reverse_original_correlation(tensor)
+    original_reverse_correlation = calculate_original_reverse_correlation(tensor)
 
     lags = np.arange(-len(autocorrelation) // 2 + 1, len(autocorrelation) // 2 + 1)
     peaks_auto = find_peaks_with_threshold(autocorrelation, threshold=0.004)
@@ -196,8 +246,8 @@ if __name__ == '__main__':
     else:
         period = len(autocorrelation) // 10  # Fallback period estimate
 
-    peaks_reverse, mins_reverse = find_peaks_and_mins_with_threshold(reverse_correlation, threshold_max=0.0015, threshold_min=-0.0015, period=period)
-    peaks_leading, mins_leading = find_peaks_and_mins_with_threshold(leading_region_correlation, threshold_max=0.0015, threshold_min=-0.0015, period=period)
+    peaks_reverse, mins_reverse = find_peaks_and_mins_with_threshold(reverse_original_correlation, threshold_max=0.0015, threshold_min=-0.0015, period=period)
+    peaks_original_reverse, mins_original_reverse = find_peaks_and_mins_with_threshold(original_reverse_correlation, threshold_max=0.0015, threshold_min=-0.0015, period=period)
 
     output_dir = args.output_dir or os.path.dirname(args.tensor_path)
     os.makedirs(output_dir, exist_ok=True)
@@ -207,9 +257,21 @@ if __name__ == '__main__':
     output_filename = f"{tensor_filename}_correlations{sample_rate_suffix}.png"
     output_path = os.path.join(output_dir, output_filename)
 
-    plot_correlations(lags, autocorrelation, reverse_correlation, leading_region_correlation, peaks_auto, peaks_reverse, mins_reverse, peaks_leading, mins_leading, output_path)
+    plot_correlations(lags, autocorrelation, reverse_original_correlation, original_reverse_correlation, peaks_auto, peaks_reverse, mins_reverse, peaks_original_reverse, mins_original_reverse, output_path)
 
     periods_info_filename = f"{tensor_filename}_periods_info{sample_rate_suffix}.txt"
     periods_info_path = os.path.join(output_dir, periods_info_filename)
 
-    save_periods_info(peaks_auto, peaks_reverse, mins_reverse, peaks_leading, mins_leading, lags, autocorrelation, reverse_correlation, leading_region_correlation, periods_info_path)
+    # Calculate the desired value
+    first_peak_auto = peaks_auto[0]
+    first_peak_reverse = peaks_reverse[0]
+    last_peak_original_reverse = 5000 - peaks_original_reverse[-1]
+
+    start, end = calculate_value(first_peak_auto, first_peak_reverse, period)
+    print(f"start: {start}\nend: {end}")
+    print(f"start: {last_peak_original_reverse/2 - period/2}")
+
+    save_periods_info(peaks_auto, peaks_reverse, mins_reverse, peaks_original_reverse, mins_original_reverse, lags, autocorrelation, reverse_original_correlation, original_reverse_correlation, periods_info_path, start, end)
+
+    # Generate and save the video
+    generate_video(tensor, autocorrelation, reverse_original_correlation, original_reverse_correlation, output_dir, tensor_filename)
