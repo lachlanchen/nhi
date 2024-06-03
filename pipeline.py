@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from metavision_raw_to_csv import convert_raw_to_csv
 from events_to_block_with_accumulation import EventDataAccumulator
 from autocorrelation import calculate_autocorrelation, find_top_peaks, find_period, calculate_periphery, load_tensor, determine_periphery
+from block_visualizer import BlockVisualizer
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Pipeline from RAW to PT file.')
@@ -42,6 +43,7 @@ def adjust_delta_t(start_ts, delta_t):
     return f"{delta_t_us}us"
 
 def split_raw_to_csv(args, start_time, duration, interval):
+    start_time = start_time + convert_time_to_microseconds(args.start_ts)
     output_paths = []
     for i in range(0, int(duration), int(interval)):
         # adjusted_delta_t = adjust_delta_t(f"{start_time + i}us", args.delta_t)
@@ -56,6 +58,19 @@ def split_raw_to_csv(args, start_time, duration, interval):
         )
         output_paths.append(output_csv)
     return output_paths
+
+def visualize_tensor(tensor_path, output_dir, sample_rate=10, time_stretch=5):
+    visualizer = BlockVisualizer(tensor_path, sample_rate=sample_rate)
+
+    views = ["default", "vertical", "horizontal", "side", "r-side", "normal", "normal45", "lateral", "reverse"]
+
+    base_name = os.path.splitext(os.path.basename(tensor_path))[0]
+    save_folder = os.path.join(output_dir, base_name)
+    os.makedirs(save_folder, exist_ok=True)
+
+    for view in views:
+        save_path = os.path.join(save_folder, f"{base_name}_{view}.png")
+        visualizer.plot_scatter_tensor(view=view, plot=False, save=True, save_path=save_path, time_stretch=time_stretch)
 
 def main():
     args = parse_args()
@@ -92,18 +107,19 @@ def main():
     prelude, aftermath, period = determine_periphery(pt_path_10ms, 10, device=device)
     print(f"Prelude: {prelude}, Aftermath: {aftermath}, Period: {period}")
 
+    # Visualize the initial tensor
+    visualize_tensor(pt_path_10ms, args.output_dir)
+
     # Convert frame indices to time in milliseconds
     prelude_time = prelude * args.accumulation_time
     aftermath_time = aftermath * args.accumulation_time
-    # total_duration = aftermath_time - prelude_time
-    # intervals = total_duration // 6
     total_duration = period * args.accumulation_time * 3
     intervals = period * args.accumulation_time / 2
 
     # Step 5: Convert RAW to multiple small CSV files based on the calculated times
     small_csv_paths = split_raw_to_csv(args, prelude_time * 1000, total_duration * 1000, intervals * 1000)
 
-    # Step 6: Convert each small CSV to PT files with 1 ms accumulation time
+    # Step 6: Convert each small CSV to PT files with 1 ms accumulation time and visualize
     for csv_path in small_csv_paths:
         data_processor = EventDataAccumulator(
             csv_path,
@@ -114,8 +130,12 @@ def main():
             model=args.model,
             force=args.force
         )
-        pt_path_1ms = os.path.join(args.output_dir, f"{os.path.basename(csv_path).replace('.csv', '')}_1ms.pt")
-        torch.save(data_processor.frames.cpu(), pt_path_1ms)
+        # pt_path_1ms = os.path.join(args.output_dir, f"{os.path.basename(csv_path).replace('.csv', '')}_1ms.pt")
+        pt_path_1ms = data_processor.cache_path
+        # torch.save(data_processor.frames.cpu(), pt_path_1ms)
+
+        # Visualize each small tensor
+        visualize_tensor(pt_path_1ms, args.output_dir)
 
 if __name__ == '__main__':
     main()
