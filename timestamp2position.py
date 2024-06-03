@@ -4,6 +4,8 @@ from datetime import datetime
 from scipy.interpolate import interp1d
 from ctypes import c_float
 import matplotlib.pyplot as plt
+import argparse
+import os
 
 class CNCMotorSystem:
     def __init__(self, csv_path, scale_factor=10):
@@ -61,9 +63,27 @@ class CNCMotorSystem:
         # Save plot
         plt.savefig(filename)
         plt.close()
+
 if __name__ == '__main__':
-    # Example usage (assuming `dll` is your library object):
-    motor_system = CNCMotorSystem('data/axis_1_positions.csv')
-    print(motor_system.predict_position('20:14:45.000000'))
-    # Assuming the CNCMotorSystem instance is already created as `motor_system`
-    motor_system.plot_and_save_fit_curve('fit_curve_plot.png')
+    parser = argparse.ArgumentParser(description='Process CNC motor system data.')
+    parser.add_argument('csv_path', type=str, help='Path to the input CSV file.')
+    parser.add_argument('--scale_factor', type=int, default=10, help='Scale factor for the CNC motor system.')
+    parser.add_argument('--timestamp', type=str, default=None, help='Timestamp to predict position for (format: HH:MM:SS.microsecond).')
+    parser.add_argument('--offset', type=int, default=0, help='Offset in seconds to apply to the timestamp.')
+    parser.add_argument('--output', type=str, default=None, help='Path to save the fit curve plot.')
+
+    args = parser.parse_args()
+
+    motor_system = CNCMotorSystem(args.csv_path, scale_factor=args.scale_factor)
+
+    if args.timestamp:
+        predicted_position = motor_system.predict_position(args.timestamp, offset=args.offset)
+        print(f"Predicted position at {args.timestamp} with offset {args.offset} seconds: {predicted_position}")
+
+    if args.output:
+        output_path = args.output
+    else:
+        output_dir = os.path.dirname(args.csv_path)
+        output_path = os.path.join(output_dir, 'fit_curve_plot.png')
+
+    motor_system.plot_and_save_fit_curve(output_path)

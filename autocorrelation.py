@@ -403,11 +403,8 @@ def generate_video(tensor1, tensor2, correlation, correlation_label, output_dir,
     # subprocess.run(command, check=True)
     # print(f"Compiled video saved to {video_path}")
 
-if __name__ == '__main__':
-    args = parse_args()
-
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    tensor = load_tensor(args.tensor_path, args.sample_rate, device)
+def determine_prephery(tensor_path, sample_rate, output_dir=None, device=None):
+    tensor = load_tensor(tensor_path, sample_rate, device)
     autocorrelation = calculate_autocorrelation(tensor)
     reverse_original_correlation = calculate_reverse_original_correlation(tensor)
     original_reverse_correlation = calculate_original_reverse_correlation(tensor)
@@ -423,11 +420,11 @@ if __name__ == '__main__':
     peaks_reverse_original, dips_reverse_original = find_peaks_and_dips(reverse_original_correlation, period=period)
     peaks_original_reverse, dips_original_reverse = find_peaks_and_dips(original_reverse_correlation, period=period)
 
-    output_dir = args.output_dir or os.path.dirname(args.tensor_path)
+    output_dir = output_dir or os.path.dirname(tensor_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    tensor_filename = os.path.basename(args.tensor_path).replace('.pt', '')
-    sample_rate_suffix = f"_sample_rate_{args.sample_rate}" if args.sample_rate > 1 else ""
+    tensor_filename = os.path.basename(tensor_path).replace('.pt', '')
+    sample_rate_suffix = f"_sample_rate_{sample_rate}" if sample_rate > 1 else ""
     output_filename = f"{tensor_filename}_correlations{sample_rate_suffix}.png"
     output_path = os.path.join(output_dir, output_filename)
 
@@ -470,6 +467,15 @@ if __name__ == '__main__':
     )
 
     # Generate and save the videos
-    generate_video(tensor, tensor, autocorrelation, 'Autocorrelation', output_dir, tensor_filename)
-    generate_video(tensor, torch.flip(tensor, [0]), reverse_original_correlation, 'Reverse Original Correlation', output_dir, tensor_filename)
-    generate_video(torch.flip(tensor, [0]), tensor, original_reverse_correlation, 'Original Reverse Correlation', output_dir, tensor_filename)
+    # generate_video(tensor, tensor, autocorrelation, 'Autocorrelation', output_dir, tensor_filename)
+    # generate_video(tensor, torch.flip(tensor, [0]), reverse_original_correlation, 'Reverse Original Correlation', output_dir, tensor_filename)
+    # generate_video(torch.flip(tensor, [0]), tensor, original_reverse_correlation, 'Original Reverse Correlation', output_dir, tensor_filename)
+
+    return prelude, aftermath, period
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+    determine_prephery(tensor_path, sample_rate, output_dir=args.output_dir, device=device)
