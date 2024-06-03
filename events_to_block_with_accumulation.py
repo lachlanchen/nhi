@@ -49,16 +49,38 @@ class EventDataAccumulator:
         print("Height (y): ", self.height)
         print("Width (x): ", self.width)
 
+    # def load_and_process_data(self):
+    #     df = pd.read_csv(self.csv_path)
+    #     timestamps = pd.to_datetime(df['event_timestamp'], format='%H:%M:%S.%f')
+    #     df['event_timestamp'] = (timestamps - timestamps.min()).dt.total_seconds() * 1000  # Convert to milliseconds
+
+    #     accumulation_intervals = (df['event_timestamp'] // self.accumulation_time).astype(int)
+    #     unique_intervals, indices = torch.unique(torch.tensor(accumulation_intervals.values), return_inverse=True)
+    #     indices = indices.to(device)
+
+    #     self.frames = torch.zeros((len(unique_intervals), self.height, self.width), dtype=torch.float32, device=device)
+    #     x = torch.tensor(df['x'].values, dtype=torch.int64, device=device)
+    #     y = torch.tensor(df['y'].values, dtype=torch.int64, device=device)
+    #     polarity = torch.tensor(df['polarity'].map({0: -1, 1: 1}).values, dtype=torch.float32, device=device)
+    #     self.frames.index_put_((indices, y, x), polarity, accumulate=True)
+
+    #     print("self.frames.max(): ", self.frames.max())
+    #     print("self.frames.min(): ", self.frames.min())
+
     def load_and_process_data(self):
         df = pd.read_csv(self.csv_path)
         timestamps = pd.to_datetime(df['event_timestamp'], format='%H:%M:%S.%f')
         df['event_timestamp'] = (timestamps - timestamps.min()).dt.total_seconds() * 1000  # Convert to milliseconds
 
-        accumulation_intervals = (df['event_timestamp'] // self.accumulation_time).astype(int)
-        unique_intervals, indices = torch.unique(torch.tensor(accumulation_intervals.values), return_inverse=True)
-        indices = indices.to(device)
+        start_time = df['event_timestamp'].min()
+        end_time = df['event_timestamp'].max()
+        total_intervals = int((end_time - start_time) // self.accumulation_time) + 1
 
-        self.frames = torch.zeros((len(unique_intervals), self.height, self.width), dtype=torch.float32, device=device)
+        intervals = torch.arange(0, total_intervals, device=device)
+        indices = ((df['event_timestamp'] - start_time) // self.accumulation_time).astype(int).values
+        indices = torch.tensor(indices, dtype=torch.int64, device=device)
+
+        self.frames = torch.zeros((total_intervals, self.height, self.width), dtype=torch.float32, device=device)
         x = torch.tensor(df['x'].values, dtype=torch.int64, device=device)
         y = torch.tensor(df['y'].values, dtype=torch.int64, device=device)
         polarity = torch.tensor(df['polarity'].map({0: -1, 1: 1}).values, dtype=torch.float32, device=device)
@@ -66,6 +88,7 @@ class EventDataAccumulator:
 
         print("self.frames.max(): ", self.frames.max())
         print("self.frames.min(): ", self.frames.min())
+
 
     def save_frames_as_images(self, alpha_scalar=0.7):
         image_folder = os.path.join(self.output_folder, f'{os.path.basename(self.csv_path).replace(".csv", "")}_events_frames_{self.accumulation_time}ms')
