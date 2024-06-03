@@ -403,7 +403,7 @@ def generate_video(tensor1, tensor2, correlation, correlation_label, output_dir,
     # subprocess.run(command, check=True)
     # print(f"Compiled video saved to {video_path}")
 
-def determine_prephery(tensor_path, sample_rate, output_dir=None, device=None):
+def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
     tensor = load_tensor(tensor_path, sample_rate, device)
     autocorrelation = calculate_autocorrelation(tensor)
     reverse_original_correlation = calculate_reverse_original_correlation(tensor)
@@ -413,7 +413,7 @@ def determine_prephery(tensor_path, sample_rate, output_dir=None, device=None):
     peaks_auto = find_top_peaks(autocorrelation)
 
     if len(peaks_auto) > 1:
-        period = np.diff(peaks_auto).mean().astype(int)
+        period = abs(np.diff(peaks_auto).mean().astype(int))
     else:
         period = len(autocorrelation) // 10  # Fallback period estimate
 

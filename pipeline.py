@@ -5,8 +5,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from metavision_raw_to_csv import convert_raw_to_csv
 from events_to_block_with_accumulation import EventDataAccumulator
-from autocorrelation import calculate_autocorrelation, find_top_peaks, find_period, calculate_periphery, load_tensor
-from autocorrelation import determine_prephery
+from autocorrelation import calculate_autocorrelation, find_top_peaks, find_period, calculate_periphery, load_tensor, determine_periphery
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Pipeline from RAW to PT file.')
@@ -25,15 +24,34 @@ def parse_args():
     parser.add_argument('--alpha_scalar', type=float, default=0.7, help='Alpha scalar to adjust overall transparency.')
     return parser.parse_args()
 
+def convert_time_to_microseconds(time_str):
+    units = {"us": 1, "ms": 1000, "s": 1000000}
+    for unit in units:
+        if time_str.endswith(unit):
+            return int(float(time_str[:-len(unit)]) * units[unit])
+    return int(time_str) * units["s"]
+
+def adjust_delta_t(start_ts, delta_t):
+    start_ts_us = convert_time_to_microseconds(start_ts)
+    delta_t_us = convert_time_to_microseconds(delta_t)
+
+    # Adjust delta_t to be a divisor of start_ts
+    while start_ts_us % delta_t_us != 0:
+        delta_t_us -= 1  # Decrease delta_t until it becomes a divisor
+
+    return f"{delta_t_us}us"
+
 def split_raw_to_csv(args, start_time, duration, interval):
     output_paths = []
     for i in range(0, int(duration), int(interval)):
+        # adjusted_delta_t = adjust_delta_t(f"{start_time + i}us", args.delta_t)
+        adjusted_delta_t = "1000us"
         output_csv = convert_raw_to_csv(
             input_path=args.raw_path,
             output_dir=args.output_dir,
-            start_ts=f"{start_time + i}ms",
-            max_duration=f"{interval}ms",
-            delta_t=args.delta_t,
+            start_ts=f"{start_time + i}us",
+            max_duration=f"{interval}us",
+            delta_t=adjusted_delta_t,
             start_datetime=args.start_datetime
         )
         output_paths.append(output_csv)
@@ -68,20 +86,22 @@ def main():
     )
 
     pt_path_10ms = data_processor.cache_path
-    # pt_path_10ms = os.path.join(args.output_dir, f"{os.path.basename(csv_path).replace('.csv', '')}_10ms.pt")
-    torch.save(data_processor.frames.cpu(), pt_path_10ms)
+    raw_length = data_processor.frames.shape[0]
+    # torch.save(data_processor.frames.cpu(), pt_path_10ms)
 
-    prelude, aftermath, period = determine_prephery(pt_path_10ms, 10, device=device)
-    print(f"Prelude: {prelude}, Aftermath: {aftermath}")
+    prelude, aftermath, period = determine_periphery(pt_path_10ms, 10, device=device)
+    print(f"Prelude: {prelude}, Aftermath: {aftermath}, Period: {period}")
 
     # Convert frame indices to time in milliseconds
     prelude_time = prelude * args.accumulation_time
     aftermath_time = aftermath * args.accumulation_time
-    total_duration = aftermath_time - prelude_time
-    intervals = total_duration // 6
+    # total_duration = aftermath_time - prelude_time
+    # intervals = total_duration // 6
+    total_duration = period * args.accumulation_time * 3
+    intervals = period * args.accumulation_time / 2
 
     # Step 5: Convert RAW to multiple small CSV files based on the calculated times
-    small_csv_paths = split_raw_to_csv(args, prelude_time, total_duration, intervals)
+    small_csv_paths = split_raw_to_csv(args, prelude_time * 1000, total_duration * 1000, intervals * 1000)
 
     # Step 6: Convert each small CSV to PT files with 1 ms accumulation time
     for csv_path in small_csv_paths:
