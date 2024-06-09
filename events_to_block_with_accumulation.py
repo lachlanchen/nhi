@@ -10,7 +10,15 @@ import subprocess
 device = 'cpu'
 
 class EventDataAccumulator:
-    def __init__(self, csv_path, output_folder, accumulation_time=1, height=None, width=None, model=None, use_cache=False, force=False):
+    def __init__(self, 
+        csv_path, output_folder, 
+        accumulation_time=1, 
+        height=None, width=None, 
+        model=None, use_cache=False, force=False,
+        reverse_time=False,
+        reverse_polarity=False,
+        description=None
+    ):
         self.csv_path = csv_path
         self.output_folder = output_folder or os.path.dirname(csv_path)
         self.accumulation_time = accumulation_time  # in milliseconds
@@ -29,15 +37,26 @@ class EventDataAccumulator:
         else:
             self.set_dynamic_dimensions()
 
-        self.cache_path = os.path.join(
-            self.output_folder, 
-            f'{csv_basename}_frames_{self.height}_{self.width}_accumulation_{self.accumulation_time}ms.pt'
-        )
-        if os.path.exists(self.cache_path) and use_cache and not force:
+        if description is not None:
+            self.cache_path = os.path.join(
+                self.output_folder, 
+                f'{csv_basename}_frames_{description}_{self.height}_{self.width}_accumulation_{self.accumulation_time}ms.pt'
+            )
+        else:
+            self.cache_path = os.path.join(
+                self.output_folder, 
+                f'{csv_basename}_frames_{self.height}_{self.width}_accumulation_{self.accumulation_time}ms.pt'
+            )
+
+        if os.path.exists(self.cache_path) and use_cache:
             print("Loading frames from cache.")
             self.frames = torch.load(self.cache_path).to(device)
         else:
             self.load_and_process_data()
+            if reverse_time:
+                self.frames = torch.flip(self.frames, dims=[0])
+            if reverse_polarity:
+                self.frames = self.frames * -1
             torch.save(self.frames.cpu(), self.cache_path)
             print(f"Saved frames to {self.cache_path}.")
 

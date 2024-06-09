@@ -27,6 +27,18 @@ def calculate_std_for_shifts(tensor, min_shift, max_shift, reverse, sample_rate)
 
     return shift_values, std_values
 
+
+def optimal_shift(shift_values, std_value):
+    
+    
+    # Find and annotate the minimum std value
+    min_std = min(std_values)
+    min_shift = shift_values[std_values.index(min_std)]
+    
+    print(f"Minimum standard deviation: {min_std:.2f} occurs at shift: {min_shift}")
+
+    return min_shift, min_std
+
 def plot_std_vs_shift(shift_values, std_values, output_path):
     plt.figure(figsize=(10, 5))
     plt.plot(shift_values, std_values, marker='o', linestyle='-')

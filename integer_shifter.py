@@ -3,10 +3,11 @@ import argparse
 import os
 
 class TensorShifter:
-    def __init__(self, max_shift, width, reverse=False):
+    def __init__(self, max_shift, width, reverse=False, crop=False):
         self.max_shift = max_shift  # Maximum time shift for the first or last column
         self.width = width  # Width of the tensor to calculate shift per column
         self.reverse = reverse  # Determine if the shift starts from the last column
+        self.crop = crop
 
     def apply_shift(self, tensor):
         # Initialize a tensor of the same shape filled with zeros
@@ -26,7 +27,14 @@ class TensorShifter:
             elif shift < 0:
                 shifted_tensor[-shift:, :, col] = tensor[:shift, :, col]  # Shift backward in time
 
-        return shifted_tensor
+        if self.crop:
+            if self.max_shift < 0:
+                return shifted_tensor[-self.max_shift:]
+            else:
+                return shifted_tensor[:-self.max_shift]
+        else:
+            return shifted_tensor
+
 
 def main(tensor_path, max_shift, reverse, sample_rate):
     # Load the tensor from the specified file

@@ -141,7 +141,7 @@ def find_top_peaks_with_period(correlation, period, num_peaks=5):
     print("Peaks found:", peaks)
     return peaks
 
-def find_top_peaks(correlation, initial_period=0, num_peaks=5):
+def find_top_peaks(correlation, initial_period=500, num_peaks=5):
     period = initial_period
     previous_period = -1
 
@@ -276,7 +276,16 @@ def plot_correlations(lags, autocorrelation, reverse_original_correlation, origi
     plt.close()
     print(f"Saved autocorrelation and reverse correlation plot to {output_path}")
 
-def save_periods_info(peaks_auto, peaks_reverse_original, dips_reverse_original, peaks_original_reverse, dips_original_reverse, lags, autocorrelation, reverse_original_correlation, original_reverse_correlation, output_path, prelude, aftermath):
+def save_periods_info(
+    peaks_auto, 
+    peaks_reverse_original, dips_reverse_original, 
+    peaks_original_reverse, dips_original_reverse, 
+    lags, 
+    autocorrelation, reverse_original_correlation, original_reverse_correlation, 
+    prelude, aftermath,
+    period,
+    output_path, 
+):
     with open(output_path, 'w') as f:
         f.write("Peak indices for Autocorrelation:\n")
         f.write(", ".join(map(str, peaks_auto)) + "\n\n")
@@ -334,7 +343,7 @@ def save_periods_info(peaks_auto, peaks_reverse_original, dips_reverse_original,
         if len(peaks_original_reverse) <= 1:
             f.write("Not enough peaks to determine periods (Original-Reverse Correlation).\n")
         
-        f.write(f"\nprelude: {prelude}\naftermath:{aftermath}")
+        f.write(f"period: {period}\nprelude: {prelude}\naftermath: {aftermath}")
     print(f"Saved periods information to {output_path}")
 
 def calculate_periphery(first_peak_auto, first_dip_reverse, period):
@@ -403,7 +412,95 @@ def generate_video(tensor1, tensor2, correlation, correlation_label, output_dir,
     # subprocess.run(command, check=True)
     # print(f"Compiled video saved to {video_path}")
 
+# def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
+#     tensor = load_tensor(tensor_path, sample_rate, device)
+#     autocorrelation = calculate_autocorrelation(tensor)
+#     reverse_original_correlation = calculate_reverse_original_correlation(tensor)
+#     original_reverse_correlation = calculate_original_reverse_correlation(tensor)
+
+#     lags = np.arange(-len(autocorrelation) // 2 + 1, len(autocorrelation) // 2 + 1)
+#     peaks_auto = find_top_peaks(autocorrelation)
+
+#     if len(peaks_auto) > 1:
+#         period = abs(np.diff(peaks_auto).mean().astype(int))
+#     else:
+#         period = len(autocorrelation) // 10  # Fallback period estimate
+
+#     peaks_reverse_original, dips_reverse_original = find_peaks_and_dips(reverse_original_correlation, period=period)
+#     peaks_original_reverse, dips_original_reverse = find_peaks_and_dips(original_reverse_correlation, period=period)
+
+#     output_dir = output_dir or os.path.dirname(tensor_path)
+#     os.makedirs(output_dir, exist_ok=True)
+
+#     tensor_filename = os.path.basename(tensor_path).replace('.pt', '')
+#     sample_rate_suffix = f"_sample_rate_{sample_rate}" if sample_rate > 1 else ""
+#     output_filename = f"{tensor_filename}_correlations{sample_rate_suffix}.png"
+#     output_path = os.path.join(output_dir, output_filename)
+
+#     plot_correlations(
+#         lags, autocorrelation, 
+#         reverse_original_correlation, original_reverse_correlation, 
+#         peaks_auto, 
+#         peaks_reverse_original, dips_reverse_original, 
+#         peaks_original_reverse, dips_original_reverse, 
+#         output_path
+#     )
+
+#     periods_info_filename = f"{tensor_filename}_periods_info{sample_rate_suffix}.txt"
+#     periods_info_path = os.path.join(output_dir, periods_info_filename)
+
+#     # Calculate the desired value
+#     first_peak_auto = peaks_auto[0]
+#     first_dip_reverse = dips_reverse_original[0]
+#     # for i, dip in enumerate(dips_reverse_original):
+#     #     print("dip: ", dip)
+#     #     print("period: ", period)
+#     #     if dip - period > 0:
+#     #         first_dip_reverse = dips_reverse_original[i]
+#     #         break
+
+
+#     prelude, aftermath = calculate_periphery(first_peak_auto, first_dip_reverse, period)
+#     print(f"prelude: {prelude}\naftermath: {aftermath}")
+
+#     save_periods_info(
+#         peaks_auto, 
+#         peaks_reverse_original, dips_reverse_original, 
+#         peaks_original_reverse, dips_original_reverse, 
+#         lags, 
+#         autocorrelation, 
+#         reverse_original_correlation, 
+#         original_reverse_correlation, 
+#         periods_info_path, 
+#         prelude, aftermath
+#     )
+
+#     # Generate and save the videos
+#     # generate_video(tensor, tensor, autocorrelation, 'Autocorrelation', output_dir, tensor_filename)
+#     # generate_video(tensor, torch.flip(tensor, [0]), reverse_original_correlation, 'Reverse Original Correlation', output_dir, tensor_filename)
+#     # generate_video(torch.flip(tensor, [0]), tensor, original_reverse_correlation, 'Original Reverse Correlation', output_dir, tensor_filename)
+
+#     return prelude, aftermath, period
+
+
 def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
+    output_dir = output_dir or os.path.dirname(tensor_path)
+    os.makedirs(output_dir, exist_ok=True)
+
+    
+    tensor_filename = os.path.basename(tensor_path).replace('.pt', '')
+    sample_rate_suffix = f"_sample_rate_{sample_rate}" if sample_rate > 1 else ""
+    periods_info_filename = f"{tensor_filename}_periods_info{sample_rate_suffix}.txt"
+    periods_info_path = os.path.join(output_dir, periods_info_filename)
+    
+    if os.path.exists(periods_info_path):
+        with open(periods_info_path, 'r') as f:
+            content = f.read().splitlines()
+            prelude = float(content[-2].split(': ')[1])
+            aftermath = float(content[-1].split(': ')[1])
+            period = float(content[-3].split(': ')[1])
+            return prelude, aftermath, period
+    
     tensor = load_tensor(tensor_path, sample_rate, device)
     autocorrelation = calculate_autocorrelation(tensor)
     reverse_original_correlation = calculate_reverse_original_correlation(tensor)
@@ -423,8 +520,6 @@ def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
     output_dir = output_dir or os.path.dirname(tensor_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    tensor_filename = os.path.basename(tensor_path).replace('.pt', '')
-    sample_rate_suffix = f"_sample_rate_{sample_rate}" if sample_rate > 1 else ""
     output_filename = f"{tensor_filename}_correlations{sample_rate_suffix}.png"
     output_path = os.path.join(output_dir, output_filename)
 
@@ -437,22 +532,11 @@ def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
         output_path
     )
 
-    periods_info_filename = f"{tensor_filename}_periods_info{sample_rate_suffix}.txt"
-    periods_info_path = os.path.join(output_dir, periods_info_filename)
-
-    # Calculate the desired value
     first_peak_auto = peaks_auto[0]
     first_dip_reverse = dips_reverse_original[0]
-    # for i, dip in enumerate(dips_reverse_original):
-    #     print("dip: ", dip)
-    #     print("period: ", period)
-    #     if dip - period > 0:
-    #         first_dip_reverse = dips_reverse_original[i]
-    #         break
-
-
+    
     prelude, aftermath = calculate_periphery(first_peak_auto, first_dip_reverse, period)
-    print(f"prelude: {prelude}\naftermath: {aftermath}")
+    print(f"period: {period},  prelude: {prelude}\naftermath: {aftermath}")
 
     save_periods_info(
         peaks_auto, 
@@ -462,14 +546,10 @@ def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
         autocorrelation, 
         reverse_original_correlation, 
         original_reverse_correlation, 
+        prelude, aftermath,
+        period,
         periods_info_path, 
-        prelude, aftermath
     )
-
-    # Generate and save the videos
-    # generate_video(tensor, tensor, autocorrelation, 'Autocorrelation', output_dir, tensor_filename)
-    # generate_video(tensor, torch.flip(tensor, [0]), reverse_original_correlation, 'Reverse Original Correlation', output_dir, tensor_filename)
-    # generate_video(torch.flip(tensor, [0]), tensor, original_reverse_correlation, 'Original Reverse Correlation', output_dir, tensor_filename)
 
     return prelude, aftermath, period
 

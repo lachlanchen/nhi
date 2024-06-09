@@ -9,8 +9,6 @@ from datetime import datetime, timedelta
 from metavision_core.event_io import EventsIterator
 from tqdm import tqdm
 
-
-
 def parse_time_argument(arg):
     """Parse time argument with units."""
     units = {"us": 1, "ms": 1000, "s": 1000000}
@@ -38,9 +36,13 @@ def parse_args():
                         help="Duration of served event slice. Can be specified in us, ms, or s (default: s).")
     parser.add_argument('--start-datetime', type=str, default=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         help="Start datetime for timestamps in HH:MM:SS.microsecond format. Defaults to current datetime.")
+    parser.add_argument('--force', action='store_true', help="Force override of existing files.")
     return parser.parse_args()
 
-def convert_raw_to_csv(input_path, output_dir=None, start_ts="30s", max_duration="60s", delta_t="1s", start_datetime=None):
+def convert_raw_to_csv(
+    input_path, output_dir=None, 
+    start_ts="30s", max_duration="60s", delta_t="1s", 
+    start_datetime=None, force=False, description=None):
     if not os.path.isfile(input_path):
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
@@ -53,15 +55,21 @@ def convert_raw_to_csv(input_path, output_dir=None, start_ts="30s", max_duration
     if start_datetime is None:
         start_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    description = f"_{description}"if description else ""
     # Construct the output filename with all the info in args
     output_filename = (
         f"{os.path.basename(input_path)[:-4]}"
+        f"{description}"
         f"_start_ts_{start_ts}"
         f"_max_duration_{max_duration}"
         f"_delta_t_{delta_t}"
         ".csv"
     )
     output_file = os.path.join(output_dir, output_filename)
+
+    if os.path.exists(output_file) and not force:
+        print(f"File {output_file} already exists. Skipping conversion.")
+        return output_file
 
     mv_iterator = EventsIterator(input_path=input_path, delta_t=parse_time_argument(delta_t),
                                  start_ts=parse_time_argument(start_ts), max_duration=parse_time_argument(max_duration))
@@ -90,7 +98,8 @@ def main():
         start_ts=args.start_ts,
         max_duration=args.max_duration,
         delta_t=args.delta_t,
-        start_datetime=args.start_datetime
+        start_datetime=args.start_datetime,
+        force=args.force
     )
 
 if __name__ == "__main__":
