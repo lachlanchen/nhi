@@ -44,6 +44,8 @@ class EventSensorEVK5:
         self.trigger.enable(mv_hal.I_TriggerIn.Channel.MAIN)
         print("Trigger enabled:", self.trigger.is_enabled(mv_hal.I_TriggerIn.Channel.MAIN))
 
+        # self.setThreshold(100, 100)
+
     def setThreshold(self, bias_off, bias_on):
         """
         Set bias values for the device.
@@ -51,6 +53,7 @@ class EventSensorEVK5:
             bias_off (int): Threshold for decrement intensity.
             bias_on (int): Threshold for increment intensity.
         """
+        print('Bias values after setting:', self.bias.get_all_biases())
         self.bias.set('bias_diff_off', bias_off)
         self.bias.set('bias_diff_on', bias_on)
         print('Bias values after setting:', self.bias.get_all_biases())

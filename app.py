@@ -20,6 +20,8 @@ import shutil
 from datetime import datetime
 import time
 
+import argparse
+
 def print_timestamp(message, timestamp):
     """Helper function to format and print the timestamp."""
     print(f"{message}: {datetime.fromtimestamp(timestamp / 1e6).strftime('%H:%M:%S')}")
@@ -37,6 +39,7 @@ class StartSequenceHandler(tornado.web.RequestHandler):
         self.write({"status": "Sequence started"})
 
 def start_sequence():
+    record_events = args.record_events
 
     def cnc_movement_sequence():
 
@@ -67,7 +70,8 @@ def start_sequence():
 
     # Initialize devices
     led_control = ArduinoLED(port='COM4')
-    sensor = EventSensor()
+    if record_events:
+        sensor = EventSensor()
     dll_path = "cnc/FMC4030Lib-x64-20220329/FMC4030-Dll.dll"
     motor_system = MotorSystem(dll_path)
 
@@ -75,12 +79,13 @@ def start_sequence():
     # Start LED
     led_control.led_off()
     motor_system.move(1, 15, 1, 20, record=False) 
-    time.sleep(5)
+    time.sleep(15)
     led_control.led_on()
-    time.sleep(5)
+    time.sleep(15)
 
-    # Start recording events
-    sensor.start_recording()
+    if record_events:
+        # Start recording events
+        sensor.start_recording()
 
 
     # Pass the get_current_status method as a parameter
@@ -93,11 +98,13 @@ def start_sequence():
     # I'm using 'record_events_and_frames_concurrently' directly. 
     # If 'get_current_status' or other parameters need to be passed, you can adjust the lambda function accordingly.
     
-    threading.Thread(target=lambda: sensor.record_events_and_frames_concurrently(
-        'events_output', 
-        'frames_output', 
-        recording_duration_sec=500
-    )).start()
+    record_events = False
+    if record_events:
+        threading.Thread(target=lambda: sensor.record_events_and_frames_concurrently(
+            'events_output', 
+            'frames_output', 
+            recording_duration_sec=500
+        )).start()
 
     motor_speed = 100
 
@@ -115,19 +122,21 @@ def start_sequence():
     # motor_system.move(1, 25, 1, motor_speed)  # Move Y axis -50
     # motor_system.move(1, 25, -1, motor_speed)  # Move Y axis -50
 
-    motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
-    motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 30, 1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 30, -1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 30, 1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 30, -1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 30, 1, motor_speed)  # Move Y axis -50
+    motor_system.move(1, 30, -1, motor_speed)  # Move Y axis -50
 
-    # motor_system.move(1, 25, 1, motor_speed)  # Move Y axis -50
-    # motor_system.move(1, 25, -1, motor_speed)  # Move Y axis -50
-    # motor_system.move(1, 25, 1, motor_speed)  # Move Y axis -50
-    # motor_system.move(1, 25, -1, motor_speed)  # Move Y axis -50
-    # motor_system.move(1, 25, 1, motor_speed)  # Move Y axis -50
-    # motor_system.move(1, 25, -1, motor_speed)  # Move Y axis -50
+    # motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
+    # motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
+    # motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
+    # motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
+    # motor_system.move(1, 35, 1, motor_speed)  # Move Y axis -50
+    # motor_system.move(1, 35, -1, motor_speed)  # Move Y axis -50
+
+
 
     # time.sleep(60)
 
@@ -156,28 +165,34 @@ def start_sequence():
     # while motor_system.finish_time + 3 > sensor.current_event_timestamp:
     #     pass
 
-    # Print before entering the loop
-    print_timestamp("Before loop start time", int(time.time() * 1e6))
+    if record_events:
 
-    # Continue checking until the sensor's current event timestamp surpasses the motor's finish time
-    while motor_system.finish_time  > sensor.current_event_timestamp:
-        # Update sensor timestamp to current time
-        # sensor.current_event_timestamp = int(time.time() * 1e6)  
-        # Print the current finish time and event timestamp inside the loop
-        print_timestamp("Motor system finish time", motor_system.finish_time)
-        print_timestamp("Sensor current event timestamp", sensor.current_event_timestamp)
-        # Small delay to prevent tight loop execution and allow readable output
-        time.sleep(10)  
+        # Print before entering the loop
+        print_timestamp("Before loop start time", int(time.time() * 1e6))
 
-    # Print after exiting the loop
-    print_timestamp("After loop end time", int(time.time() * 1e6))
+        # Continue checking until the sensor's current event timestamp surpasses the motor's finish time
+        while motor_system.finish_time  > sensor.current_event_timestamp:
+            # Update sensor timestamp to current time
+            # sensor.current_event_timestamp = int(time.time() * 1e6)  
+            # Print the current finish time and event timestamp inside the loop
+            print_timestamp("Motor system finish time", motor_system.finish_time)
+            print_timestamp("Sensor current event timestamp", sensor.current_event_timestamp)
+            # Small delay to prevent tight loop execution and allow readable output
+
+            time.sleep(10)  
+
+            led_control.led_off()
+
+        # Print after exiting the loop
+        print_timestamp("After loop end time", int(time.time() * 1e6))
 
     # time.sleep(15)
     # time.sleep(15)
 
+    if record_events:
 
-    # Stop recording
-    sensor.stop_recording()
+        # Stop recording
+        sensor.stop_recording()
 
     time.sleep(5)
 
@@ -218,6 +233,15 @@ def make_app():
     ])
 
 if __name__ == "__main__":
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Control the CNC and sensor recording sequence via web server.")
+    parser.add_argument("--record_events", type=bool, default=False, help="Set to True to enable event recording.")
+    args = parser.parse_args()
+
+    print("args.record_events: ", args.record_events)
+
+
     app = make_app()
     app.listen(8888)
     print("Server running on http://localhost:8888")

@@ -47,6 +47,8 @@ class EventCamera:
         self.events_iterator = EventsIterator.from_device(self.device)
         self.height, self.width = self.events_iterator.get_size()
         print('Size=', self.height, self.width)
+
+        self.setThreshold(100, 100, 100, 100)
         
         flag = 0
         for evs in self.events_iterator:
