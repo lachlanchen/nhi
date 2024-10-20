@@ -126,7 +126,7 @@ with open(log_file, mode='w') as file:
     writer.writerow(['Epoch', 'Batch', 'Loss'])
 
 # Training loop
-num_epochs = 1000  # Train for more epochs since we have a powerful GPU and large dataset
+num_epochs = 100  # Train for more epochs since we have a powerful GPU and large dataset
 losses = []
 debug_print("Starting training loop...")
 for epoch in range(num_epochs):
@@ -140,9 +140,9 @@ for epoch in range(num_epochs):
 
         loss = criterion(scaled_outputs, targets)
 
-        # Regularization term
-        regularizer = torch.mean(torch.abs(scaled_outputs))
-        loss += regularizer
+        # # Regularization term
+        # regularizer = torch.mean(torch.abs(scaled_outputs))
+        # loss += regularizer
 
         # Backward pass and optimization
         optimizer.zero_grad()
@@ -171,8 +171,8 @@ for epoch in range(num_epochs):
         x_grid_flat = x_grid.flatten() * sensor_width * 1e3
         y_grid_flat = y_grid.flatten() * sensor_height * 1e3
 
-        for wavelength, color in zip([700e-6, 546.1e-6, 435.8e-6], ['red', 'green', 'blue']):
-            lambda_grid = np.full_like(x_grid_flat, wavelength)
+        for wavelength, color in zip([700e-9, 546.1e-9, 435.8e-9], ['red', 'green', 'blue']):
+            lambda_grid = np.full_like(x_grid_flat, wavelength*1e3)
             mesh_inputs = torch.tensor(np.vstack((x_grid_flat, y_grid_flat, lambda_grid)).T, dtype=torch.float32).cuda()
             
             mesh_outputs = []

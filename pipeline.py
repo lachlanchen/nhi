@@ -3,7 +3,7 @@ import os
 import torch
 import numpy as np
 from datetime import datetime, timedelta
-from metavision_raw_to_csv import convert_raw_to_csv
+from metavision_raw_to_csv import convert_raw_to_csv, parse_time_argument
 from events_to_block_with_accumulation import EventDataAccumulator
 from autocorrelation import calculate_autocorrelation, find_top_peaks, find_period, calculate_periphery, load_tensor, determine_periphery
 from block_visualizer import BlockVisualizer
@@ -16,9 +16,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Pipeline from RAW to PT file.')
     parser.add_argument('raw_path', help='Path to the input RAW file.')
     parser.add_argument('--output_dir', default=None, help='Directory to save the output files. Defaults to the input file\'s directory.')
-    parser.add_argument('--start_ts', type=str, default="0s", help='Start time to begin processing data. Can be specified in us, ms, or s.')
-    parser.add_argument('--max_duration', type=str, default="60s", help='Maximum duration for processing data. Can be specified in us, ms, or s.')
-    parser.add_argument('--delta_t', type=str, default="1s", help='Duration of served event slice. Can be specified in us, ms, or s.')
+    parser.add_argument('--start_ts', type=parse_time_argument, default="0s", help='Start time to begin processing data. Can be specified in us, ms, or s.')
+    parser.add_argument('--max_duration', type=parse_time_argument, default="60s", help='Maximum duration for processing data. Can be specified in us, ms, or s.')
+    parser.add_argument('--delta_t', type=parse_time_argument, default="1s", help='Duration of served event slice. Can be specified in us, ms, or s.')
     parser.add_argument('--start_datetime', type=str, default=None, help='Start datetime for timestamps in HH:MM:SS.microsecond format. Defaults to current datetime.')
     parser.add_argument('--accumulation_time', type=int, default=10, help='Accumulation time in milliseconds for initial processing.')
     parser.add_argument('--height', type=int, default=None, help='Height of the event frame.')
@@ -46,31 +46,38 @@ def convert_time_to_microseconds(time_str):
     return int(time_str) * units["s"]
 
 def adjust_delta_t(start_ts, delta_t):
-    start_ts_us = convert_time_to_microseconds(start_ts)
-    delta_t_us = convert_time_to_microseconds(delta_t)
+    # start_ts_us = convert_time_to_microseconds(start_ts)
+    # delta_t_us = convert_time_to_microseconds(delta_t)
+    start_ts_us = start_ts
+    delta_t_us = delta_t
 
     while start_ts_us % delta_t_us != 0:
         delta_t_us -= 1
 
     return f"{delta_t_us}us"
 
-def split_raw_to_csv(args, start_time, duration, interval):
-    start_time = start_time + convert_time_to_microseconds(args.start_ts)
+def split_raw_to_csv(args, start_time, duration, interval, time_diff=0):
+    start_time = start_time + args.start_ts + time_diff # convert_time_to_microseconds(args.start_ts)
     output_paths = []
     reverse = False
     for i, start_relative in enumerate(range(0, int(duration), int(interval))):
-        adjusted_delta_t = "1000us"
+        # adjusted_delta_t = "1000us"
+        adjusted_delta_t = 500
         if i % 2 == 1:
             reverse = True
         else:
             reverse = False
 
         direction = ["forward", "backward"][reverse]
-        output_csv = convert_raw_to_csv(
+        print("start_ts: ", start_time + start_relative)
+        print("interval: ", interval)
+        output_csv, _ = convert_raw_to_csv(
             input_path=args.raw_path,
             output_dir=args.output_dir,
-            start_ts=f"{start_time + start_relative}us",
-            max_duration=f"{interval}us",
+            # start_ts=f"{start_time + start_relative}us",
+            # max_duration=f"{interval}us",
+            start_ts=start_time + start_relative,
+            max_duration=interval,
             delta_t=adjusted_delta_t,
             start_datetime=args.start_datetime,
             description=f"segment_{i+1}_{direction}"
@@ -183,7 +190,7 @@ def main():
     if args.output_dir is None:
         args.output_dir = os.path.dirname(args.raw_path)
 
-    csv_path = convert_raw_to_csv(
+    csv_path, time_diff = convert_raw_to_csv(
         input_path=args.raw_path,
         output_dir=args.output_dir,
         start_ts=args.start_ts,
@@ -211,12 +218,17 @@ def main():
 
     visualize_tensor(pt_path_10ms, args.output_dir)
 
+    # period = 1250
     prelude_time = prelude * args.accumulation_time
     aftermath_time = aftermath * args.accumulation_time
     total_duration = period * args.accumulation_time * 3
     intervals = period * args.accumulation_time / 2
 
-    small_csv_paths = split_raw_to_csv(args, prelude_time * 1000, total_duration * 1000, intervals * 1000)
+    print("prelude_time: ", prelude_time)
+    print("total_duration: ", total_duration)
+    print("intervals: ", intervals)
+
+    small_csv_paths = split_raw_to_csv(args, prelude_time * 1000, total_duration * 1000, intervals * 1000, time_diff=time_diff)
 
     reverse = False
     pt_paths_1ms = []
@@ -246,6 +258,8 @@ def main():
     mean_tensor_output_path = os.path.join(args.output_dir, "mean_tensor.pt")
     mean_tensors(pt_paths_1ms, mean_tensor_output_path, start=mean_start, end=mean_end)
     visualize_tensor(mean_tensor_output_path, args.output_dir)
+
+    # raise 
 
     if args.auto_shift:
         min_shift = args.min_shift if args.min_shift is not None else (600 if not args.reverse else -900)

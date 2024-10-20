@@ -34,7 +34,7 @@ def calculate_autocorrelation(tensor):
     return autocorrelation
 
 def calculate_reverse_original_correlation(tensor):
-    reverse_tensor = torch.flip(tensor, [0])  # Reverse along the time dimension
+    reverse_tensor = torch.flip(tensor, [0, 2])  # Reverse along the time dimension
     time_dim = tensor.shape[0]
     reverse_original_correlation = []
 
@@ -49,7 +49,7 @@ def calculate_reverse_original_correlation(tensor):
     return reverse_original_correlation
 
 def calculate_original_reverse_correlation(tensor):
-    reverse_tensor = torch.flip(tensor, [0])  # Reverse along the time dimension
+    reverse_tensor = torch.flip(tensor, [0, 2])  # Reverse along the time dimension
     time_dim = tensor.shape[0]
     original_reverse_correlation = []
 
@@ -216,7 +216,7 @@ def find_largest_smallest_peaks_and_dips(correlation, peaks, dips, N=5):
 def find_peaks_and_dips(correlation, period):
     peaks = []
     dips = []
-    half_period = period // 3
+    half_period = period // 2
     quarter_period = period // 4
     num_segments = len(correlation) // half_period
 
@@ -257,7 +257,8 @@ def find_peaks_and_dips(correlation, period):
 def plot_correlations(lags, autocorrelation, reverse_original_correlation, original_reverse_correlation, peaks_auto, peaks_reverse_original, dips_reverse_original, peaks_original_reverse, dips_original_reverse, output_path):
     plt.figure(figsize=(10, 6))
     plt.xlim(-len(autocorrelation)//2-100, len(autocorrelation)//2+100)
-    plt.ylim(-0.0025, 0.01)
+    # plt.ylim(-0.0025, 0.01)
+    plt.ylim(-0.00025, 0.001)
     plt.plot(lags, autocorrelation, label='Autocorrelation', alpha=0.5)
     plt.plot(lags, reverse_original_correlation, label='Reverse Original Correlation', alpha=0.5)
     plt.plot(lags, original_reverse_correlation, label='Original Reverse Correlation', alpha=0.5)
@@ -393,6 +394,7 @@ def generate_video(tensor1, tensor2, correlation, correlation_label, output_dir,
         axs[1].legend()
         axs[1].grid(True)
         axs[1].set_xlim(-len(correlation), len(correlation)//2)
+        # axs[1].set_ylim(0.001)
 
 
         frame_filename = os.path.join(video_folder, f'frame_{lag + time_dim:04d}.png')
@@ -482,6 +484,39 @@ def generate_video(tensor1, tensor2, correlation, correlation_label, output_dir,
 
 #     return prelude, aftermath, period
 
+def find_best_prelude_and_aftermath(tensor, period, n_round):
+    len_tensor = tensor.shape[0]
+    # n_round = len_tensor // period
+    main_length = period * n_round
+
+    print("len_tensor: ", len_tensor)
+    print("main_length: ", main_length)
+
+    max_objective = None
+    best_prelude = None
+
+    for prelude in range(len_tensor - main_length + 1):
+        main_segment = tensor[prelude : prelude + main_length]
+        prelude_segment = tensor[:prelude]
+        aftermath_segment = tensor[prelude + main_length:]
+
+        total_abs_main = torch.sum(torch.abs(main_segment))
+        total_abs_prelude = torch.sum(torch.abs(prelude_segment))
+        total_abs_aftermath = torch.sum(torch.abs(aftermath_segment))
+
+        # Define objective function: total_abs_main - (total_abs_prelude + total_abs_aftermath)
+        objective = total_abs_main - (total_abs_prelude + total_abs_aftermath)
+
+        if max_objective is None or objective > max_objective:
+            max_objective = objective
+            best_prelude = prelude
+
+    prelude = best_prelude
+    aftermath = len_tensor - (prelude + main_length)
+
+    return prelude, aftermath
+
+
 
 def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
     output_dir = output_dir or os.path.dirname(tensor_path)
@@ -532,11 +567,30 @@ def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
         output_path
     )
 
-    first_peak_auto = peaks_auto[0]
-    first_dip_reverse = dips_reverse_original[0]
+    # first_peak_auto = peaks_auto[0]
+    # first_dip_reverse = dips_reverse_original[0]
+
+    n_round = (len(peaks_auto) + 1)//2
+
+    len_tensor = tensor.shape[0]
+    # max_peak_auto = peaks_auto[n_round - 1]
+    # max_peak_reverse = peaks_reverse_original[n_round - 1]
+
     
-    prelude, aftermath = calculate_periphery(first_peak_auto, first_dip_reverse, period)
-    print(f"period: {period},  prelude: {prelude}\naftermath: {aftermath}")
+
+    # prelude_plus_aftermath = len_tensor - n_round * period
+    # prelude_minus_aftermath = max_peak_reverse - max_peak_auto
+
+    # prelude = (prelude_plus_aftermath + prelude_minus_aftermath)/2 #+ period//3
+    # aftermath = (prelude_plus_aftermath - prelude_minus_aftermath)/2 #- period//3
+
+    period = 1200
+
+    prelude, aftermath = find_best_prelude_and_aftermath(tensor, period, n_round)
+
+    
+    # prelude, aftermath = calculate_periphery(first_peak_auto, first_dip_reverse, period)
+    print(f"period: {period}\nprelude: {prelude}\naftermath: {aftermath}")
 
     save_periods_info(
         peaks_auto, 
@@ -558,4 +612,4 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    determine_prephery(tensor_path, sample_rate, output_dir=args.output_dir, device=device)
+    determine_periphery(args.tensor_path, args.sample_rate, output_dir=args.output_dir, device=device)

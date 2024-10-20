@@ -136,9 +136,11 @@ def apply_cumulative_sum(tensor):
 def process_tensor(tensor_path, max_shift, reverse, sample_rate, output_dir, hist_steps, n_acc, kernel_size):
     tensor = torch.load(tensor_path)
     width = tensor.shape[2]
+    print("tensor: ", tensor.shape)
     tensor_shifter = TensorShifter(max_shift, width // sample_rate, reverse, crop=True)
     tensor = tensor[:, ::sample_rate, ::sample_rate]
     shifted_tensor = tensor_shifter.apply_shift(tensor)
+    print("shifted_tensor: ", shifted_tensor.shape)
 
     if n_acc > 1:
         shifted_tensor = accumulate_frames(shifted_tensor, n_acc)

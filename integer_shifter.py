@@ -26,9 +26,11 @@ class TensorShifter:
                 shifted_tensor[:-shift, :, col] = tensor[shift:, :, col]  # Shift forward in time
             elif shift < 0:
                 shifted_tensor[-shift:, :, col] = tensor[:shift, :, col]  # Shift backward in time
+            else:
+                shifted_tensor[:, :, col] = tensor[:, :, col]
 
         if self.crop:
-            if self.max_shift < 0:
+            if self.max_shift <= 0:
                 return shifted_tensor[-self.max_shift:]
             else:
                 return shifted_tensor[:-self.max_shift]

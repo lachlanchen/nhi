@@ -87,12 +87,18 @@ class EventDataAccumulator:
     #     print("self.frames.min(): ", self.frames.min())
 
     def load_and_process_data(self):
+        print("csv_path: ", self.csv_path)
         df = pd.read_csv(self.csv_path)
+        print("df:", df)
         timestamps = pd.to_datetime(df['event_timestamp'], format='%H:%M:%S.%f')
+        print("timestamps: ", timestamps)
         df['event_timestamp'] = (timestamps - timestamps.min()).dt.total_seconds() * 1000  # Convert to milliseconds
+        print("event_timestamp: ", df['event_timestamp'])
 
         start_time = df['event_timestamp'].min()
         end_time = df['event_timestamp'].max()
+        print("start_time: ", start_time)
+        print("end_time: ", end_time)
         total_intervals = int((end_time - start_time) // self.accumulation_time) + 1
 
         intervals = torch.arange(0, total_intervals, device=device)
