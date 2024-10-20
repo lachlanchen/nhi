@@ -584,7 +584,7 @@ def determine_periphery(tensor_path, sample_rate, output_dir=None, device=None):
     # prelude = (prelude_plus_aftermath + prelude_minus_aftermath)/2 #+ period//3
     # aftermath = (prelude_plus_aftermath - prelude_minus_aftermath)/2 #- period//3
 
-    period = 1200
+    # period = 1200
 
     prelude, aftermath = find_best_prelude_and_aftermath(tensor, period, n_round)
 
