@@ -3,31 +3,31 @@ import argparse
 import os
 
 class TensorShifter:
-    def __init__(self, max_shift, width, reverse=False, crop=False):
-        self.max_shift = max_shift  # Maximum time shift for the first or last column
-        self.width = width  # Width of the tensor to calculate shift per column
-        self.reverse = reverse  # Determine if the shift starts from the last column
+    def __init__(self, max_shift, height, reverse=False, crop=False):
+        self.max_shift = max_shift  # Maximum time shift for the first or last row
+        self.height = height  # Height of the tensor to calculate shift per row
+        self.reverse = reverse  # Determine if the shift starts from the last row
         self.crop = crop
 
     def apply_shift(self, tensor):
         # Initialize a tensor of the same shape filled with zeros
         shifted_tensor = torch.zeros_like(tensor)
 
-        # Calculate and apply the time shift for each column
-        for col in range(self.width):
-            # Determine the shift amount based on column index
+        # Calculate and apply the time shift for each row
+        for row in range(self.height):
+            # Determine the shift amount based on row index
             if not self.reverse:
-                shift = int(self.max_shift * (self.width - col - 1) / self.width)  # Maximum shift at the first column
+                shift = int(self.max_shift * (self.height - row - 1) / self.height)  # Maximum shift at the top row
             else:
-                shift = int(self.max_shift * col / self.width)  # Maximum shift at the last column
+                shift = int(self.max_shift * row / self.height)  # Maximum shift at the bottom row
 
-            # Apply the time shift to the entire column
+            # Apply the time shift to the entire row
             if shift > 0:
-                shifted_tensor[shift:, :, col] = tensor[:-shift, :, col]  # Shift forward in time
+                shifted_tensor[shift:, row, :] = tensor[:-shift, row, :]  # Shift forward in time 
             elif shift < 0:
-                shifted_tensor[:shift, :, col] = tensor[-shift:, :, col]  # Shift backward in time
+                shifted_tensor[:shift, row, :] = tensor[-shift:, row, :]  # Shift backward in time 
             else:
-                shifted_tensor[:, :, col] = tensor[:, :, col]
+                shifted_tensor[:, row, :] = tensor[:, row, :]
 
         if self.crop:
             if self.max_shift <= 0:
@@ -45,11 +45,11 @@ def main(tensor_path, max_shift, reverse, sample_rate):
     # Downsample the tensor
     tensor = tensor[:, ::sample_rate, ::sample_rate]
 
-    # Get the width of the tensor from the last dimension
-    width = tensor.shape[2]
+    # Get the height of the tensor from the second dimension
+    height = tensor.shape[1]
 
     # Instantiate the TensorShifter
-    tensor_shifter = TensorShifter(max_shift, width, reverse)
+    tensor_shifter = TensorShifter(max_shift, height, reverse)
 
     # Apply the shift
     shifted_tensor = tensor_shifter.apply_shift(tensor)
@@ -64,10 +64,10 @@ def main(tensor_path, max_shift, reverse, sample_rate):
     print(f"Shifted tensor saved to {output_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Shift tensor columns along the time dimension based on their horizontal position, with optional reversing and downsampling.')
+    parser = argparse.ArgumentParser(description='Shift tensor rows along the time dimension based on their vertical position, with optional reversing and downsampling.')
     parser.add_argument('tensor_path', type=str, help='Path to the tensor file to be shifted.')
-    parser.add_argument('max_shift', type=int, help='Maximum shift value for the column at the edge.')
-    parser.add_argument('--reverse', action='store_true', help='Reverse the shift direction, shifting the first column maximally instead of the last.')
+    parser.add_argument('max_shift', type=int, help='Maximum shift value for the row at the edge.')
+    parser.add_argument('--reverse', action='store_true', help='Reverse the shift direction, shifting the first row maximally instead of the last.')
     parser.add_argument('--sample_rate', type=int, default=10, help='Factor by which to downsample the tensor dimensions.')
 
     args = parser.parse_args()

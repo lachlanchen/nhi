@@ -1,7 +1,3 @@
-import sys
-sys.path.append('/usr/lib/python3/dist-packages')
-
-
 import argparse
 import os
 import torch
@@ -13,7 +9,7 @@ from autocorrelation import calculate_autocorrelation, find_top_peaks, find_peri
 from block_visualizer import BlockVisualizer
 import matplotlib.pyplot as plt
 import subprocess
-from integer_shifter import TensorShifter
+from integer_shifter_height import TensorShifter  # Updated import
 from tqdm import tqdm
 
 def parse_args():
@@ -31,8 +27,8 @@ def parse_args():
     parser.add_argument('--force', action='store_true', help='Force override of existing files.')
     parser.add_argument('--save_frames', action='store_true', help='Save frames as images.')
     parser.add_argument('--alpha_scalar', type=float, default=0.7, help='Alpha scalar to adjust overall transparency.')
-    parser.add_argument('--mean_start', type=int, default=2, help='Start index to mean over scanning pass. ')
-    parser.add_argument('--mean_end', type=int, default=3, help='End index to mean over scanning pass. ')
+    parser.add_argument('--mean_start', type=int, default=2, help='Start index to mean over scanning pass.')
+    parser.add_argument('--mean_end', type=int, default=3, help='End index to mean over scanning pass.')
     parser.add_argument('--auto_shift', action='store_true', help='Automatically determine the optimal shift value.')
     parser.add_argument('--min_shift', type=int, default=None, help='Minimum shift value to test for auto shift.')
     parser.add_argument('--max_shift', type=int, default=None, help='Maximum shift value to test for auto shift.')
@@ -50,8 +46,6 @@ def convert_time_to_microseconds(time_str):
     return int(time_str) * units["s"]
 
 def adjust_delta_t(start_ts, delta_t):
-    # start_ts_us = convert_time_to_microseconds(start_ts)
-    # delta_t_us = convert_time_to_microseconds(delta_t)
     start_ts_us = start_ts
     delta_t_us = delta_t
 
@@ -61,25 +55,18 @@ def adjust_delta_t(start_ts, delta_t):
     return f"{delta_t_us}us"
 
 def split_raw_to_csv(args, start_time, duration, interval, time_diff=0):
-    start_time = start_time + args.start_ts + time_diff # convert_time_to_microseconds(args.start_ts)
+    start_time = start_time + args.start_ts + time_diff
     output_paths = []
     reverse = False
     for i, start_relative in enumerate(range(0, int(duration), int(interval))):
-        # adjusted_delta_t = "1000us"
         adjusted_delta_t = 500
-        if i % 2 == 1:
-            reverse = True
-        else:
-            reverse = False
-
+        reverse = i % 2 == 1
         direction = ["forward", "backward"][reverse]
         print("start_ts: ", start_time + start_relative)
         print("interval: ", interval)
         output_csv, _ = convert_raw_to_csv(
             input_path=args.raw_path,
             output_dir=args.output_dir,
-            # start_ts=f"{start_time + start_relative}us",
-            # max_duration=f"{interval}us",
             start_ts=start_time + start_relative,
             max_duration=interval,
             delta_t=adjusted_delta_t,
@@ -91,13 +78,10 @@ def split_raw_to_csv(args, start_time, duration, interval, time_diff=0):
 
 def visualize_tensor(tensor_path, output_dir, sample_rate=10, time_stretch=5):
     visualizer = BlockVisualizer(tensor_path, sample_rate=sample_rate)
-
     views = ["default", "vertical", "horizontal", "side", "r-side", "normal", "normal45", "lateral", "reverse"]
-
     base_name = os.path.splitext(os.path.basename(tensor_path))[0]
     save_folder = os.path.join(output_dir, base_name)
     os.makedirs(save_folder, exist_ok=True)
-
     for view in views:
         save_path = os.path.join(save_folder, f"{base_name}_{view}.png")
         if os.path.exists(save_path):
@@ -130,7 +114,6 @@ def mean_tensors(tensor_paths, output_path, start=1, end=5):
         min_size = min(mean_tensor.shape[0], tensor.shape[0])
         mean_tensor[-min_size:] += tensor[-min_size:]
         count += 1
-
     mean_tensor /= count
     torch.save(mean_tensor, output_path)
     print(f"Saved mean tensor to {output_path}")
@@ -139,16 +122,14 @@ def mean_tensors(tensor_paths, output_path, start=1, end=5):
 def calculate_std_for_shifts(tensor, min_shift, max_shift, reverse, sample_rate):
     std_values = []
     shift_values = list(range(min_shift, max_shift + 1))
-    width = tensor.shape[2]
-    tensor_shifter = TensorShifter(0, width // sample_rate, reverse)
-
-    for shift in tqdm(shift_values):
+    height = tensor.shape[1]
+    tensor_shifter = TensorShifter(0, height // sample_rate, reverse)
+    for shift in tqdm(shift_values, desc="Calculating standard deviations for shifts"):
         tensor_shifter.max_shift = shift
         sampled_tensor = tensor[:, ::sample_rate, ::sample_rate]
         shifted_tensor = tensor_shifter.apply_shift(sampled_tensor)
         std_val = torch.sum(torch.std(shifted_tensor, dim=[1, 2])).item()
         std_values.append(std_val)
-
     return shift_values, std_values
 
 def optimal_shift(shift_values, std_values):
@@ -167,7 +148,7 @@ def plot_std_vs_shift(shift_values, std_values, output_path):
     plt.axvline(x=min_shift, color='red', linestyle='--')
     plt.xlabel('Shift Value')
     plt.ylabel('Sum of Standard Deviations of Shifted Frames')
-    plt.title('Sum of Standard Deviations vs. Shift Value')
+    plt.title('Sum of Standard Deviations vs. Shift Value (Height Shift)')
     plt.grid(True)
     plt.savefig(output_path)
     plt.close()
@@ -179,7 +160,7 @@ def determine_optimal_shift(tensor_path, min_shift, max_shift, reverse, sample_r
     shift_values, std_values = calculate_std_for_shifts(tensor, min_shift, max_shift, reverse, sample_rate)
     dir_name = os.path.dirname(tensor_path)
     reverse_str = 'reversed' if reverse else 'normal'
-    figure_filename = f"std_plot_{min_shift}_to_{max_shift}_{reverse_str}_sample{sample_rate}.png"
+    figure_filename = f"std_plot_height_{min_shift}_to_{max_shift}_{reverse_str}_sample{sample_rate}.png"
     output_path = os.path.join(dir_name, figure_filename)
     plot_std_vs_shift(shift_values, std_values, output_path)
     min_shift, _ = optimal_shift(shift_values, std_values)
@@ -222,7 +203,6 @@ def main():
 
     visualize_tensor(pt_path_10ms, args.output_dir)
 
-    # period = 1250
     prelude_time = prelude * args.accumulation_time
     aftermath_time = aftermath * args.accumulation_time
     total_duration = period * args.accumulation_time * 3
@@ -237,11 +217,7 @@ def main():
     reverse = False
     pt_paths_1ms = []
     for i, csv_path in enumerate(small_csv_paths):
-        if i % 2 == 1:
-            reverse = True
-        else:
-            reverse = False
-        
+        reverse = i % 2 == 1
         data_processor = EventDataAccumulator(
             csv_path,
             args.output_dir,
@@ -256,18 +232,15 @@ def main():
         )
         pt_path_1ms = data_processor.cache_path
         pt_paths_1ms.append(pt_path_1ms)
-
         visualize_tensor(pt_path_1ms, args.output_dir)
 
     mean_tensor_output_path = os.path.join(args.output_dir, "mean_tensor.pt")
     mean_tensors(pt_paths_1ms, mean_tensor_output_path, start=mean_start, end=mean_end)
     visualize_tensor(mean_tensor_output_path, args.output_dir)
 
-    # raise 
-
     if args.auto_shift:
-        min_shift = args.min_shift if args.min_shift is not None else (600 if not args.reverse else -900)
-        max_shift = args.max_shift if args.max_shift is not None else (900 if not args.reverse else -600)
+        min_shift = args.min_shift if args.min_shift is not None else (50 if not args.reverse else -150)
+        max_shift = args.max_shift if args.max_shift is not None else (150 if not args.reverse else -50)
         shift = determine_optimal_shift(mean_tensor_output_path, min_shift, max_shift, args.reverse, args.sample_rate)
     else:
         shift = args.shift
@@ -275,18 +248,14 @@ def main():
     print(f"Determined optimal shift: {shift}")
 
     cmd = [
-        'python', 'remove_background.py', mean_tensor_output_path,
+        'python', 'remove_background_height.py', mean_tensor_output_path,
         '--shift', str(shift),
         '--n_acc', str(args.n_acc),
-        # '--sample_rate', str(args.sample_rate)
         '--sample_rate', "1"
     ]
 
     if args.reverse:
         cmd.append('--reverse')
-
-    # if args.output_dir:
-    #     cmd.extend(['--output_dir', args.output_dir])
 
     if args.force:
         cmd.append('--force')

@@ -1,0 +1,1076 @@
+#!/usr/bin/env python3
+"""
+Robust autocorrelation analysis to find scanning period using proven method
+Enhanced with event segmentation into forward/backward scans and mean tensor creation
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+import argparse
+import os
+from simple_raw_reader import read_raw_simple
+
+
+def events_to_activity_signal(t, time_bin_us=1000):
+    """
+    Convert event timestamps to 1D activity signal
+    """
+    print(f"Converting events to 1D activity signal with {time_bin_us}μs bins...")
+    
+    # Get time range
+    t_min, t_max = t.min(), t.max()
+    total_duration = t_max - t_min
+    n_bins = int(total_duration / time_bin_us) + 1
+    
+    print(f"Time range: {t_min} - {t_max} μs ({total_duration/1e6:.2f} seconds)")
+    print(f"Creating {n_bins} time bins")
+    
+    # Create 1D activity signal (event counts per bin)
+    activity = np.zeros(n_bins)
+    
+    # Bin events
+    bin_indices = ((t - t_min) / time_bin_us).astype(int)
+    bin_indices = np.clip(bin_indices, 0, n_bins - 1)
+    
+    # Count events in each bin
+    np.add.at(activity, bin_indices, 1)
+    
+    print(f"Activity signal shape: {activity.shape}")
+    print(f"Non-zero bins: {np.count_nonzero(activity)}")
+    print(f"Max events per bin: {activity.max()}")
+    print(f"Mean events per bin: {activity.mean():.1f}")
+    
+    return activity, t_min, time_bin_us
+
+
+def calculate_autocorrelation(signal):
+    """
+    Calculate autocorrelation using numpy correlate
+    """
+    print("Calculating autocorrelation...")
+    
+    # Normalize signal
+    signal = signal - np.mean(signal)
+    if np.std(signal) > 0:
+        signal = signal / np.std(signal)
+    
+    # Calculate full autocorrelation
+    autocorr = np.correlate(signal, signal, mode='full')
+    
+    # Normalize by zero-lag value
+    zero_lag_idx = len(autocorr) // 2
+    if autocorr[zero_lag_idx] > 0:
+        autocorr = autocorr / autocorr[zero_lag_idx]
+    
+    return autocorr
+
+
+def calculate_reverse_correlation(signal):
+    """
+    Calculate correlation between original and reversed signal
+    """
+    print("Calculating reverse correlation...")
+    
+    # Normalize signal
+    signal = signal - np.mean(signal)
+    if np.std(signal) > 0:
+        signal = signal / np.std(signal)
+    
+    # Reverse the signal
+    reversed_signal = signal[::-1]
+    
+    # Calculate cross-correlation
+    reverse_corr = np.correlate(signal, reversed_signal, mode='full')
+    
+    # Normalize by maximum absolute value
+    max_abs = np.max(np.abs(reverse_corr))
+    if max_abs > 0:
+        reverse_corr = reverse_corr / max_abs
+    
+    return reverse_corr
+
+
+def find_top_peaks_with_period(correlation, period, num_peaks=5):
+    """
+    Find peaks in segments based on known period
+    """
+    peaks = []
+    if period > 0:
+        half_period = period // 2
+        
+        for i in range(0, len(correlation), half_period):
+            segment_start = i
+            segment_end = min(i + half_period, len(correlation))
+            segment = correlation[segment_start:segment_end]
+            if len(segment) == 0:
+                continue
+            peak_index = segment_start + np.argmax(segment)
+            peaks.append(peak_index)
+
+    # Keep only top peaks by value
+    if len(peaks) > num_peaks:
+        peak_values = correlation[peaks]
+        top_indices = np.argpartition(peak_values, -num_peaks)[-num_peaks:]
+        peaks = [peaks[i] for i in top_indices]
+    
+    peaks = sorted(peaks)
+    return peaks
+
+
+def find_period(peaks):
+    """
+    Calculate period from peak differences
+    """
+    if len(peaks) < 2:
+        return 0
+    differences = np.diff(peaks)
+    return int(np.mean(differences))
+
+
+def find_top_peaks(correlation, initial_period=500, num_peaks=5, max_iterations=10):
+    """
+    Iteratively find peaks until period converges
+    """
+    print("Finding peaks with iterative period refinement...")
+    
+    period = initial_period
+    previous_period = -1
+    iteration = 0
+    
+    while period != previous_period and iteration < max_iterations:
+        previous_period = period
+        peaks = find_top_peaks_with_period(correlation, period, num_peaks)
+        if len(peaks) >= 2:
+            period = find_period(peaks)
+            print(f"Iteration {iteration}: period = {period}")
+        else:
+            print(f"Iteration {iteration}: Not enough peaks found")
+            break
+        iteration += 1
+    
+    print(f"Converged to period: {period}")
+    return peaks, period
+
+
+def find_three_largest_autocorr_peaks(autocorr):
+    """
+    Find the three largest autocorrelation peaks with symmetric validation:
+    SIMPLE AND ROBUST: Find highest peaks on left/right with constraints
+    """
+    print("Finding three largest autocorrelation peaks...")
+    
+    center_idx = len(autocorr) // 2
+    center_peak = center_idx
+    
+    # Define minimum distance from center - shouldn't be too small
+    min_distance = max(200, len(autocorr) // 20)  # At least 200 bins or 5% of signal
+    print(f"Minimum distance from center: {min_distance} bins")
+    
+    # Split into left and right halves (excluding center region)
+    left_half = autocorr[:center_idx - min_distance]
+    right_half = autocorr[center_idx + min_distance:]
+    
+    print(f"Left half: {len(left_half)} bins")
+    print(f"Right half: {len(right_half)} bins")
+    
+    # Find highest peak on left side
+    if len(left_half) > 0:
+        left_peak_local_idx = np.argmax(left_half)
+        left_peak_idx = left_peak_local_idx
+        left_distance = center_idx - left_peak_idx
+        left_value = autocorr[left_peak_idx]
+        print(f"Left peak at lag: -{left_distance}, value: {left_value:.4f}")
+    else:
+        print("No left peak found!")
+        return [], 0, center_idx
+    
+    # Find highest peak on right side
+    if len(right_half) > 0:
+        right_peak_local_idx = np.argmax(right_half)
+        right_peak_idx = center_idx + min_distance + right_peak_local_idx
+        right_distance = right_peak_idx - center_idx
+        right_value = autocorr[right_peak_idx]
+        print(f"Right peak at lag: +{right_distance}, value: {right_value:.4f}")
+    else:
+        print("No right peak found!")
+        return [], 0, center_idx
+    
+    # Calculate round-trip period = max(left_distance, right_distance) as user suggested
+    round_trip_period = max(left_distance, right_distance)
+    one_way_period = round_trip_period // 2
+    
+    print(f"\nFinal peaks found:")
+    print(f"Left peak at lag: -{left_distance}")
+    print(f"Right peak at lag: +{right_distance}")
+    print(f"Peak values: ({left_value:.4f}, {right_value:.4f})")
+    print(f"Round-trip period: {round_trip_period} bins (max of distances)")
+    print(f"One-way period: {one_way_period} bins")
+    
+    # Cross-validation
+    if left_distance > 0 and right_distance > 0:
+        distance_ratio = min(left_distance, right_distance) / max(left_distance, right_distance)
+        value_ratio = min(left_value, right_value) / max(left_value, right_value)
+        
+        print(f"Distance symmetry ratio: {distance_ratio:.3f}")
+        print(f"Value symmetry ratio: {value_ratio:.3f}")
+        
+        if distance_ratio < 0.7:
+            print("Warning: Poor distance symmetry")
+        if value_ratio < 0.3:
+            print("Warning: Large value difference")
+    
+    peaks = [left_peak_idx, center_peak, right_peak_idx]
+    
+    return peaks, round_trip_period, center_idx
+
+
+def find_largest_reverse_correlation_peak(reverse_corr):
+    """
+    Find the lag of the largest peak in reverse correlation
+    """
+    print("Finding largest peak in reverse correlation...")
+    
+    # Find all peaks
+    peaks, _ = find_top_peaks(reverse_corr, initial_period=len(reverse_corr)//10)
+    
+    if not peaks:
+        print("No peaks found in reverse correlation")
+        return 0, 0
+    
+    # Get the largest peak by value
+    peak_values = [(idx, reverse_corr[idx]) for idx in peaks]
+    peak_values.sort(key=lambda x: x[1], reverse=True)
+    
+    largest_peak_idx = peak_values[0][0]
+    largest_peak_value = peak_values[0][1]
+    
+    # Convert to lag (relative to center)
+    center_idx = len(reverse_corr) // 2
+    lag = largest_peak_idx - center_idx
+    
+    print(f"Largest reverse correlation peak at lag: {lag}")
+    print(f"Peak value: {largest_peak_value:.4f}")
+    
+    return lag, largest_peak_value
+
+
+def calculate_prelude_aftermath(full_length, round_trip_period, reverse_peak_lag):
+    """
+    Calculate prelude and aftermath using the equations:
+    prelude - aftermath = reverse_peak_lag
+    prelude + aftermath + 3*round_trip_period = full_length
+    
+    Solving:
+    prelude = (full_length - 3*round_trip_period + reverse_peak_lag) / 2
+    aftermath = (full_length - 3*round_trip_period - reverse_peak_lag) / 2
+    """
+    print("Calculating prelude and aftermath...")
+    
+    # Expected main scanning length (3 round trips = 6 one-way scans)
+    main_scanning_length = 3 * round_trip_period
+    
+    # Solve the system of equations
+    prelude = (full_length - main_scanning_length + reverse_peak_lag) / 2
+    aftermath = (full_length - main_scanning_length - reverse_peak_lag) / 2
+    
+    # Ensure non-negative values
+    prelude = max(0, int(prelude))
+    aftermath = max(0, int(aftermath))
+    
+    # Adjust if needed to maintain total length
+    adjusted_main = full_length - prelude - aftermath
+    
+    print(f"Full length: {full_length} bins")
+    print(f"Expected main scanning: {main_scanning_length} bins")
+    print(f"Reverse peak lag: {reverse_peak_lag}")
+    print(f"Calculated prelude: {prelude} bins")
+    print(f"Calculated aftermath: {aftermath} bins")
+    print(f"Adjusted main scanning: {adjusted_main} bins")
+    
+    return prelude, aftermath, adjusted_main
+
+
+def analyze_scanning_pattern(activity):
+    """
+    Complete scanning analysis using proven method with robust peak finding
+    """
+    print("\n" + "="*60)
+    print("SCANNING PATTERN ANALYSIS")
+    print("="*60)
+    
+    # Calculate autocorrelation
+    autocorr = calculate_autocorrelation(activity)
+    
+    # Find three largest peaks in autocorrelation to get round-trip period
+    autocorr_peaks, round_trip_period, center_idx = find_three_largest_autocorr_peaks(autocorr)
+    
+    if round_trip_period <= 0:
+        print("Could not determine round-trip period!")
+        return None
+    
+    # Calculate reverse correlation  
+    reverse_corr = calculate_reverse_correlation(activity)
+    
+    # Find largest peak in reverse correlation
+    reverse_peak_lag, reverse_peak_value = find_largest_reverse_correlation_peak(reverse_corr)
+    
+    # Calculate prelude and aftermath
+    full_length = len(activity)
+    prelude, aftermath, main_length = calculate_prelude_aftermath(
+        full_length, round_trip_period, reverse_peak_lag
+    )
+    
+    # One-way period is half of round-trip
+    one_way_period = round_trip_period // 2
+    n_cycles = 6  # 6 one-way scans = 3 round trips
+    
+    # Calculate segment boundaries
+    scan_start = prelude
+    scan_end = prelude + main_length
+    
+    print(f"\nFinal Results:")
+    print(f"Round-trip period: {round_trip_period} bins")
+    print(f"One-way period: {one_way_period} bins")
+    print(f"Reverse peak lag: {reverse_peak_lag} bins")
+    print(f"Prelude: {prelude} bins")
+    print(f"Main scanning: {main_length} bins")
+    print(f"Aftermath: {aftermath} bins")
+    print(f"Expected cycles: {n_cycles}")
+    print(f"Scan boundaries: {scan_start} to {scan_end}")
+    
+    return {
+        'autocorr': autocorr,
+        'reverse_corr': reverse_corr,
+        'autocorr_peaks': autocorr_peaks,
+        'center_idx': center_idx,
+        'round_trip_period': round_trip_period,
+        'one_way_period': one_way_period,
+        'reverse_peak_lag': reverse_peak_lag,
+        'reverse_peak_value': reverse_peak_value,
+        'prelude': prelude,
+        'aftermath': aftermath,
+        'main_length': main_length,
+        'scan_start': scan_start,
+        'scan_end': scan_end,
+        'n_cycles': n_cycles,
+        'full_length': full_length
+    }
+
+
+def segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min):
+    """
+    Segment events into 6 scanning periods (forward/backward)
+    """
+    print("\n" + "="*60)
+    print("SEGMENTING EVENTS INTO FORWARD/BACKWARD SCANS")
+    print("="*60)
+    
+    if results is None:
+        print("No scanning results available for segmentation!")
+        return None
+    
+    # Calculate absolute time boundaries for each scan
+    scan_segments = []
+    scan_labels = []
+    
+    # Convert bin indices to absolute timestamps
+    scan_start_time = t_min + results['scan_start'] * time_bin_us
+    one_way_period_us = results['one_way_period'] * time_bin_us
+    
+    print(f"Scan start time: {scan_start_time} μs")
+    print(f"One-way period: {one_way_period_us} μs ({one_way_period_us/1000:.1f} ms)")
+    
+    # Define the 6 scan periods
+    for i in range(6):
+        # Calculate time boundaries
+        start_time = scan_start_time + i * one_way_period_us
+        end_time = scan_start_time + (i + 1) * one_way_period_us
+        
+        # Make sure we don't exceed the scanning end boundary
+        scan_end_time = t_min + results['scan_end'] * time_bin_us
+        end_time = min(end_time, scan_end_time)
+        
+        # Determine scan direction (even indices = forward, odd = backward)
+        direction = "Forward" if i % 2 == 0 else "Backward"
+        
+        # Find events in this time window
+        mask = (t >= start_time) & (t < end_time)
+        event_count = np.sum(mask)
+        
+        # Extract events for this scan
+        scan_events = {
+            'x': x[mask],
+            'y': y[mask], 
+            't': t[mask],
+            'p': p[mask],
+            'start_time': start_time,
+            'end_time': end_time,
+            'duration_us': end_time - start_time,
+            'event_count': event_count,
+            'direction': direction,
+            'scan_id': i + 1
+        }
+        
+        scan_segments.append(scan_events)
+        scan_labels.append(f"Scan_{i+1}_{direction}")
+        
+        print(f"Scan {i+1} ({direction}): {start_time} - {end_time} μs, "
+              f"{event_count:,} events, {(end_time-start_time)/1000:.1f} ms")
+    
+    return scan_segments, scan_labels
+
+
+def create_mean_tensor(scan_segments, width=1280, height=720, time_bins=100):
+    """
+    Create mean tensor from segmented scans with backward processing:
+    - For backward scans: reverse time and flip polarity (0->1, 1->0)
+    - Average all segments together
+    """
+    print("\n" + "="*60)
+    print("CREATING MEAN TENSOR FROM SEGMENTS")
+    print("="*60)
+    
+    print(f"Creating tensor with dimensions: {width} x {height} x {time_bins}")
+    
+    # Initialize accumulator tensor and count tensor
+    tensor_sum = np.zeros((width, height, time_bins), dtype=np.float64)
+    tensor_count = np.zeros((width, height, time_bins), dtype=np.int32)
+    
+    valid_segments = 0
+    
+    for i, segment in enumerate(scan_segments):
+        if segment['event_count'] == 0:
+            print(f"Skipping empty segment {i+1}")
+            continue
+            
+        print(f"Processing segment {i+1} ({segment['direction']})...")
+        
+        # Extract events
+        x_seg = segment['x'].copy()
+        y_seg = segment['y'].copy()
+        t_seg = segment['t'].copy()
+        p_seg = segment['p'].copy()
+        
+        # Process backward scans
+        if segment['direction'] == 'Backward':
+            print(f"  Applying backward processing...")
+            
+            # Reverse time order (sort by decreasing time, then reverse to get increasing)
+            time_order = np.argsort(t_seg)[::-1]  # Reverse time order
+            x_seg = x_seg[time_order]
+            y_seg = y_seg[time_order]
+            t_seg = t_seg[time_order]
+            p_seg = p_seg[time_order]
+            
+            # Flip polarity: 0->1, 1->0
+            p_seg = 1 - p_seg
+            
+        # Normalize time to [0, 1] within segment
+        if len(t_seg) > 1:
+            t_min_seg = t_seg.min()
+            t_max_seg = t_seg.max()
+            t_normalized = (t_seg - t_min_seg) / (t_max_seg - t_min_seg)
+        else:
+            t_normalized = np.array([0.5])  # Single event goes to middle
+        
+        # Convert to time bins
+        time_indices = (t_normalized * (time_bins - 1)).astype(int)
+        time_indices = np.clip(time_indices, 0, time_bins - 1)
+        
+        # Clip spatial coordinates
+        x_indices = np.clip(x_seg.astype(int), 0, width - 1)
+        y_indices = np.clip(y_seg.astype(int), 0, height - 1)
+        
+        # Create polarity weights (-1 for negative events, +1 for positive events)
+        weights = np.where(p_seg == 1, 1.0, -1.0)
+        
+        # Add to tensor
+        for j in range(len(x_seg)):
+            x_idx = x_indices[j]
+            y_idx = y_indices[j]
+            t_idx = time_indices[j]
+            weight = weights[j]
+            
+            tensor_sum[x_idx, y_idx, t_idx] += weight
+            tensor_count[x_idx, y_idx, t_idx] += 1
+        
+        valid_segments += 1
+        print(f"  Added {len(x_seg)} events to tensor")
+    
+    # Calculate mean tensor
+    print(f"Averaging over {valid_segments} segments...")
+    
+    # Avoid division by zero
+    nonzero_mask = tensor_count > 0
+    mean_tensor = np.zeros_like(tensor_sum)
+    mean_tensor[nonzero_mask] = tensor_sum[nonzero_mask] / valid_segments
+    
+    # Statistics
+    total_nonzero = np.count_nonzero(mean_tensor)
+    total_elements = mean_tensor.size
+    sparsity = total_nonzero / total_elements * 100
+    
+    print(f"Mean tensor statistics:")
+    print(f"  Shape: {mean_tensor.shape}")
+    print(f"  Non-zero elements: {total_nonzero:,} / {total_elements:,} ({sparsity:.2f}%)")
+    print(f"  Value range: [{mean_tensor.min():.3f}, {mean_tensor.max():.3f}]")
+    print(f"  Mean value: {mean_tensor.mean():.6f}")
+    print(f"  Std value: {mean_tensor.std():.6f}")
+    
+    return mean_tensor, tensor_count
+
+
+def save_mean_tensor(mean_tensor, tensor_count, output_dir, base_name):
+    """
+    Save the mean tensor in the same format as individual segments (x, y, t, p arrays)
+    """
+    print("\nSaving mean tensor...")
+    
+    # Convert tensor back to event format
+    print("Converting tensor back to event format...")
+    
+    # Find all non-zero entries
+    nonzero_indices = np.nonzero(mean_tensor)
+    x_coords = nonzero_indices[0].astype(np.float32)
+    y_coords = nonzero_indices[1].astype(np.float32) 
+    t_coords = nonzero_indices[2].astype(np.float32)
+    values = mean_tensor[nonzero_indices].astype(np.float32)
+    
+    # Convert values to polarities
+    # Positive values -> polarity 1, negative values -> polarity 0
+    p_coords = (values > 0).astype(np.float32)
+    
+    # Normalize time coordinates to [0, 1]
+    if len(t_coords) > 0:
+        t_min, t_max = t_coords.min(), t_coords.max()
+        if t_max > t_min:
+            t_normalized = (t_coords - t_min) / (t_max - t_min)
+        else:
+            t_normalized = np.zeros_like(t_coords)
+    else:
+        t_normalized = np.array([], dtype=np.float32)
+    
+    # Create synthetic timestamps (in microseconds, like the original segments)
+    # Scale to reasonable time range
+    duration_us = 1000000  # 1 second duration
+    t_synthetic = t_normalized * duration_us
+    
+    print(f"Converted to {len(x_coords)} events")
+    print(f"X range: [{x_coords.min():.1f}, {x_coords.max():.1f}]")
+    print(f"Y range: [{y_coords.min():.1f}, {y_coords.max():.1f}]")
+    print(f"T range: [{t_synthetic.min():.1f}, {t_synthetic.max():.1f}] μs")
+    print(f"Positive events: {np.sum(p_coords):.0f}")
+    print(f"Negative events: {np.sum(1-p_coords):.0f}")
+    
+    # Save in same format as segments
+    tensor_path = os.path.join(output_dir, f"{base_name}_mean_tensor.npz")
+    np.savez_compressed(tensor_path,
+                       x=x_coords,
+                       y=y_coords,
+                       t=t_synthetic,
+                       p=p_coords,
+                       start_time=0.0,
+                       end_time=duration_us,
+                       duration_us=duration_us,
+                       event_count=len(x_coords),
+                       direction='Mean',
+                       scan_id=0,
+                       # Also save the original tensor for reference
+                       mean_tensor_3d=mean_tensor,
+                       count_tensor=tensor_count)
+    
+    print(f"Mean tensor saved to: {tensor_path}")
+    
+    # Save summary
+    summary_path = os.path.join(output_dir, f"{base_name}_mean_tensor_summary.txt")
+    with open(summary_path, 'w') as f:
+        f.write("MEAN TENSOR SUMMARY\n")
+        f.write("="*50 + "\n\n")
+        
+        f.write(f"Original tensor shape: {mean_tensor.shape}\n")
+        f.write(f"Converted to events: {len(x_coords):,}\n")
+        f.write(f"Data type: {mean_tensor.dtype}\n")
+        f.write(f"Total tensor elements: {mean_tensor.size:,}\n")
+        f.write(f"Non-zero elements: {np.count_nonzero(mean_tensor):,}\n")
+        f.write(f"Sparsity: {np.count_nonzero(mean_tensor)/mean_tensor.size*100:.2f}%\n\n")
+        
+        f.write(f"Event statistics:\n")
+        f.write(f"  Total events: {len(x_coords):,}\n")
+        f.write(f"  Positive events: {np.sum(p_coords):.0f}\n")
+        f.write(f"  Negative events: {np.sum(1-p_coords):.0f}\n")
+        f.write(f"  X range: [{x_coords.min():.1f}, {x_coords.max():.1f}]\n")
+        f.write(f"  Y range: [{y_coords.min():.1f}, {y_coords.max():.1f}]\n")
+        f.write(f"  T range: [{t_synthetic.min():.1f}, {t_synthetic.max():.1f}] μs\n\n")
+        
+        f.write(f"Tensor value statistics:\n")
+        f.write(f"  Min: {mean_tensor.min():.6f}\n")
+        f.write(f"  Max: {mean_tensor.max():.6f}\n")
+        f.write(f"  Mean: {mean_tensor.mean():.6f}\n")
+        f.write(f"  Std: {mean_tensor.std():.6f}\n\n")
+        
+        f.write("Processing details:\n")
+        f.write("- Forward scans: used as-is\n")
+        f.write("- Backward scans: time-reversed and polarity-flipped\n")
+        f.write("- Tensor polarity encoding: +1 for positive events, -1 for negative events\n")
+        f.write("- Event polarity: positive tensor values -> p=1, negative -> p=0\n")
+        f.write("- Averaged over all valid segments\n")
+        f.write("- Saved in same format as individual segments (x, y, t, p arrays)\n")
+    
+    print(f"Mean tensor summary saved to: {summary_path}")
+    
+    return tensor_path
+
+
+def plot_mean_tensor_slices(mean_tensor, output_dir, base_name, num_slices=10):
+    """
+    Plot time slices of the mean tensor
+    """
+    print("Creating mean tensor visualization...")
+    
+    # Select time slices
+    time_bins = mean_tensor.shape[2]
+    slice_indices = np.linspace(0, time_bins-1, num_slices).astype(int)
+    
+    fig, axes = plt.subplots(2, 5, figsize=(20, 8))
+    axes = axes.flatten()
+    
+    for i, t_idx in enumerate(slice_indices):
+        ax = axes[i]
+        
+        # Get time slice (transpose for correct orientation)
+        time_slice = mean_tensor[:, :, t_idx].T
+        
+        # Plot
+        im = ax.imshow(time_slice, aspect='auto', cmap='RdBu_r', 
+                      vmin=-np.abs(mean_tensor).max(), 
+                      vmax=np.abs(mean_tensor).max())
+        
+        ax.set_title(f'Time slice {t_idx}/{time_bins-1}\n({t_idx/time_bins*100:.0f}%)')
+        ax.set_xlabel('X (pixels)')
+        ax.set_ylabel('Y (pixels)')
+        
+        # Add colorbar to first subplot
+        if i == 0:
+            plt.colorbar(im, ax=ax, label='Mean activity')
+    
+    plt.tight_layout()
+    
+    # Save plot
+    plot_path = os.path.join(output_dir, f"{base_name}_mean_tensor_slices.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Mean tensor slices plot saved to: {plot_path}")
+
+
+def save_segmented_events(scan_segments, scan_labels, output_dir, base_name):
+    """
+    Save segmented events to individual files
+    """
+    print("\n" + "="*60)
+    print("SAVING SEGMENTED EVENTS")
+    print("="*60)
+    
+    # Create subdirectory for segmented files
+    segments_dir = os.path.join(output_dir, f"{base_name}_segments")
+    os.makedirs(segments_dir, exist_ok=True)
+    
+    segment_files = []
+    
+    for i, (segment, label) in enumerate(zip(scan_segments, scan_labels)):
+        # Save as numpy arrays
+        filename = f"{label}_events.npz"
+        filepath = os.path.join(segments_dir, filename)
+        
+        np.savez_compressed(filepath,
+                          x=segment['x'],
+                          y=segment['y'],
+                          t=segment['t'],
+                          p=segment['p'],
+                          start_time=segment['start_time'],
+                          end_time=segment['end_time'],
+                          duration_us=segment['duration_us'],
+                          event_count=segment['event_count'],
+                          direction=segment['direction'],
+                          scan_id=segment['scan_id'])
+        
+        segment_files.append(filepath)
+        print(f"Saved {label}: {segment['event_count']:,} events to {filename}")
+    
+    # Save summary
+    summary_path = os.path.join(segments_dir, "segmentation_summary.txt")
+    with open(summary_path, 'w') as f:
+        f.write("EVENT SEGMENTATION SUMMARY\n")
+        f.write("="*50 + "\n\n")
+        
+        total_events = sum(seg['event_count'] for seg in scan_segments)
+        f.write(f"Total segmented events: {total_events:,}\n")
+        f.write(f"Number of segments: {len(scan_segments)}\n\n")
+        
+        f.write("SEGMENT DETAILS:\n")
+        f.write("-" * 50 + "\n")
+        
+        for i, segment in enumerate(scan_segments):
+            f.write(f"Scan {segment['scan_id']} ({segment['direction']}):\n")
+            f.write(f"  Time range: {segment['start_time']} - {segment['end_time']} μs\n")
+            f.write(f"  Duration: {segment['duration_us']/1000:.1f} ms\n")
+            f.write(f"  Event count: {segment['event_count']:,}\n")
+            f.write(f"  Events/ms: {segment['event_count']/(segment['duration_us']/1000):.0f}\n")
+            f.write(f"  File: {scan_labels[i]}_events.npz\n\n")
+    
+    print(f"Segmentation summary saved to: {summary_path}")
+    return segment_files, segments_dir
+
+
+def plot_segmented_scans(scan_segments, scan_labels, output_dir, base_name):
+    """
+    Plot the segmented scans showing spatial patterns
+    """
+    print("Creating segmented scan visualization...")
+    
+    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
+    axes = axes.flatten()
+    
+    # Define colors for forward/backward
+    colors = {'Forward': 'blue', 'Backward': 'red'}
+    
+    for i, (segment, label) in enumerate(zip(scan_segments, scan_labels)):
+        ax = axes[i]
+        
+        if segment['event_count'] > 0:
+            # Subsample if too many events for plotting
+            max_plot_events = 10000
+            if segment['event_count'] > max_plot_events:
+                indices = np.random.choice(segment['event_count'], max_plot_events, replace=False)
+                x_plot = segment['x'][indices]
+                y_plot = segment['y'][indices]
+                p_plot = segment['p'][indices]
+            else:
+                x_plot = segment['x']
+                y_plot = segment['y']
+                p_plot = segment['p']
+            
+            # Plot events colored by polarity
+            pos_mask = p_plot == 1
+            neg_mask = p_plot == 0
+            
+            if np.any(pos_mask):
+                ax.scatter(x_plot[pos_mask], y_plot[pos_mask], 
+                          c='red', s=0.1, alpha=0.6, label='Positive')
+            if np.any(neg_mask):
+                ax.scatter(x_plot[neg_mask], y_plot[neg_mask], 
+                          c='blue', s=0.1, alpha=0.6, label='Negative')
+        
+        direction_color = colors.get(segment['direction'], 'black')
+        ax.set_title(f"{label}\n{segment['event_count']:,} events, "
+                    f"{segment['duration_us']/1000:.1f} ms", 
+                    color=direction_color, fontweight='bold')
+        ax.set_xlabel('X (pixels)')
+        ax.set_ylabel('Y (pixels)')
+        ax.grid(True, alpha=0.3)
+        
+        # Set consistent axis limits
+        ax.set_xlim(0, 1280)
+        ax.set_ylim(0, 720)
+        
+        if i == 0:  # Add legend to first subplot
+            ax.legend(loc='upper right', markerscale=10)
+    
+    plt.tight_layout()
+    
+    # Save plot
+    plot_path = os.path.join(output_dir, f"{base_name}_segmented_scans.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Segmented scans plot saved to: {plot_path}")
+
+
+def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
+    """
+    Plot comprehensive results
+    """
+    if results is None:
+        print("No results to plot")
+        return
+        
+    fig, axes = plt.subplots(4, 1, figsize=(15, 16))
+    
+    # Convert to time
+    time_axis = np.arange(len(activity)) * time_bin_us / 1000 + t_min / 1000
+    
+    # Plot 1: Activity with boundaries
+    axes[0].plot(time_axis, activity, 'b-', alpha=0.8, linewidth=0.8)
+    
+    # Mark boundaries
+    scan_start_time = (results['scan_start'] * time_bin_us + t_min) / 1000
+    scan_end_time = (results['scan_end'] * time_bin_us + t_min) / 1000
+    
+    axes[0].axvline(x=scan_start_time, color='red', linestyle='--', linewidth=2, label='Scan boundaries')
+    axes[0].axvline(x=scan_end_time, color='red', linestyle='--', linewidth=2)
+    
+    # Shade regions
+    prelude_end_time = scan_start_time
+    aftermath_start_time = scan_end_time
+    
+    axes[0].axvspan(time_axis[0], prelude_end_time, alpha=0.2, color='orange', label='Prelude')
+    axes[0].axvspan(aftermath_start_time, time_axis[-1], alpha=0.2, color='gray', label='Aftermath')
+    axes[0].axvspan(prelude_end_time, aftermath_start_time, alpha=0.2, color='lightblue', label='Main scanning')
+    
+    axes[0].set_xlabel('Time (ms)')
+    axes[0].set_ylabel('Events per bin')
+    axes[0].set_title('Event Activity with Scanning Boundaries')
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+    
+    # Plot 2: Main scanning region with cycle divisions
+    if results['scan_start'] < results['scan_end'] and results['one_way_period'] > 0:
+        main_time = time_axis[results['scan_start']:results['scan_end']]
+        main_activity = activity[results['scan_start']:results['scan_end']]
+        
+        axes[1].plot(main_time, main_activity, 'b-', alpha=0.8)
+        
+        # Mark one-way scan boundaries and label them
+        scan_colors = ['blue', 'red']  # Forward, Backward
+        scan_labels = ['Forward', 'Backward']
+        
+        for i in range(6):  # 6 one-way scans
+            cycle_pos = results['scan_start'] + i * results['one_way_period']
+            if cycle_pos < results['scan_end']:
+                cycle_time = (cycle_pos * time_bin_us + t_min) / 1000
+                color_idx = i % 2
+                color = scan_colors[color_idx]
+                direction = scan_labels[color_idx]
+                
+                axes[1].axvline(x=cycle_time, color=color, linestyle=':', alpha=0.8, linewidth=2)
+                
+                # Add scan number and direction labels
+                if i < 5:  # Don't label the last boundary
+                    next_cycle_pos = results['scan_start'] + (i + 1) * results['one_way_period']
+                    next_cycle_time = (min(next_cycle_pos, results['scan_end']) * time_bin_us + t_min) / 1000
+                    mid_time = (cycle_time + next_cycle_time) / 2
+                    max_val = np.max(main_activity)
+                    
+                    axes[1].text(mid_time, max_val * 0.9, f'Scan {i+1}\n{direction}', 
+                               ha='center', va='top', fontsize=10, fontweight='bold',
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor=color, alpha=0.3))
+        
+        axes[1].set_xlabel('Time (ms)')
+        axes[1].set_ylabel('Events per bin')
+        axes[1].set_title(f'Main Scanning Region (6 one-way scans, period = {results["one_way_period"]} bins)')
+        axes[1].grid(True, alpha=0.3)
+    
+    # Plot 3: Autocorrelation with three largest peaks
+    n = len(activity)
+    autocorr_lags = np.arange(-n + 1, n) * time_bin_us / 1000
+    axes[2].plot(autocorr_lags, results['autocorr'], 'g-', alpha=0.8)
+    
+    # Mark the three largest peaks
+    if len(results['autocorr_peaks']) >= 3:
+        peak_labels = ['Left Peak', 'Center Peak', 'Right Peak']
+        colors = ['blue', 'red', 'blue']
+        for i, peak_idx in enumerate(results['autocorr_peaks']):
+            if peak_idx < len(autocorr_lags):
+                peak_time = autocorr_lags[peak_idx]
+                peak_value = results['autocorr'][peak_idx]
+                axes[2].scatter([peak_time], [peak_value], color=colors[i], s=100, zorder=5)
+                axes[2].annotate(peak_labels[i], (peak_time, peak_value), 
+                               xytext=(10, 10), textcoords='offset points')
+    
+    axes[2].axhline(y=0, color='black', linestyle='-', alpha=0.3)
+    axes[2].axvline(x=0, color='black', linestyle='-', alpha=0.3)
+    axes[2].set_xlabel('Lag (ms)')
+    axes[2].set_ylabel('Autocorrelation')
+    axes[2].set_title(f'Autocorrelation (Round-trip period: {results["round_trip_period"]} bins)')
+    axes[2].grid(True, alpha=0.3)
+    
+    # Limit view
+    max_lag_ms = results['round_trip_period'] * 2 * time_bin_us / 1000
+    axes[2].set_xlim(-max_lag_ms, max_lag_ms)
+    
+    # Plot 4: Reverse correlation with largest peak
+    reverse_lags = np.arange(-n + 1, n) * time_bin_us / 1000
+    axes[3].plot(reverse_lags, results['reverse_corr'], 'purple', alpha=0.8)
+    
+    # Mark the largest peak
+    largest_peak_idx = results['center_idx'] + results['reverse_peak_lag']
+    if 0 <= largest_peak_idx < len(reverse_lags):
+        peak_time = reverse_lags[largest_peak_idx]
+        peak_value = results['reverse_peak_value']
+        axes[3].scatter([peak_time], [peak_value], color='red', s=100, zorder=5, label='Largest Peak')
+        axes[3].annotate(f'Lag: {results["reverse_peak_lag"]}', (peak_time, peak_value), 
+                        xytext=(10, 10), textcoords='offset points')
+    
+    axes[3].axhline(y=0, color='black', linestyle='-', alpha=0.3)
+    axes[3].axvline(x=0, color='black', linestyle='-', alpha=0.3)
+    axes[3].set_xlabel('Lag (ms)')
+    axes[3].set_ylabel('Reverse correlation')
+    axes[3].set_title('Reverse Correlation (Original vs Reversed)')
+    axes[3].legend()
+    axes[3].grid(True, alpha=0.3)
+    axes[3].set_xlim(-max_lag_ms, max_lag_ms)
+    
+    plt.tight_layout()
+    
+    # Save plot
+    plot_path = os.path.join(output_dir, f"{base_name}_scanning_analysis.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Analysis plot saved to {plot_path}")
+
+
+def save_results(results, time_bin_us, t_min, output_dir, base_name):
+    """
+    Save detailed results
+    """
+    if results is None:
+        print("No results to save")
+        return
+        
+    results_path = os.path.join(output_dir, f"{base_name}_scanning_results.txt")
+    
+    with open(results_path, 'w') as f:
+        f.write("SCANNING PATTERN ANALYSIS RESULTS\n")
+        f.write("="*60 + "\n\n")
+        
+        f.write(f"Time bin size: {time_bin_us} μs\n")
+        f.write(f"Recording start: {t_min} μs\n\n")
+        
+        f.write("PERIODS:\n")
+        f.write(f"Round-trip period: {results['round_trip_period']} bins ({results['round_trip_period']*time_bin_us/1000:.1f} ms)\n")
+        f.write(f"One-way period: {results['one_way_period']} bins ({results['one_way_period']*time_bin_us/1000:.1f} ms)\n\n")
+        
+        f.write("CORRELATION ANALYSIS:\n")
+        f.write(f"Reverse peak lag: {results['reverse_peak_lag']} bins\n")
+        f.write(f"Reverse peak value: {results['reverse_peak_value']:.4f}\n\n")
+        
+        f.write("SEGMENTS (bins):\n")
+        f.write(f"Prelude: {results['prelude']} bins\n")
+        f.write(f"Main scanning: {results['main_length']} bins\n")
+        f.write(f"Aftermath: {results['aftermath']} bins\n")
+        f.write(f"Expected cycles: {results['n_cycles']}\n\n")
+        
+        f.write("SEGMENTS (time):\n")
+        prelude_ms = results['prelude'] * time_bin_us / 1000
+        main_ms = results['main_length'] * time_bin_us / 1000
+        aftermath_ms = results['aftermath'] * time_bin_us / 1000
+        
+        f.write(f"Prelude: {prelude_ms:.1f} ms ({prelude_ms/1000:.3f} s)\n")
+        f.write(f"Main scanning: {main_ms:.1f} ms ({main_ms/1000:.3f} s)\n")
+        f.write(f"Aftermath: {aftermath_ms:.1f} ms ({aftermath_ms/1000:.3f} s)\n\n")
+        
+        f.write("ABSOLUTE TIMESTAMPS:\n")
+        start_abs = t_min + results['scan_start'] * time_bin_us
+        end_abs = t_min + results['scan_end'] * time_bin_us
+        f.write(f"Scan start: {start_abs} μs ({start_abs/1e6:.3f} s)\n")
+        f.write(f"Scan end: {end_abs} μs ({end_abs/1e6:.3f} s)\n\n")
+        
+        f.write("CYCLE TIMING:\n")
+        for i in range(results['n_cycles']):
+            cycle_start = results['scan_start'] + i * results['one_way_period']
+            cycle_end = results['scan_start'] + (i + 1) * results['one_way_period']
+            if cycle_end <= results['scan_end']:
+                start_time = t_min + cycle_start * time_bin_us
+                end_time = t_min + cycle_end * time_bin_us
+                direction = "Forward" if i % 2 == 0 else "Backward"
+                f.write(f"Cycle {i+1} ({direction}): {start_time} - {end_time} μs\n")
+        
+        f.write("\nVERIFICATION:\n")
+        f.write(f"prelude - aftermath = {results['prelude'] - results['aftermath']} (should equal reverse_peak_lag = {results['reverse_peak_lag']})\n")
+        f.write(f"prelude + aftermath + 3*period = {results['prelude'] + results['aftermath'] + 3*results['round_trip_period']} (should equal full_length = {results['full_length']})\n")
+    
+    print(f"Results saved to {results_path}")
+    
+    # Print summary
+    print(f"\nSUMMARY:")
+    print(f"Round-trip period: {results['round_trip_period']*time_bin_us/1000:.1f} ms")
+    print(f"One-way period: {results['one_way_period']*time_bin_us/1000:.1f} ms") 
+    print(f"Total scanning time: {main_ms:.1f} ms")
+    print(f"Number of one-way scans: {results['n_cycles']}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Robust scanning analysis with event segmentation and mean tensor creation')
+    parser.add_argument('raw_file', help='Path to RAW event file')
+    parser.add_argument('--output_dir', default=None, help='Output directory')
+    parser.add_argument('--time_bin_us', type=int, default=1000, help='Time bin size in microseconds')
+    parser.add_argument('--max_events', type=int, default=None, help='Maximum events to load')
+    parser.add_argument('--segment_events', action='store_true', help='Segment events into forward/backward scans')
+    parser.add_argument('--create_mean_tensor', action='store_true', help='Create mean tensor from segments')
+    parser.add_argument('--tensor_time_bins', type=int, default=100, help='Number of time bins for mean tensor')
+    
+    args = parser.parse_args()
+    
+    # Set output directory
+    if args.output_dir is None:
+        args.output_dir = os.path.dirname(args.raw_file)
+    
+    os.makedirs(args.output_dir, exist_ok=True)
+    
+    base_name = os.path.splitext(os.path.basename(args.raw_file))[0]
+    
+    print(f"Analyzing: {args.raw_file}")
+    
+    # Read raw data
+    x, y, t, p, width, height = read_raw_simple(args.raw_file)
+    
+    if x is None:
+        print("Failed to read data!")
+        return
+    
+    # Subsample if needed
+    if args.max_events and len(x) > args.max_events:
+        print(f"Subsampling to {args.max_events} events...")
+        indices = np.random.choice(len(x), args.max_events, replace=False)
+        x, y, t, p = x[indices], y[indices], t[indices], p[indices]
+    
+    # Convert to activity signal
+    activity, t_min, time_bin_us = events_to_activity_signal(t, args.time_bin_us)
+    
+    # Analyze pattern
+    results = analyze_scanning_pattern(activity)
+    
+    if results is not None:
+        # Plot and save results
+        plot_results(activity, results, args.output_dir, base_name, time_bin_us, t_min)
+        save_results(results, time_bin_us, t_min, args.output_dir, base_name)
+        
+        # Segment events if requested
+        if args.segment_events:
+            scan_segments, scan_labels = segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min)
+            
+            if scan_segments:
+                # Save segmented events
+                segment_files, segments_dir = save_segmented_events(scan_segments, scan_labels, 
+                                                                  args.output_dir, base_name)
+                
+                # Plot segmented scans
+                plot_segmented_scans(scan_segments, scan_labels, args.output_dir, base_name)
+                
+                print(f"\nEvent segmentation complete!")
+                print(f"Segmented files saved in: {segments_dir}")
+                
+                # Create mean tensor if requested
+                if args.create_mean_tensor:
+                    mean_tensor, tensor_count = create_mean_tensor(scan_segments, 
+                                                                 width=width, 
+                                                                 height=height, 
+                                                                 time_bins=args.tensor_time_bins)
+                    
+                    # Save mean tensor
+                    tensor_path = save_mean_tensor(mean_tensor, tensor_count, args.output_dir, base_name)
+                    
+                    # Plot tensor slices
+                    plot_mean_tensor_slices(mean_tensor, args.output_dir, base_name)
+                    
+                    print(f"\nMean tensor creation complete!")
+                    print(f"Mean tensor saved to: {tensor_path}")
+                
+        print("\nAnalysis complete!")
+    else:
+        print("Analysis failed!")
+
+
+if __name__ == "__main__":
+    main()

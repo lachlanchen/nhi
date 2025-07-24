@@ -86,14 +86,74 @@ class EventDataAccumulator:
     #     print("self.frames.max(): ", self.frames.max())
     #     print("self.frames.min(): ", self.frames.min())
 
+    # def load_and_process_data(self):
+    #     print("csv_path: ", self.csv_path)
+    #     df = pd.read_csv(self.csv_path)
+    #     print("df:", df)
+    #     timestamps = pd.to_datetime(df['event_timestamp'], format='%H:%M:%S.%f')
+    #     print("timestamps: ", timestamps)
+    #     df['event_timestamp'] = (timestamps - timestamps.min()).dt.total_seconds() * 1000  # Convert to milliseconds
+    #     print("event_timestamp: ", df['event_timestamp'])
+
+    #     start_time = df['event_timestamp'].min()
+    #     end_time = df['event_timestamp'].max()
+    #     print("start_time: ", start_time)
+    #     print("end_time: ", end_time)
+    #     total_intervals = int((end_time - start_time) // self.accumulation_time) + 1
+
+    #     intervals = torch.arange(0, total_intervals, device=device)
+    #     indices = ((df['event_timestamp'] - start_time) // self.accumulation_time).astype(int).values
+    #     indices = torch.tensor(indices, dtype=torch.int64, device=device)
+
+    #     self.frames = torch.zeros((total_intervals, self.height, self.width), dtype=torch.float32, device=device)
+    #     x = torch.tensor(df['x'].values, dtype=torch.int64, device=device)
+    #     y = torch.tensor(df['y'].values, dtype=torch.int64, device=device)
+    #     polarity = torch.tensor(df['polarity'].map({0: -1, 1: 1}).values, dtype=torch.float32, device=device)
+    #     self.frames.index_put_((indices, y, x), polarity, accumulate=True)
+
+    #     print("self.frames.max(): ", self.frames.max())
+    #     print("self.frames.min(): ", self.frames.min())
+
     def load_and_process_data(self):
         print("csv_path: ", self.csv_path)
-        df = pd.read_csv(self.csv_path)
-        print("df:", df)
+        
+        # Try reading CSV with explicit parameters to avoid type conversion issues
+        try:
+            df = pd.read_csv(self.csv_path, dtype={
+                'event_timestamp': str,
+                'x': 'int64', 
+                'y': 'int64', 
+                'polarity': 'int64'
+            })
+        except Exception as e:
+            print(f"Error reading CSV with explicit dtypes: {e}")
+            # Fallback: read without specifying dtypes but with engine
+            try:
+                df = pd.read_csv(self.csv_path, engine='python')
+            except Exception as e2:
+                print(f"Error reading CSV with python engine: {e2}")
+                # Last resort: read line by line
+                import csv
+                data = []
+                with open(self.csv_path, 'r') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        data.append({
+                            'event_timestamp': row['event_timestamp'],
+                            'x': int(row['x']),
+                            'y': int(row['y']),
+                            'polarity': int(row['polarity'])
+                        })
+                df = pd.DataFrame(data)
+        
+        print("df:", df.head())
+        
+        # Convert timestamp column explicitly
         timestamps = pd.to_datetime(df['event_timestamp'], format='%H:%M:%S.%f')
-        print("timestamps: ", timestamps)
+        print("timestamps: ", timestamps.head())
+        
         df['event_timestamp'] = (timestamps - timestamps.min()).dt.total_seconds() * 1000  # Convert to milliseconds
-        print("event_timestamp: ", df['event_timestamp'])
+        print("event_timestamp: ", df['event_timestamp'].head())
 
         start_time = df['event_timestamp'].min()
         end_time = df['event_timestamp'].max()

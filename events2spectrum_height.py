@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from spectrum_visualizer import SpectrumVisualizer
-# from tensor_shifter import ShiftCalculator, TensorShifter
+# from tensor_shifter_height import ShiftCalculator, TensorShifter
 
 from scipy.interpolate import interp1d
 import torch.nn.functional as F

@@ -43,17 +43,18 @@ def parse_args():
     parser.add_argument('--force', action='store_true', help="Force override of existing files.")
     return parser.parse_args()
 
-def save_start_time(start_time_file, start_datetime):
+def save_start_time(start_time_path, start_datetime):
     """Save the start datetime to a text file."""
-    with open(start_time_file, 'w') as f:
+    with open(start_time_path, 'w') as f:
         f.write(start_datetime.strftime("%Y-%m-%d %H:%M:%S.%f"))
-    return start_time_file
+    return start_time_path
 
-def read_start_time(start_time_file):
+def read_start_time(start_time_path):
     """Read the start datetime from a text file."""
-    if os.path.exists(start_time_file):
-        with open(start_time_file, 'r') as f:
+    if os.path.exists(start_time_path):
+        with open(start_time_path, 'r') as f:
             start_datetime_str = f.read().strip()
+            print("start_datetime_str: ", start_datetime_str)
         return datetime.strptime(start_datetime_str, "%Y-%m-%d %H:%M:%S.%f")
     return None
 
@@ -80,12 +81,12 @@ def read_first_event_time_from_csv(csv_file_path):
         first_timestamp = datetime.strptime(first_timestamp_str, '%H:%M:%S.%f')
     return first_timestamp
 
-def handle_existing_file(csv_file_path, start_time_file):
+def handle_existing_file(csv_file_path, start_time_path):
     """Handles reading time difference if the CSV file already exists."""
     print(f"File {csv_file_path} already exists. Reading start time and calculating time difference.")
     
     # Read the start time from the saved text file
-    start_datetime = read_start_time(start_time_file)
+    start_datetime = read_start_time(start_time_path)
     if start_datetime is None:
         raise FileNotFoundError(f"Start time file not found for existing CSV file: {csv_file_path}")
     
@@ -126,12 +127,21 @@ def convert_raw_to_csv(
         f"_delta_t_{delta_t}"
         ".csv"
     )
+    start_time_filename = (
+        f"{os.path.basename(input_path)[:-4]}"
+        f"{description}"
+        f"_start_ts_{start_ts}"
+        f"_max_duration_{max_duration}"
+        f"_delta_t_{delta_t}_start_time"
+        ".txt"
+    )
     csv_file_path = os.path.join(output_dir, output_filename)
-    start_time_file = os.path.join(output_dir, f"{os.path.basename(input_path)[:-4]}_start_time.txt")
+    # start_time_path = os.path.join(output_dir, f"{os.path.basename(input_path)[:-4]}_start_time.txt")
+    start_time_path = os.path.join(output_dir, start_time_filename)
 
     # Check if the CSV file already exists
     if os.path.exists(csv_file_path) and not force:
-        return handle_existing_file(csv_file_path, start_time_file)
+        return handle_existing_file(csv_file_path, start_time_path)
 
     # Start converting RAW to CSV
     mv_iterator = EventsIterator(
@@ -145,7 +155,7 @@ def convert_raw_to_csv(
     start_datetime = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M:%S")
 
     # Save the start datetime to a text file
-    save_start_time(start_time_file, start_datetime)
+    save_start_time(start_time_path, start_datetime)
 
     with open(csv_file_path, 'w') as csv_file:
         # Write header
