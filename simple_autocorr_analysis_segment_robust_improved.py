@@ -2,6 +2,7 @@
 """
 Robust autocorrelation analysis to find scanning period using proven method
 Enhanced with event segmentation into forward/backward scans
+Improved with adaptive period estimation and dynamic peak finding
 """
 
 import numpy as np
@@ -41,6 +42,57 @@ def events_to_activity_signal(t, time_bin_us=1000):
     print(f"Mean events per bin: {activity.mean():.1f}")
     
     return activity, t_min, time_bin_us
+
+
+def find_most_active_region(activity, target_fraction=0.90):
+    """
+    Find the region containing target_fraction of all events using sliding window
+    Returns start_idx, end_idx, and estimated period
+    """
+    print(f"Finding most active region containing {target_fraction*100}% of events...")
+    
+    total_events = np.sum(activity)
+    target_events = target_fraction * total_events
+    
+    print(f"Total events: {total_events:,}")
+    print(f"Target events ({target_fraction*100}%): {target_events:,.0f}")
+    
+    # Try different window sizes to find the shortest one containing target events
+    min_window_events = target_events
+    best_start, best_end = 0, len(activity)
+    best_window_size = len(activity)
+    
+    # Start with a reasonable minimum window size
+    min_window = max(100, len(activity) // 20)  # At least 100 bins or 5% of total
+    max_window = len(activity)
+    
+    for window_size in range(min_window, max_window):
+        for start_idx in range(len(activity) - window_size + 1):
+            end_idx = start_idx + window_size
+            window_events = np.sum(activity[start_idx:end_idx])
+            
+            if window_events >= target_events and window_size < best_window_size:
+                best_start = start_idx
+                best_end = end_idx
+                best_window_size = window_size
+                break
+        
+        # If we found a good window, we can stop
+        if best_window_size < len(activity):
+            break
+    
+    actual_events = np.sum(activity[best_start:best_end])
+    actual_fraction = actual_events / total_events
+    
+    print(f"Best window: bins {best_start} to {best_end} (size: {best_window_size})")
+    print(f"Events in window: {actual_events:,} ({actual_fraction*100:.1f}%)")
+    
+    # Estimate initial round period as window_size / 3 (3 round trips expected)
+    estimated_round_period = best_window_size // 3
+    
+    print(f"Estimated initial round period: {estimated_round_period} bins")
+    
+    return best_start, best_end, estimated_round_period
 
 
 def calculate_autocorrelation(signal):
@@ -152,51 +204,102 @@ def find_top_peaks(correlation, initial_period=200, num_peaks=3, max_iterations=
     return peaks, period
 
 
-def find_three_largest_autocorr_peaks(autocorr):
+def find_three_largest_autocorr_peaks_adaptive(autocorr, estimated_period):
     """
-    Find the three largest autocorrelation peaks with symmetric validation:
-    SIMPLE AND ROBUST: Find highest peaks on left/right with constraints
+    Find the three largest autocorrelation peaks with adaptive minimum distance
+    Uses estimated period to set appropriate minimum distance and search range
     """
-    print("Finding three largest autocorrelation peaks...")
+    print("Finding three largest autocorrelation peaks with adaptive algorithm...")
     
     center_idx = len(autocorr) // 2
     center_peak = center_idx
     
-    # Define minimum distance from center - shouldn't be too small
-    # min_distance = max(100, len(autocorr) // 20)  # At least 200 bins or 5% of signal
-    min_distance = 200  # At least 200 bins or 5% of signal
-    print(f"Minimum distance from center: {min_distance} bins")
+    # Set minimum distance based on estimated period
+    # Use 50% of estimated period as minimum distance, but ensure reasonable bounds
+    min_distance = max(50, int(0.5 * estimated_period))
+    min_distance = min(min_distance, len(autocorr) // 10)  # Don't exceed 10% of signal
+    
+    print(f"Estimated period: {estimated_period} bins")
+    print(f"Adaptive minimum distance from center: {min_distance} bins")
+    
+    # Define search range based on estimated period
+    # Look for peaks within reasonable range around estimated period
+    search_range = int(1.5 * estimated_period)  # 150% of estimated period
+    search_range = min(search_range, center_idx)  # Don't exceed signal bounds
+    
+    print(f"Search range: ±{search_range} bins")
     
     # Split into left and right halves (excluding center region)
-    left_half = autocorr[:center_idx - min_distance]
-    right_half = autocorr[center_idx + min_distance:]
+    left_start = max(0, center_idx - search_range)
+    left_end = center_idx - min_distance
+    right_start = center_idx + min_distance
+    right_end = min(len(autocorr), center_idx + search_range)
     
-    print(f"Left half: {len(left_half)} bins")
-    print(f"Right half: {len(right_half)} bins")
+    print(f"Left search region: {left_start} to {left_end} ({left_end - left_start} bins)")
+    print(f"Right search region: {right_start} to {right_end} ({right_end - right_start} bins)")
     
     # Find highest peak on left side
-    if len(left_half) > 0:
-        left_peak_local_idx = np.argmax(left_half)
-        left_peak_idx = left_peak_local_idx
+    if left_end > left_start:
+        left_region = autocorr[left_start:left_end]
+        left_peak_local_idx = np.argmax(left_region)
+        left_peak_idx = left_start + left_peak_local_idx
         left_distance = center_idx - left_peak_idx
         left_value = autocorr[left_peak_idx]
         print(f"Left peak at lag: -{left_distance}, value: {left_value:.4f}")
     else:
-        print("No left peak found!")
+        print("No valid left search region!")
         return [], 0, center_idx
     
     # Find highest peak on right side
-    if len(right_half) > 0:
-        right_peak_local_idx = np.argmax(right_half)
-        right_peak_idx = center_idx + min_distance + right_peak_local_idx
+    if right_end > right_start:
+        right_region = autocorr[right_start:right_end]
+        right_peak_local_idx = np.argmax(right_region)
+        right_peak_idx = right_start + right_peak_local_idx
         right_distance = right_peak_idx - center_idx
         right_value = autocorr[right_peak_idx]
         print(f"Right peak at lag: +{right_distance}, value: {right_value:.4f}")
     else:
-        print("No right peak found!")
+        print("No valid right search region!")
         return [], 0, center_idx
     
-    # Calculate round-trip period = max(left_distance, right_distance) as user suggested
+    # Alternative strategy: find the largest peak beyond 50% of estimated period
+    print("\nAlternative peak search beyond 50% of estimated period...")
+    alt_min_distance = max(min_distance, int(0.5 * estimated_period))
+    
+    # Left side alternative
+    left_alt_end = center_idx - alt_min_distance
+    if left_alt_end > 0:
+        left_alt_region = autocorr[:left_alt_end]
+        left_alt_peak_idx = np.argmax(left_alt_region)
+        left_alt_distance = center_idx - left_alt_peak_idx
+        left_alt_value = autocorr[left_alt_peak_idx]
+        print(f"Left alternative peak at lag: -{left_alt_distance}, value: {left_alt_value:.4f}")
+        
+        # Use alternative if it's significantly better
+        if left_alt_value > left_value * 1.1:  # 10% better
+            left_peak_idx = left_alt_peak_idx
+            left_distance = left_alt_distance
+            left_value = left_alt_value
+            print(f"Using left alternative peak")
+    
+    # Right side alternative
+    right_alt_start = center_idx + alt_min_distance
+    if right_alt_start < len(autocorr):
+        right_alt_region = autocorr[right_alt_start:]
+        right_alt_peak_local_idx = np.argmax(right_alt_region)
+        right_alt_peak_idx = right_alt_start + right_alt_peak_local_idx
+        right_alt_distance = right_alt_peak_idx - center_idx
+        right_alt_value = autocorr[right_alt_peak_idx]
+        print(f"Right alternative peak at lag: +{right_alt_distance}, value: {right_alt_value:.4f}")
+        
+        # Use alternative if it's significantly better
+        if right_alt_value > right_value * 1.1:  # 10% better
+            right_peak_idx = right_alt_peak_idx
+            right_distance = right_alt_distance
+            right_value = right_alt_value
+            print(f"Using right alternative peak")
+    
+    # Calculate round-trip period = max(left_distance, right_distance)
     round_trip_period = max(left_distance, right_distance)
     one_way_period = round_trip_period // 2
     
@@ -225,15 +328,18 @@ def find_three_largest_autocorr_peaks(autocorr):
     return peaks, round_trip_period, center_idx
 
 
-def find_largest_reverse_correlation_peak(reverse_corr):
+def find_largest_reverse_correlation_peak(reverse_corr, estimated_period):
     """
     Find the lag of the largest peak in reverse correlation
+    Uses estimated period for better initial guess
     """
     print("Finding largest peak in reverse correlation...")
     
+    # Use estimated period for better initial guess
+    initial_period = max(estimated_period, 200)
+    
     # Find all peaks
-    # peaks, _ = find_top_peaks(reverse_corr, initial_period=len(reverse_corr)//30)
-    peaks, _ = find_top_peaks(reverse_corr, initial_period=200)
+    peaks, _ = find_top_peaks(reverse_corr, initial_period=initial_period)
     
     if not peaks:
         print("No peaks found in reverse correlation")
@@ -294,17 +400,22 @@ def calculate_prelude_aftermath(full_length, round_trip_period, reverse_peak_lag
 
 def analyze_scanning_pattern(activity):
     """
-    Complete scanning analysis using proven method with robust peak finding
+    Complete scanning analysis using proven method with adaptive peak finding
     """
     print("\n" + "="*60)
     print("SCANNING PATTERN ANALYSIS")
     print("="*60)
     
+    # Step 1: Find most active region to estimate initial period
+    active_start, active_end, estimated_period = find_most_active_region(activity)
+    
     # Calculate autocorrelation
     autocorr = calculate_autocorrelation(activity)
     
-    # Find three largest peaks in autocorrelation to get round-trip period
-    autocorr_peaks, round_trip_period, center_idx = find_three_largest_autocorr_peaks(autocorr)
+    # Find three largest peaks in autocorrelation using adaptive method
+    autocorr_peaks, round_trip_period, center_idx = find_three_largest_autocorr_peaks_adaptive(
+        autocorr, estimated_period
+    )
     
     if round_trip_period <= 0:
         print("Could not determine round-trip period!")
@@ -314,7 +425,9 @@ def analyze_scanning_pattern(activity):
     reverse_corr = calculate_reverse_correlation(activity)
     
     # Find largest peak in reverse correlation
-    reverse_peak_lag, reverse_peak_value = find_largest_reverse_correlation_peak(reverse_corr)
+    reverse_peak_lag, reverse_peak_value = find_largest_reverse_correlation_peak(
+        reverse_corr, estimated_period
+    )
     
     # Calculate prelude and aftermath
     full_length = len(activity)
@@ -331,6 +444,7 @@ def analyze_scanning_pattern(activity):
     scan_end = prelude + main_length
     
     print(f"\nFinal Results:")
+    print(f"Estimated initial period: {estimated_period} bins")
     print(f"Round-trip period: {round_trip_period} bins")
     print(f"One-way period: {one_way_period} bins")
     print(f"Reverse peak lag: {reverse_peak_lag} bins")
@@ -345,6 +459,7 @@ def analyze_scanning_pattern(activity):
         'reverse_corr': reverse_corr,
         'autocorr_peaks': autocorr_peaks,
         'center_idx': center_idx,
+        'estimated_period': estimated_period,
         'round_trip_period': round_trip_period,
         'one_way_period': one_way_period,
         'reverse_peak_lag': reverse_peak_lag,
@@ -355,7 +470,9 @@ def analyze_scanning_pattern(activity):
         'scan_start': scan_start,
         'scan_end': scan_end,
         'n_cycles': n_cycles,
-        'full_length': full_length
+        'full_length': full_length,
+        'active_start': active_start,
+        'active_end': active_end
     }
 
 
@@ -547,18 +664,18 @@ def plot_segmented_scans(scan_segments, scan_labels, output_dir, base_name):
 
 def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     """
-    Plot comprehensive results
+    Plot comprehensive results including estimated period analysis
     """
     if results is None:
         print("No results to plot")
         return
         
-    fig, axes = plt.subplots(4, 1, figsize=(15, 16))
+    fig, axes = plt.subplots(5, 1, figsize=(15, 20))
     
     # Convert to time
     time_axis = np.arange(len(activity)) * time_bin_us / 1000 + t_min / 1000
     
-    # Plot 1: Activity with boundaries
+    # Plot 1: Activity with boundaries and most active region
     axes[0].plot(time_axis, activity, 'b-', alpha=0.8, linewidth=0.8)
     
     # Mark boundaries
@@ -567,6 +684,12 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     
     axes[0].axvline(x=scan_start_time, color='red', linestyle='--', linewidth=2, label='Scan boundaries')
     axes[0].axvline(x=scan_end_time, color='red', linestyle='--', linewidth=2)
+    
+    # Mark most active region
+    active_start_time = (results['active_start'] * time_bin_us + t_min) / 1000
+    active_end_time = (results['active_end'] * time_bin_us + t_min) / 1000
+    
+    axes[0].axvspan(active_start_time, active_end_time, alpha=0.1, color='green', label='90% active region')
     
     # Shade regions
     prelude_end_time = scan_start_time
@@ -578,7 +701,7 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     
     axes[0].set_xlabel('Time (ms)')
     axes[0].set_ylabel('Events per bin')
-    axes[0].set_title('Event Activity with Scanning Boundaries')
+    axes[0].set_title(f'Event Activity with Scanning Boundaries (Est. period: {results["estimated_period"]} bins)')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     
@@ -619,10 +742,25 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
         axes[1].set_title(f'Main Scanning Region (6 one-way scans, period = {results["one_way_period"]} bins)')
         axes[1].grid(True, alpha=0.3)
     
-    # Plot 3: Autocorrelation with three largest peaks
+    # Plot 3: Most active region analysis
+    axes[2].plot(time_axis, activity, 'b-', alpha=0.5, linewidth=0.8, label='Full signal')
+    axes[2].plot(time_axis[results['active_start']:results['active_end']], 
+                activity[results['active_start']:results['active_end']], 
+                'g-', linewidth=2, label='90% active region')
+    
+    axes[2].axvline(x=active_start_time, color='green', linestyle='--', linewidth=2)
+    axes[2].axvline(x=active_end_time, color='green', linestyle='--', linewidth=2)
+    
+    axes[2].set_xlabel('Time (ms)')
+    axes[2].set_ylabel('Events per bin')
+    axes[2].set_title(f'Most Active Region Detection (Est. period: {results["estimated_period"]} bins)')
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+    
+    # Plot 4: Autocorrelation with three largest peaks
     n = len(activity)
     autocorr_lags = np.arange(-n + 1, n) * time_bin_us / 1000
-    axes[2].plot(autocorr_lags, results['autocorr'], 'g-', alpha=0.8)
+    axes[3].plot(autocorr_lags, results['autocorr'], 'g-', alpha=0.8)
     
     # Mark the three largest peaks
     if len(results['autocorr_peaks']) >= 3:
@@ -632,42 +770,42 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
             if peak_idx < len(autocorr_lags):
                 peak_time = autocorr_lags[peak_idx]
                 peak_value = results['autocorr'][peak_idx]
-                axes[2].scatter([peak_time], [peak_value], color=colors[i], s=100, zorder=5)
-                axes[2].annotate(peak_labels[i], (peak_time, peak_value), 
+                axes[3].scatter([peak_time], [peak_value], color=colors[i], s=100, zorder=5)
+                axes[3].annotate(peak_labels[i], (peak_time, peak_value), 
                                xytext=(10, 10), textcoords='offset points')
     
-    axes[2].axhline(y=0, color='black', linestyle='-', alpha=0.3)
-    axes[2].axvline(x=0, color='black', linestyle='-', alpha=0.3)
-    axes[2].set_xlabel('Lag (ms)')
-    axes[2].set_ylabel('Autocorrelation')
-    axes[2].set_title(f'Autocorrelation (Round-trip period: {results["round_trip_period"]} bins)')
-    axes[2].grid(True, alpha=0.3)
+    axes[3].axhline(y=0, color='black', linestyle='-', alpha=0.3)
+    axes[3].axvline(x=0, color='black', linestyle='-', alpha=0.3)
+    axes[3].set_xlabel('Lag (ms)')
+    axes[3].set_ylabel('Autocorrelation')
+    axes[3].set_title(f'Autocorrelation (Round-trip period: {results["round_trip_period"]} bins)')
+    axes[3].grid(True, alpha=0.3)
     
     # Limit view
     max_lag_ms = results['round_trip_period'] * 2 * time_bin_us / 1000
-    axes[2].set_xlim(-max_lag_ms, max_lag_ms)
+    axes[3].set_xlim(-max_lag_ms, max_lag_ms)
     
-    # Plot 4: Reverse correlation with largest peak
+    # Plot 5: Reverse correlation with largest peak
     reverse_lags = np.arange(-n + 1, n) * time_bin_us / 1000
-    axes[3].plot(reverse_lags, results['reverse_corr'], 'purple', alpha=0.8)
+    axes[4].plot(reverse_lags, results['reverse_corr'], 'purple', alpha=0.8)
     
     # Mark the largest peak
     largest_peak_idx = results['center_idx'] + results['reverse_peak_lag']
     if 0 <= largest_peak_idx < len(reverse_lags):
         peak_time = reverse_lags[largest_peak_idx]
         peak_value = results['reverse_peak_value']
-        axes[3].scatter([peak_time], [peak_value], color='red', s=100, zorder=5, label='Largest Peak')
-        axes[3].annotate(f'Lag: {results["reverse_peak_lag"]}', (peak_time, peak_value), 
+        axes[4].scatter([peak_time], [peak_value], color='red', s=100, zorder=5, label='Largest Peak')
+        axes[4].annotate(f'Lag: {results["reverse_peak_lag"]}', (peak_time, peak_value), 
                         xytext=(10, 10), textcoords='offset points')
     
-    axes[3].axhline(y=0, color='black', linestyle='-', alpha=0.3)
-    axes[3].axvline(x=0, color='black', linestyle='-', alpha=0.3)
-    axes[3].set_xlabel('Lag (ms)')
-    axes[3].set_ylabel('Reverse correlation')
-    axes[3].set_title('Reverse Correlation (Original vs Reversed)')
-    axes[3].legend()
-    axes[3].grid(True, alpha=0.3)
-    axes[3].set_xlim(-max_lag_ms, max_lag_ms)
+    axes[4].axhline(y=0, color='black', linestyle='-', alpha=0.3)
+    axes[4].axvline(x=0, color='black', linestyle='-', alpha=0.3)
+    axes[4].set_xlabel('Lag (ms)')
+    axes[4].set_ylabel('Reverse correlation')
+    axes[4].set_title('Reverse Correlation (Original vs Reversed)')
+    axes[4].legend()
+    axes[4].grid(True, alpha=0.3)
+    axes[4].set_xlim(-max_lag_ms, max_lag_ms)
     
     plt.tight_layout()
     
@@ -681,7 +819,7 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
 
 def save_results(results, time_bin_us, t_min, output_dir, base_name):
     """
-    Save detailed results
+    Save detailed results including adaptive analysis info
     """
     if results is None:
         print("No results to save")
@@ -690,11 +828,15 @@ def save_results(results, time_bin_us, t_min, output_dir, base_name):
     results_path = os.path.join(output_dir, f"{base_name}_scanning_results.txt")
     
     with open(results_path, 'w') as f:
-        f.write("SCANNING PATTERN ANALYSIS RESULTS\n")
+        f.write("ADAPTIVE SCANNING PATTERN ANALYSIS RESULTS\n")
         f.write("="*60 + "\n\n")
         
         f.write(f"Time bin size: {time_bin_us} μs\n")
         f.write(f"Recording start: {t_min} μs\n\n")
+        
+        f.write("ADAPTIVE ANALYSIS:\n")
+        f.write(f"90% active region: bins {results['active_start']} to {results['active_end']}\n")
+        f.write(f"Estimated initial period: {results['estimated_period']} bins ({results['estimated_period']*time_bin_us/1000:.1f} ms)\n\n")
         
         f.write("PERIODS:\n")
         f.write(f"Round-trip period: {results['round_trip_period']} bins ({results['round_trip_period']*time_bin_us/1000:.1f} ms)\n")
@@ -738,19 +880,25 @@ def save_results(results, time_bin_us, t_min, output_dir, base_name):
         f.write("\nVERIFICATION:\n")
         f.write(f"prelude - aftermath = {results['prelude'] - results['aftermath']} (should equal reverse_peak_lag = {results['reverse_peak_lag']})\n")
         f.write(f"prelude + aftermath + 3*period = {results['prelude'] + results['aftermath'] + 3*results['round_trip_period']} (should equal full_length = {results['full_length']})\n")
+        
+        f.write(f"\nPERIOD COMPARISON:\n")
+        f.write(f"Estimated period: {results['estimated_period']} bins\n")
+        f.write(f"Final round-trip period: {results['round_trip_period']} bins\n")
+        f.write(f"Ratio (final/estimated): {results['round_trip_period']/results['estimated_period']:.3f}\n")
     
     print(f"Results saved to {results_path}")
     
     # Print summary
     print(f"\nSUMMARY:")
-    print(f"Round-trip period: {results['round_trip_period']*time_bin_us/1000:.1f} ms")
+    print(f"Estimated period: {results['estimated_period']*time_bin_us/1000:.1f} ms")
+    print(f"Final round-trip period: {results['round_trip_period']*time_bin_us/1000:.1f} ms")
     print(f"One-way period: {results['one_way_period']*time_bin_us/1000:.1f} ms") 
     print(f"Total scanning time: {main_ms:.1f} ms")
     print(f"Number of one-way scans: {results['n_cycles']}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Robust scanning analysis with event segmentation')
+    parser = argparse.ArgumentParser(description='Adaptive robust scanning analysis with event segmentation')
     parser.add_argument('raw_file', help='Path to RAW event file')
     parser.add_argument('--output_dir', default=None, help='Output directory')
     parser.add_argument('--time_bin_us', type=int, default=1000, help='Time bin size in microseconds')
