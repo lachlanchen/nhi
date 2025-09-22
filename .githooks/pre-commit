@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Block committing large/binary artifacts. Allow only code/docs/data-text by default.
+ALLOWED_EXTENSIONS_REGEX='\.(py|ipynb|md|sh|txt|csv|json)$'
+MAX_SIZE_MB=20
+
+fail=false
+while IFS= read -r -d '' path; do
+  # Skip deletions/renames where file no longer exists in working tree
+  [ -f "$path" ] || continue
+
+  # Check extension allowlist
+  if [[ ! "$path" =~ $ALLOWED_EXTENSIONS_REGEX ]]; then
+    echo "[pre-commit] Disallowed file type staged: $path" >&2
+    fail=true
+    continue
+  fi
+
+  # Check size
+  size_bytes=$(wc -c < "$path")
+  if (( size_bytes > MAX_SIZE_MB * 1024 * 1024 )); then
+    echo "[pre-commit] File too large (> ${MAX_SIZE_MB}MB): $path ($((size_bytes/1024/1024)) MB)" >&2
+    fail=true
+  fi
+done < <(git diff --cached --name-only --diff-filter=AM -z)
+
+if [ "$fail" = true ]; then
+  echo "[pre-commit] Commit aborted. Add to a versioned data store or ignore." >&2
+  echo "Allowed: .py .ipynb .md .sh .txt .csv .json (≤ ${MAX_SIZE_MB}MB each)" >&2
+  exit 1
+fi
+
+exit 0
+

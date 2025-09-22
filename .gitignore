@@ -16,6 +16,10 @@
 
 # Bash scripts (e.g., in versions/**/code, experiments, scripts)
 !*.sh
+!scripts/
+!scripts/**
+!.githooks/
+!.githooks/**
 
 # Text/CSV/JSON in safe locations
 !/*.txt
