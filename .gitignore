@@ -7,9 +7,29 @@
 # Keep this ignore file
 !.gitignore
 
-# Only track Python and Markdown source files
+# Track core text-based artifacts (scoped to avoid data bloat)
 !*.py
 !*.md
+
+# Notebooks
+!/*.ipynb           # only notebooks in repo root
+
+# Bash scripts (e.g., in versions/**/code, experiments, scripts)
+!*.sh
+
+# Text/CSV/JSON in safe locations
+!/*.txt
+!/*.csv
+!/*.json
+!outputs_root/**/*.txt
+!outputs_root/**/*.csv
+!outputs_root/**/*.json
+!versions/**/code/**/*.txt
+!versions/**/code/**/*.csv
+!versions/**/code/**/*.json
+!versions/**/experiments/**/*.txt
+!versions/**/experiments/**/*.csv
+!versions/**/experiments/**/*.json
 
 # Ignore macOS resource forks and caches
 ._*
