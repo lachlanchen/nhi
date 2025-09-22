@@ -7,8 +7,9 @@
 # Keep this ignore file
 !.gitignore
 
-# Only track Python source files
+# Only track Python and Markdown source files
 !*.py
+!*.md
 
 # Ignore macOS resource forks and caches
 ._*
