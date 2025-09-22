@@ -21,8 +21,28 @@ else:
     dll_loader = ctypes.CDLL
     dllname = "libMvCameraControl.so"
 
-# Load the vendor library
-MvCamCtrldll = dll_loader(dllname)
+# Load the vendor library with common fallback paths on Linux
+def _load_vendor_lib(name):
+    candidates = [name]
+    if platform.system() != "Windows":
+        # Common Linux install paths for Hikvision MVS
+        candidates += [
+            os.path.join('/opt/MVS/lib', name),
+            os.path.join('/opt/MVS/lib/64', name),
+            os.path.join('/usr/lib', name),
+            os.path.join('/usr/local/lib', name),
+        ]
+    last_exc = None
+    for path in candidates:
+        try:
+            return dll_loader(path)
+        except Exception as e:
+            last_exc = e
+            continue
+    # Re-raise the last error for visibility
+    raise last_exc
+
+MvCamCtrldll = _load_vendor_lib(dllname)
 
 
 # 用于回调函数传入相机实例
