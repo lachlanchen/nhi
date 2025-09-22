@@ -20,6 +20,7 @@
 !scripts/**
 !.githooks/
 !.githooks/**
+!.lfsconfig
 
 # Text/CSV/JSON in safe locations
 !/*.txt

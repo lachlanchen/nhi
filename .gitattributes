@@ -1,5 +1,2 @@
-frames_640x480.pt filter=lfs diff=lfs merge=lfs -text
-*.csv filter=lfs diff=lfs merge=lfs -text
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-*.raw filter=lfs diff=lfs merge=lfs -text
-evk5/recording_2024-05-22_16-27-14.raw filter=lfs diff=lfs merge=lfs -text
+# Disable LFS for all patterns; repository focuses on code and small text
+# (Large artifacts are ignored and/or removed from history.)
