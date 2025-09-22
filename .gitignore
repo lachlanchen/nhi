@@ -12,7 +12,7 @@
 !*.md
 
 # Notebooks
-!/*.ipynb           # only notebooks in repo root
+!**/*.ipynb         # track notebooks anywhere (code assets)
 
 # Bash scripts (e.g., in versions/**/code, experiments, scripts)
 !*.sh
