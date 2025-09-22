@@ -1,18 +1,10 @@
 # -- coding: utf-8 --
 
-import platform, os
-# Platform-aware loader for Linux vs Windows
-if platform.system()=="Windows":
-    try:
-        dll_loader = ctypes.WinDLL
-    except AttributeError:
-        from ctypes import WinDLL as dll_loader
-else:
-    dll_loader = ctypes.CDLL
-
 import sys
 import copy
 import ctypes
+import platform
+import os
 
 from ctypes import *
 
@@ -21,12 +13,16 @@ from CameraParams_const import *
 from CameraParams_header import *
 from MvErrorDefine_const import *
 
-# Python3.8版本修改Dll加载策略, 默认不再搜索Path环境变量, 同时增加winmode参数以兼容旧版本
-dllname = 'libMvCameraControl.so'
-if "winmode" in ctypes.dll_loader.__init__.__code__.co_varnames:
-    MvCamCtrldll = dll_loader(dllname, winmode=0)
+# Platform-aware loader (Windows: WinDLL, Linux: CDLL)
+if platform.system() == "Windows":
+    dll_loader = ctypes.WinDLL
+    dllname = "MvCameraControl.dll"
 else:
-    MvCamCtrldll = dll_loader(dllname)
+    dll_loader = ctypes.CDLL
+    dllname = "libMvCameraControl.so"
+
+# Load the vendor library
+MvCamCtrldll = dll_loader(dllname)
 
 
 # 用于回调函数传入相机实例
