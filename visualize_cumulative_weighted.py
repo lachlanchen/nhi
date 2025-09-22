@@ -99,6 +99,10 @@ def main():
     ap.add_argument("--ymax", type=float, default=2.0, help="Y-axis max for plotting (default 2.0)")
     ap.add_argument("--exp", action='store_true', help="Plot exponential of accumulation (apply exp() to series)")
     ap.add_argument("--no_comp", action='store_true', help="Do not compute/show compensated series")
+    ap.add_argument("--auto_scale", action='store_true', help="Auto-tune neg_scale to equalize start/end plateaus")
+    ap.add_argument("--plateau_frac", type=float, default=0.05, help="Fraction of bins at each end used for plateau averaging (default 0.05)")
+    ap.add_argument("--auto_min", type=float, default=0.1, help="Min neg_scale for auto search (default 0.1)")
+    ap.add_argument("--auto_max", type=float, default=3.0, help="Max neg_scale for auto search (default 3.0)")
     args = ap.parse_args()
 
     x, y, t, p = load_npz_events(args.segment_npz)
@@ -108,9 +112,61 @@ def main():
     # Build weights: +pos_scale for p>0, -neg_scale for p<0
     weights = np.where(p >= 0, args.pos_scale, -args.neg_scale).astype(np.float32)
 
-    # Base per-step weighted sums and cumulative means (original time)
-    sums_orig, edges_ms = base_binned_sums_weighted(t, weights, t_min, t_max, args.step_us)
-    cum_means_orig = np.cumsum(sums_orig) / hw_size
+    # Helper: per-polarity binned sums (original)
+    pos_mask = p >= 0
+    neg_mask = ~pos_mask
+    sums_pos_orig, edges_ms = base_binned_sums_weighted(t[pos_mask], np.ones(np.count_nonzero(pos_mask), dtype=np.float32), t_min, t_max, args.step_us)
+    sums_neg_orig, _ = base_binned_sums_weighted(t[neg_mask], np.ones(np.count_nonzero(neg_mask), dtype=np.float32), t_min, t_max, args.step_us)
+
+    def build_cum_from_sums(s_pos, s_neg, pos_scale, neg_scale):
+        step_sums = pos_scale * s_pos - neg_scale * s_neg
+        return np.cumsum(step_sums) / hw_size
+
+    # Auto-scale (neg_scale) to equalize plateaus on the plotted series (linear or exp)
+    chosen_neg = args.neg_scale
+    if args.auto_scale:
+        # Define objective on current domain (after optional exp)
+        def plateau_diff(neg_scale):
+            cm = build_cum_from_sums(sums_pos_orig, sums_neg_orig, args.pos_scale, neg_scale)
+            series = np.exp(cm) if args.exp else cm
+            K = len(series)
+            if K <= 2:
+                return 0.0
+            n = max(5, int(args.plateau_frac * K))
+            start_mean = float(np.mean(series[:n]))
+            end_mean = float(np.mean(series[-n:]))
+            return end_mean - start_mean
+
+        # Bisection with fallback grid search
+        a, b = max(1e-6, args.auto_min), max(args.auto_min + 1e-6, args.auto_max)
+        fa, fb = plateau_diff(a), plateau_diff(b)
+        if fa == 0:
+            chosen_neg = a
+        elif fb == 0:
+            chosen_neg = b
+        elif fa * fb < 0:
+            # Bisection
+            for _ in range(40):
+                m = 0.5 * (a + b)
+                fm = plateau_diff(m)
+                if abs(fm) < 1e-6:
+                    chosen_neg = m
+                    break
+                if fa * fm < 0:
+                    b, fb = m, fm
+                else:
+                    a, fa = m, fm
+            else:
+                chosen_neg = 0.5 * (a + b)
+        else:
+            # Fallback: coarse grid search
+            grid = np.linspace(a, b, 50)
+            vals = np.array([abs(plateau_diff(g)) for g in grid])
+            chosen_neg = float(grid[int(np.argmin(vals))])
+        print(f"Auto-scale: pos_scale={args.pos_scale:.3f}, neg_scale={chosen_neg:.3f}")
+
+    # Base per-step weighted sums and cumulative means (original time) with chosen neg scale
+    cum_means_orig = build_cum_from_sums(sums_pos_orig, sums_neg_orig, args.pos_scale, chosen_neg)
 
     # Compensated series
     t_comp = None
@@ -121,8 +177,10 @@ def main():
         if param_file is not None:
             params = load_parameters_from_npz(param_file)
             t_comp, a_avg, b_avg = compute_fast_compensated_times(x, y, t, params['a_params'], params['b_params'])
-            sums_comp, _ = base_binned_sums_weighted(t_comp, weights, t_min, t_max, args.step_us)
-            cum_means_comp = np.cumsum(sums_comp) / hw_size
+            # Per-polarity comp sums
+            sums_pos_comp, _ = base_binned_sums_weighted(t_comp[pos_mask], np.ones(np.count_nonzero(pos_mask), dtype=np.float32), t_min, t_max, args.step_us)
+            sums_neg_comp, _ = base_binned_sums_weighted(t_comp[neg_mask], np.ones(np.count_nonzero(neg_mask), dtype=np.float32), t_min, t_max, args.step_us)
+            cum_means_comp = build_cum_from_sums(sums_pos_comp, sums_neg_comp, args.pos_scale, chosen_neg)
         else:
             print("Warning: no learned params found; skipping compensated series")
 
@@ -140,9 +198,9 @@ def main():
 
     # Plot
     plt.figure(figsize=(10, 5))
-    plt.plot(edges_ms, plot_orig, 'b-', label=f'Orig (pos={args.pos_scale}, neg={args.neg_scale})')
+    plt.plot(edges_ms, plot_orig, 'b-', label=f'Orig (pos={args.pos_scale}, neg={chosen_neg:.3f})')
     if plot_comp is not None:
-        lbl = f'Comp (pos={args.pos_scale}, neg={args.neg_scale})'
+        lbl = f'Comp (pos={args.pos_scale}, neg={chosen_neg:.3f})'
         if a_avg is not None and b_avg is not None:
             lbl += f" | a_avg={a_avg:.3f}, b_avg={b_avg:.3f}"
         plt.plot(edges_ms, plot_comp, 'r-', label=lbl)
@@ -153,7 +211,7 @@ def main():
     plt.grid(True, alpha=0.3)
     plt.legend()
     suffix = "_exp" if args.exp else ""
-    out_png = os.path.join(out_dir, f"weighted_cumulative_pos{args.pos_scale}_neg{args.neg_scale}{suffix}.png")
+    out_png = os.path.join(out_dir, f"weighted_cumulative_pos{args.pos_scale}_neg{chosen_neg:.3f}{suffix}.png")
     plt.savefig(out_png, dpi=150, bbox_inches='tight')
     print(f"\n✓ Weighted cumulative plot saved: {out_png}")
     plt.show()
