@@ -1,140 +1,377 @@
-Spectral Reconstruction with Event Cameras: Segment, Compensate, Visualize
+# Neuromorphic Hyperspectral Reconstruction with Event Cameras
 
-Overview
+A comprehensive pipeline for reconstructing spectra from event cameras with dispersed light illumination (e.g., diffraction grating). The system records intensity change events $e = (x, y, t, p)$ where $p \in \{-1, +1\}$ indicates polarity of log-intensity change.
 
-This repository reconstructs spectra from an event camera while the scene is illuminated by a dispersed light (e.g., diffraction grating). The camera records intensity change events e = (x, y, t, p) where p ∈ {−1, +1} indicates the polarity of log-intensity change. Because illumination sweeps across wavelengths over time, the event stream encodes a temporal derivative of the underlying spectrum along the dispersion axis. The pipeline has three stages:
+## Overview
 
-- Segment: find scan timing and split the recording into forward/backward passes.
-- Compensate: estimate a piecewise-linear time-warp that removes scan-induced temporal tilt in the x–t and y–t planes.
-- Visualize: overlay learned boundaries and compare original vs compensated time-binned frames.
+When illumination sweeps across wavelengths over time, the event stream encodes a temporal derivative of the underlying spectrum along the dispersion axis. This pipeline provides three main stages:
 
-Below is a concise mathematical description of the three main scripts and how they fit together.
+1. **Segment**: Find scan timing and split recordings into forward/backward passes
+2. **Compensate**: Estimate piecewise-linear time-warp to remove scan-induced temporal tilt
+3. **Visualize**: Overlay learned boundaries and compare original vs. compensated time-binned frames
 
-1) Segment: segment_robust_fixed.py
+## Quick Start
 
-Goal: From raw events, recover the scan timing (start/end, period) and slice the recording into 6 one-way scans (F, B, F, B, F, B).
+### Prerequisites
 
-- Activity signal (1D):
-  Given timestamps t (μs), bin them with Δt = 1000 μs to produce a[n] = number of events in bin n. Let t_min = min(t) and N be the number of bins.
+* Python 3.9+ with `numpy`, `torch`, `matplotlib`
+* GPU optional but recommended for faster processing
+* RAW recordings and/or segmented NPZ files
 
-    a[n] = #{ i | t_min + nΔt ≤ t_i < t_min + (n+1)Δt }.
+### Basic Workflow
 
-- Active window detection (80% events):
-  Find the smallest contiguous index window [s, e) such that Σ_{n=s}^{e−1} a[n] ≥ 0.8 Σ_{n=0}^{N−1} a[n]. This yields a compact region that concentrates the scan.
+```bash
+# 1. Segment RAW into 6 scans (Forward/Backward)
+python segment_robust_fixed.py \
+  data/recording.raw \
+  --segment_events \
+  --output_dir data/segments/
 
-- Period estimation (two modes):
-  • Automatic: use autocorrelation of the normalized activity signal
+# 2. Train multi-window compensation
+python compensate_multiwindow_train_saved_params.py \
+  data/segments/Scan_1_Forward_events.npz \
+  --bin_width 50000 \
+  --visualize --plot_params --a_trainable \
+  --iterations 1000
 
-      r[k] = Σ_n (a[n]−μ)(a[n+k]−μ), with r[0] used to normalize,
+# 3. Visualize results with boundaries
+python visualize_boundaries_and_frames.py \
+  data/segments/Scan_1_Forward_events.npz
 
-    then detect symmetric side peaks near ±P to estimate the round-trip period P (in bins). Alternatively,
-  • Manual: pass a fixed round-trip period P (default 1688 bins). In the fixed variant, peak search is skipped and P is used directly.
+# 4. Compare cumulative vs multi-bin means
+python visualize_cumulative_compare.py \
+  data/segments/Scan_1_Forward_events.npz \
+  --sensor_width 1280 --sensor_height 720
+```
 
-- Reverse-correlation and timing structure:
-  With the activity reversed a_rev[n] = a[N−1−n], compute
+## Core Scripts
 
-      R[k] = Σ_n a[n] a_rev[n+k].
+### 1. Segmentation: `segment_robust_fixed.py`
 
-  The maximal peak location gives a constraint between the prelude and aftermath durations; together with the total active length and 3P main span (F+B+F), this determines (prelude, aftermath, main-length).
+**Goal**: Extract scan timing from raw events and slice into 6 one-way scans (F, B, F, B, F, B).
 
-- Convert to absolute time and segment:
-  With one-way period τ = P/2 bins and scan start index s_start, absolute times are
+**Mathematical Description**:
 
-      T_start = t_min + s_start Δt,
-      segment i: [ T_start + (i−1)τΔt, T_start + i τΔt ), i = 1..6,
+* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$):
 
-  alternating Forward/Backward directions. Each segment is saved as NPZ with x, y, t, p plus metadata (start_time, duration_us, direction, scan_id).
+  $$
+  a[n] \;=\; \#\left\{\, i \;\middle|\; t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \,\right\}
+  $$
 
-2) Compensate: compensate_multiwindow_train_saved_params.py
+* **Active window detection**: find the smallest contiguous window containing $80\%$ of events.
 
-Goal: Learn a time-warp that removes scan-induced temporal shear so that events for the same wavelength align across the sensor. The model is multi-window, piecewise linear in x and y with soft transitions across temporal boundaries.
+* **Period estimation**: autocorrelation or manual period (default: $1688$ bins).
 
-- Boundary surfaces (piecewise windows):
-  Let there be M = num_params parameters for a and b. Define boundary times as planes in (x, y, t):
+* **Reverse-correlation** (timing structure):
 
-      T_i(x, y) = a_i x + b_i y + c_i,  i = 0..M−1,
+  $$
+  R[k] \;=\; \sum_{n} a[n]\; a_{\text{rev}}[n+k],
+  \quad \text{where} \quad a_{\text{rev}}[n] = a[N-1-n].
+  $$
 
-  with fixed offsets c_i spaced uniformly over the scan duration (or learned when boundary_trainable=True). These M boundaries define M−1 windows.
+**Usage**:
 
-- Soft window memberships:
-  For an event (x, y, t), define the membership of window i (between T_i and T_{i+1}) via sigmoids (temperature τ > 0):
+```bash
+# Automatic period detection
+python segment_robust_fixed.py recording.raw --segment_events --output_dir segments/
 
-      m_i(x,y,t) = σ((t − T_i)/τ) · σ((T_{i+1} − t)/τ),
-      w_i = m_i / (Σ_j m_j + ε).
+# Manual period (fixed 1688 bins)
+python segment_robust_fixed.py recording.raw --segment_events --round_trip_period 1688
+```
 
-- Interpolated slopes within each window:
-  Define α_i = (t − T_i) / (T_{i+1} − T_i) ∈ [0, 1] and
+**Arguments**:
 
-      ã_i = (1 − α_i) a_i + α_i a_{i+1},
-      b̃_i = (1 − α_i) b_i + α_i b_{i+1}.
+* `--segment_events`: Save individual scan segments as NPZ files
+* `--round_trip_period 1688`: Use manual period (default)
+* `--auto_calculate_period`: Override manual period with autocorrelation
+* `--activity_fraction 0.80`: Fraction of events for active region
+* `--max_iterations 2`: Refinement iterations
 
-- Time warp (compensation):
+### 2. Compensation: `compensate_multiwindow_train_saved_params.py`
 
-      Δt(x,y,t) = Σ_i w_i [ ã_i x + b̃_i y ],
-      t′ = t − Δt(x,y,t).
+**Goal**: Learn time-warp parameters to remove scan-induced temporal shear using multi-window piecewise-linear compensation.
 
-  In the “FAST” visualization path, a constant linear compensation is used with a_avg = mean_i a_i and b_avg = mean_i b_i:
+**Mathematical Description**:
 
-      t′_FAST = t − a_avg x − b_avg y.
+* **Boundary surfaces**:
 
-- Training objective (variance minimization):
-  Accumulate events into a time-binned tensor E ∈ R^{B×H×W} using linear interpolation in time:
+  $$
+  T_i(x, y) \;=\; a_i\,x \;+\; b_i\,y \;+\; c_i,
+  \qquad i=0,\ldots,M-1
+  $$
 
-      E[b, y, x] = Σ_{events} p · κ_b(t′),
+* **Soft window memberships**:
 
-  where κ_b distributes an event between adjacent time bins based on t′. The loss encourages spatial concentration per time bin:
+  $$
+  m_i(x,y,t) \;=\; \sigma\!\left(\frac{t - T_i}{\tau}\right)\,
+                   \sigma\!\left(\frac{T_{i+1} - t}{\tau}\right), 
+  \qquad
+  w_i \;=\; \frac{m_i}{\sum_j m_j + \varepsilon}
+  $$
 
-      L_var = Σ_{b=1}^B Var_{y,x}(E[b, y, x]).
+* **Interpolated slopes (optional)**:
 
-  Add smoothness penalties across adjacent parameters:
+  $$
+  \alpha_i \;=\; \frac{t - T_i}{T_{i+1} - T_i},\qquad
+  \tilde{a}_i \;=\; (1-\alpha_i)a_i + \alpha_i a_{i+1},\quad
+  \tilde{b}_i \;=\; (1-\alpha_i)b_i + \alpha_i b_{i+1}
+  $$
 
-      L_smooth = Σ_i (a_{i+1} − a_i)^2 + Σ_i (b_{i+1} − b_i)^2 (+ boundary smoothness if enabled),
+* **Time warp**:
 
-  and optimize L = L_var + λ L_smooth over trainable parameters (a, b, and optionally boundaries).
+  $$
+  \Delta t(x,y,t) \;=\; \sum_i w_i \,\big[\, \tilde{a}_i\,x + \tilde{b}_i\,y \,\big],
+  \qquad
+  t' \;=\; t \;-\; \Delta t(x,y,t)
+  $$
 
-3) Visualize: visualize_boundaries_and_frames.py
+* **Loss**: variance minimization of time-binned frames with smoothness regularization on parameters.
 
-Goal: Summarize learned parameters and show qualitative improvements.
+**Usage**:
 
-- Parameter overlays:
-  Plot events (x vs t and y vs t) with normalized time t − min(t), and overlay boundary lines T_i(x, y_center) and T_i(x_center, y) computed from the learned parameters and the actual event duration (ensuring proper overlap with normalized time).
+```bash
+# Train with a-parameters trainable, b fixed
+python compensate_multiwindow_train_saved_params.py segment.npz \
+  --bin_width 50000 --a_trainable --b_default -76.0 \
+  --iterations 1000 --smoothness_weight 0.001
 
-- Time-binned frame comparisons:
-  Build two sets of frames using the same temporal windows for both original t and compensated t′_FAST:
+# Load pre-trained parameters
+python compensate_multiwindow_train_saved_params.py segment.npz \
+  --load_params learned_params.npz
+```
 
-  • 50 ms bin width, 2 ms shift (sliding) – highlights coarse evolution.
-  • 2 ms bin width, 2 ms shift (sliding) – a fine “derivative-like” view.
+**Key Arguments**:
 
-  For each set, compare original vs compensated per-bin frames and summary statistics (means, counts, standard deviation).
+* `--a_trainable` / `--a_fixed`: Control a-parameter training (default: fixed)
+* `--b_trainable` / `--b_fixed`: Control b-parameter training (default: trainable)
+* `--num_params 13`: Number of boundary parameters
+* `--temperature 5000`: Sigmoid temperature for soft windows
+* `--smoothness_weight 0.001`: Regularization weight
+* `--load_params file.npz`: Load saved parameters
+* `--chunk_size 250000`: Memory-efficient processing chunk size
 
-Relation between sliding (2 ms) and cumulative views
+### 3. Visualization: `visualize_boundaries_and_frames.py`
 
-If F(T) is the per-pixel average of the cumulative frame formed by all events up to time T, then the finite difference
+**Goal**: Display learned parameters and show qualitative improvements.
 
-    ΔF(T) ≈ [F(T) − F(T − Δ)] / Δ
+**Features**:
 
-approximates the derivative of the cumulative signal. The 2 ms sliding frames (bin_width = shift = 2 ms) act like this finite difference: they isolate what changed within [T − 2 ms, T), which is comparable to the temporal derivative of the keep-accumulating view.
+* Parameter overlays on $x\text{–}t$ and $y\text{–}t$ projections
+* Time-binned frame comparisons (original vs. compensated)
+* Sliding window analysis (50 ms and 2 ms bins)
+* Wavelength mapping for spectral visualization
 
-Quick Start
+**Usage**:
 
-1) Segment a RAW file into 6 scans (forward/backward):
+```bash
+python visualize_boundaries_and_frames.py segment.npz \
+  --sample_rate 0.1 --wavelength_min 380 --wavelength_max 680
+```
 
-    python segment_robust_fixed.py <path/to/file.raw> \
-      --segment_events --output_dir <output_dir>
+### 4. Cumulative Comparison: `visualize_cumulative_compare.py`
 
-   Optionally pass a manual round-trip period (bins @ 1 ms):
+**Goal**: Compare cumulative 2 ms-step means with sliding bin means.
 
-    python segment_robust_fixed.py <file.raw> \
-      --segment_events --output_dir <out> --round_trip_period 1688
+**Mathematical Description**:
 
-2) Train compensation on a segment (e.g., Scan_1_Forward):
+* **Cumulative means**:
 
-    python compensate_multiwindow_train_saved_params.py <segment.npz> \
-      --bin_width 50000 --plot_params --visualize --a_trainable \
-      --iterations 1000 --b_default 0 --smoothness_weight 0.001
+  $$
+  F(T) \;=\; \frac{1}{H\,W}\sum_{t < T}\text{events}(t)
+  $$
 
-3) Visualize results with overlays and time-binned comparisons:
+* **Sliding means** (events in $[T-\Delta,\,T)$ divided by $H\times W$).
 
-    python visualize_boundaries_and_frames.py <segment.npz>
+* **Relationship** (finite-difference derivative):
 
-The visualization automatically loads the most recent learned parameter NPZ co-located with the segment file.
+  $$
+  \Delta F(T) \;\approx\; \frac{F(T) - F(T-\Delta)}{\Delta}
+  $$
+
+**Usage**:
+
+```bash
+python visualize_cumulative_compare.py segment.npz \
+  --sensor_width 1280 --sensor_height 720 \
+  --sample_label "My Dataset"
+```
+
+## Additional Tools
+
+### GUI Application: `scan_compensation_gui_cloud.py`
+
+Complete GUI for scan compensation with 3D spectral visualization.
+
+**Features**:
+
+* Interactive parameter tuning
+* Real-time optimization progress
+* 3D wavelength-mapped visualization
+* Export results and parameters
+
+**Usage**:
+
+```bash
+python scan_compensation_gui_cloud.py
+```
+
+### Dual Camera System: `sync_image_system/DualCamera_separate_transform.py`
+
+Synchronized recording system for event and frame cameras.
+
+**Features**:
+
+* Simultaneous event and frame recording
+* Real-time preview with transformations
+* Always-on-top window controls
+* Parameter adjustment during recording
+
+### Arduino Motor Control: `rotor/step42_with_key_int/step42_with_key_int.ino`
+
+Stepper motor control for scanning mechanisms.
+
+**Features**:
+
+* Precise angle control with microstepping
+* Acceleration/deceleration profiles
+* Limit switch integration
+* Auto-centering functionality
+
+## Parameter Management
+
+The system supports comprehensive parameter save/load functionality:
+
+### Save Formats
+
+* **NPZ**: Binary format for fast loading
+* **JSON**: Human-readable with metadata
+* **CSV**: Excel-compatible for manual inspection
+
+### Parameter Loading
+
+```bash
+# Load any supported format
+python compensate_multiwindow_train_saved_params.py segment.npz \
+  --load_params learned_params.npz
+  # or --load_params learned_params.json
+  # or --load_params learned_params.csv
+```
+
+### Parameter Files
+
+Files are automatically named with parameter count: `*_learned_params_n13.*`
+
+## Memory Optimization
+
+The system uses chunked processing throughout:
+
+* **Chunk Size**: Default $250{,}000$ events (configurable)
+* **Memory Efficient**: Processes large datasets without GPU overflow
+* **Unified Variance**: Maintains proper gradient flow for learning
+* **Progress Tracking**: Real-time processing updates
+
+## Output Structure
+
+```
+project/
+├── data/
+│   ├── recording.raw                    # Original RAW file
+│   ├── recording_segments/              # Segmented scans
+│   │   ├── Scan_1_Forward_events.npz   
+│   │   ├── Scan_2_Backward_events.npz  
+│   │   └── ...
+│   ├── learned_params_n13.npz          # Trained parameters
+│   ├── learned_params_n13.json         
+│   ├── learned_params_n13.csv          
+│   └── visualization_20240115_143022/  # Results
+│       ├── events_with_params.png      
+│       ├── sliding_frames_*.npz        
+│       ├── frame_means_wavelength.png  
+│       └── time_binned_frames/         # Individual frames
+```
+
+## Configuration Examples
+
+### High-Precision Compensation
+
+```bash
+python compensate_multiwindow_train_saved_params.py segment.npz \
+  --num_params 21 --temperature 3000 --iterations 2000 \
+  --a_trainable --b_trainable --boundary_trainable \
+  --smoothness_weight 0.0001 --chunk_size 100000
+```
+
+### Fast Processing
+
+```bash
+python compensate_multiwindow_train_saved_params.py segment.npz \
+  --num_params 7 --iterations 500 --chunk_size 500000 \
+  --a_fixed --b_default -76.0
+```
+
+### Memory Constrained
+
+```bash
+python compensate_multiwindow_train_saved_params.py segment.npz \
+  --chunk_size 50000 --bin_width 100000
+```
+
+## Wavelength Mapping
+
+The system supports spectral visualization by mapping temporal evolution to wavelength:
+
+```python
+# Linear mapping: time → wavelength
+wavelength = wavelength_min + (t_normalized / t_max) * (wavelength_max - wavelength_min)
+```
+
+**Default Range**: $380\text{–}680~\text{nm}$ (configurable)
+
+## Tips and Best Practices
+
+### Parameter Selection
+
+* **Microstepping**: Use $32\times$ for smooth motion (Arduino)
+* **Bin Width**: Start with $50\,\text{ms}$ for optimization, $2\,\text{ms}$ for analysis
+* **Temperature**: Higher values ($\sim 5000$) for smoother boundaries
+* **Smoothness**: $0.001$ provides good regularization
+
+### Memory Management
+
+* **GPU Memory**: Use chunked processing with appropriate chunk size
+* **Event Count**: $> 10^6$ events recommended for stable learning
+* **Iterations**: $1000$ iterations usually sufficient
+
+### File Organization
+
+* Keep RAW files and segments in same directory
+* Parameter files auto-detected by naming convention
+* Use descriptive filename prefixes for organized output
+
+### Troubleshooting
+
+* **Parameter Loading**: Ensure matching parameter count in filename
+* **Memory Issues**: Reduce `--chunk_size` and `--bin_width`
+* **Poor Compensation**: Increase iterations or enable more trainable parameters
+
+## Citation
+
+If you use this work in your research, please cite:
+
+```bibtex
+@software{spectral_reconstruction_event_cameras,
+  title   = {Spectral Reconstruction with Event Cameras},
+  author  = {[Authors]},
+  year    = {2024},
+  url     = {https://github.com/[repository]}
+}
+```
+
+## License
+
+\[License information]
+
+## Contributing
+
+Contributions welcome! Please read our contributing guidelines and submit pull requests for any improvements.
+
