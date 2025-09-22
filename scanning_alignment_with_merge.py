@@ -174,6 +174,11 @@ class ScanCompensation(nn.Module):
         a_x = self.params[0]
         a_y = self.params[1]
         t_warped = timestamps - a_x * x_coords - a_y * y_coords
+        print("t_warped: ", t_warped.max())
+        print("a_x: ", a_x.max())
+        print("a_y: ", a_y.max())
+        print("x_coords: ", x_coords.max())
+        print("y_coords: ", y_coords.max())
         # t_warped = timestamps - torch.sqrt((a_x * x_coords)**2 - (a_y * y_coords)**2)
         return x_coords, y_coords, t_warped
 

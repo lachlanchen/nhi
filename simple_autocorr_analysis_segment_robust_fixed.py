@@ -4,6 +4,7 @@ Robust autocorrelation analysis to find scanning period using proven method
 Enhanced with event segmentation into forward/backward scans
 Improved with adaptive period estimation and iterative refinement
 Added configurable activity fraction and simplified peak finding
+Added manual round trip period option with default 1688
 """
 
 import numpy as np
@@ -218,7 +219,7 @@ def find_three_largest_autocorr_peaks_adaptive(autocorr, estimated_period):
     
     # Set minimum distance based on estimated period
     # Use 50% of estimated period as minimum distance, but ensure reasonable bounds
-    min_distance = max(200, int(0.5 * estimated_period))
+    min_distance = max(200, int(0.6 * estimated_period))
     
     print(f"Estimated period: {estimated_period} bins")
     print(f"Adaptive minimum distance from center: {min_distance} bins")
@@ -374,33 +375,54 @@ def calculate_prelude_aftermath(full_length, round_trip_period, reverse_peak_lag
     return prelude, aftermath, adjusted_main
 
 
-def analyze_scanning_pattern_single(activity, activity_fraction=0.80, initial_estimates=None):
+def analyze_scanning_pattern_single(activity, activity_fraction=0.80, initial_estimates=None, manual_round_trip_period=None):
     """
     Single iteration of scanning analysis
+    If manual_round_trip_period is provided, skip autocorrelation-based calculation
     """
     print(f"\nAnalyzing scanning pattern (activity fraction: {activity_fraction*100}%)...")
     
-    if initial_estimates is None:
-        # Step 1: Find smallest window containing target fraction of events
-        active_start, active_end, estimated_period = find_smallest_window_with_target_events(
-            activity, activity_fraction
-        )
+    if manual_round_trip_period is not None:
+        print(f"Using manual round trip period: {manual_round_trip_period} bins")
+        # Still need to find active window for reverse correlation analysis
+        if initial_estimates is None:
+            active_start, active_end, estimated_period = find_smallest_window_with_target_events(
+                activity, activity_fraction
+            )
+        else:
+            active_start, active_end, estimated_period = initial_estimates
+        
+        # Use manual period instead of calculated one
+        round_trip_period = manual_round_trip_period
+        autocorr = calculate_autocorrelation(activity)  # Still calculate for plotting
+        autocorr_peaks = []  # Empty since we're not using it
+        center_idx = len(autocorr) // 2
+        
+        print(f"Skipping autocorrelation peak finding - using manual round trip period: {round_trip_period}")
+        
     else:
-        # Use provided estimates
-        active_start, active_end, estimated_period = initial_estimates
-        print(f"Using provided estimates: start={active_start}, end={active_end}, period={estimated_period}")
-    
-    # Calculate autocorrelation
-    autocorr = calculate_autocorrelation(activity)
-    
-    # Find three largest peaks in autocorrelation using adaptive method with iterative refinement
-    autocorr_peaks, round_trip_period, center_idx = find_three_largest_autocorr_peaks_adaptive(
-        autocorr, estimated_period
-    )
-    
-    if round_trip_period <= 0:
-        print("Could not determine round-trip period!")
-        return None
+        # Original automatic calculation method
+        if initial_estimates is None:
+            # Step 1: Find smallest window containing target fraction of events
+            active_start, active_end, estimated_period = find_smallest_window_with_target_events(
+                activity, activity_fraction
+            )
+        else:
+            # Use provided estimates
+            active_start, active_end, estimated_period = initial_estimates
+            print(f"Using provided estimates: start={active_start}, end={active_end}, period={estimated_period}")
+        
+        # Calculate autocorrelation
+        autocorr = calculate_autocorrelation(activity)
+        
+        # Find three largest peaks in autocorrelation using adaptive method with iterative refinement
+        autocorr_peaks, round_trip_period, center_idx = find_three_largest_autocorr_peaks_adaptive(
+            autocorr, estimated_period
+        )
+        
+        if round_trip_period <= 0:
+            print("Could not determine round-trip period!")
+            return None
     
     # Calculate reverse correlation  
     reverse_corr = calculate_reverse_correlation(activity)
@@ -431,7 +453,7 @@ def analyze_scanning_pattern_single(activity, activity_fraction=0.80, initial_es
         'autocorr_peaks': autocorr_peaks,
         'center_idx': center_idx,
         'activity_fraction': activity_fraction,
-        'estimated_period': estimated_period,
+        'estimated_period': estimated_period if manual_round_trip_period is None else manual_round_trip_period,
         'round_trip_period': round_trip_period,
         'one_way_period': one_way_period,
         'reverse_peak_lag': reverse_peak_lag,
@@ -445,17 +467,22 @@ def analyze_scanning_pattern_single(activity, activity_fraction=0.80, initial_es
         'full_length': full_length,
         'active_start': active_start,
         'active_end': active_end,
-        'refined_estimates': refined_estimates
+        'refined_estimates': refined_estimates,
+        'manual_period_used': manual_round_trip_period is not None
     }
 
 
-def analyze_scanning_pattern(activity, activity_fraction=0.80, max_iterations=2):
+def analyze_scanning_pattern(activity, activity_fraction=0.80, max_iterations=2, manual_round_trip_period=None):
     """
     Complete scanning analysis with iterative refinement
     Uses results from first iteration as initial values for second iteration
+    If manual_round_trip_period is provided, uses that instead of calculating
     """
     print("\n" + "="*60)
-    print("SCANNING PATTERN ANALYSIS WITH ITERATIVE REFINEMENT")
+    if manual_round_trip_period is not None:
+        print(f"SCANNING PATTERN ANALYSIS WITH MANUAL ROUND TRIP PERIOD: {manual_round_trip_period}")
+    else:
+        print("SCANNING PATTERN ANALYSIS WITH ITERATIVE REFINEMENT")
     print("="*60)
     
     results = None
@@ -467,13 +494,13 @@ def analyze_scanning_pattern(activity, activity_fraction=0.80, max_iterations=2)
         
         if iteration == 0:
             # First iteration: use initial window detection
-            results = analyze_scanning_pattern_single(activity, activity_fraction, None)
+            results = analyze_scanning_pattern_single(activity, activity_fraction, None, manual_round_trip_period)
         else:
             # Subsequent iterations: use refined estimates from previous iteration
             if results is not None and 'refined_estimates' in results:
                 refined_estimates = results['refined_estimates']
                 print(f"Using refined estimates from iteration {iteration}: {refined_estimates}")
-                results = analyze_scanning_pattern_single(activity, activity_fraction, refined_estimates)
+                results = analyze_scanning_pattern_single(activity, activity_fraction, refined_estimates, manual_round_trip_period)
             else:
                 print("No valid results from previous iteration, stopping")
                 break
@@ -489,9 +516,14 @@ def analyze_scanning_pattern(activity, activity_fraction=0.80, max_iterations=2)
         print(f"Reverse peak lag: {results['reverse_peak_lag']} bins")
         print(f"Scan boundaries: {results['scan_start']} to {results['scan_end']}")
         print(f"Prelude: {results['prelude']}, Main: {results['main_length']}, Aftermath: {results['aftermath']}")
+        
+        # If using manual period, iterations don't change the core calculation much
+        if manual_round_trip_period is not None and iteration >= 1:
+            print("Using manual period - limiting iterations since core calculation doesn't change")
+            break
     
     if results is not None:
-        print(f"\nFinal Results (after {max_iterations} iterations):")
+        print(f"\nFinal Results (after {max_iterations if manual_round_trip_period is None else iteration + 1} iterations):")
         print(f"Activity fraction used: {results['activity_fraction']*100}%")
         print(f"Round-trip period: {results['round_trip_period']} bins")
         print(f"One-way period: {results['one_way_period']} bins")
@@ -501,6 +533,10 @@ def analyze_scanning_pattern(activity, activity_fraction=0.80, max_iterations=2)
         print(f"Aftermath: {results['aftermath']} bins")
         print(f"Expected cycles: {results['n_cycles']}")
         print(f"Scan boundaries: {results['scan_start']} to {results['scan_end']}")
+        if manual_round_trip_period is not None:
+            print(f"Period calculation: MANUAL ({manual_round_trip_period} bins)")
+        else:
+            print(f"Period calculation: AUTOMATIC")
     
     return results
 
@@ -729,9 +765,13 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     axes[0].axvspan(aftermath_start_time, time_axis[-1], alpha=0.2, color='gray', label='Aftermath')
     axes[0].axvspan(prelude_end_time, aftermath_start_time, alpha=0.2, color='lightblue', label='Main scanning')
     
+    # Update title based on manual vs automatic period
+    period_source = "Manual" if results.get('manual_period_used', False) else "Auto"
+    title = f'Event Activity with Scanning Boundaries ({period_source} period: {results["round_trip_period"]} bins)'
+    
     axes[0].set_xlabel('Time (ms)')
     axes[0].set_ylabel('Events per bin')
-    axes[0].set_title(f'Event Activity with Scanning Boundaries (Est. period: {results["estimated_period"]} bins)')
+    axes[0].set_title(title)
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     
@@ -769,7 +809,8 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
         
         axes[1].set_xlabel('Time (ms)')
         axes[1].set_ylabel('Events per bin')
-        axes[1].set_title(f'Main Scanning Region (6 one-way scans, period = {results["one_way_period"]} bins)')
+        title = f'Main Scanning Region (6 one-way scans, {period_source.lower()} period = {results["one_way_period"]} bins)'
+        axes[1].set_title(title)
         axes[1].grid(True, alpha=0.3)
     
     # Plot 3: Smallest active window analysis
@@ -784,7 +825,8 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     window_size = results['active_end'] - results['active_start']
     axes[2].set_xlabel('Time (ms)')
     axes[2].set_ylabel('Events per bin')
-    axes[2].set_title(f'Smallest Window Detection (Size: {window_size} bins, Est. period: {results["estimated_period"]} bins)')
+    title = f'Smallest Window Detection (Size: {window_size} bins, Used: {period_source.lower()} period)'
+    axes[2].set_title(title)
     axes[2].legend()
     axes[2].grid(True, alpha=0.3)
     
@@ -793,8 +835,8 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     autocorr_lags = np.arange(-n + 1, n) * time_bin_us / 1000
     axes[3].plot(autocorr_lags, results['autocorr'], 'g-', alpha=0.8)
     
-    # Mark the three largest peaks
-    if len(results['autocorr_peaks']) >= 3:
+    # Mark the three largest peaks (only if calculated automatically)
+    if not results.get('manual_period_used', False) and len(results['autocorr_peaks']) >= 3:
         peak_labels = ['Left Peak', 'Center Peak', 'Right Peak']
         colors = ['blue', 'red', 'blue']
         for i, peak_idx in enumerate(results['autocorr_peaks']):
@@ -809,7 +851,12 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     axes[3].axvline(x=0, color='black', linestyle='-', alpha=0.3)
     axes[3].set_xlabel('Lag (ms)')
     axes[3].set_ylabel('Autocorrelation')
-    axes[3].set_title(f'Autocorrelation with Iterative Peak Finding (Round-trip period: {results["round_trip_period"]} bins)')
+    
+    if results.get('manual_period_used', False):
+        title = f'Autocorrelation (Manual round-trip period: {results["round_trip_period"]} bins)'
+    else:
+        title = f'Autocorrelation with Iterative Peak Finding (Round-trip period: {results["round_trip_period"]} bins)'
+    axes[3].set_title(title)
     axes[3].grid(True, alpha=0.3)
     
     # Limit view
@@ -860,13 +907,21 @@ def save_results(results, time_bin_us, t_min, output_dir, base_name):
     
     with open(results_path, 'w') as f:
         f.write("ENHANCED SCANNING PATTERN ANALYSIS RESULTS\n")
-        f.write("WITH ITERATIVE REFINEMENT\n")
+        if results.get('manual_period_used', False):
+            f.write("WITH MANUAL ROUND TRIP PERIOD\n")
+        else:
+            f.write("WITH ITERATIVE REFINEMENT\n")
         f.write("="*60 + "\n\n")
         
         f.write(f"Time bin size: {time_bin_us} μs\n")
         f.write(f"Recording start: {t_min} μs\n\n")
         
-        f.write("ENHANCED ANALYSIS:\n")
+        f.write("ANALYSIS METHOD:\n")
+        if results.get('manual_period_used', False):
+            f.write(f"Period calculation: MANUAL ({results['round_trip_period']} bins)\n")
+        else:
+            f.write(f"Period calculation: AUTOMATIC (iterative refinement)\n")
+        
         window_size = results['active_end'] - results['active_start']
         f.write(f"Activity fraction: {results['activity_fraction']*100:.0f}%\n")
         f.write(f"Smallest window: bins {results['active_start']} to {results['active_end']} (size: {window_size})\n")
@@ -916,32 +971,41 @@ def save_results(results, time_bin_us, t_min, output_dir, base_name):
         f.write(f"prelude + aftermath + 3*period = {results['prelude'] + results['aftermath'] + 3*results['round_trip_period']} (should equal full_length = {results['full_length']})\n")
         
         f.write(f"\nPERIOD COMPARISON:\n")
-        f.write(f"Estimated period: {results['estimated_period']} bins\n")
-        f.write(f"Final round-trip period: {results['round_trip_period']} bins\n")
-        f.write(f"Ratio (final/estimated): {results['round_trip_period']/results['estimated_period']:.3f}\n")
+        if results.get('manual_period_used', False):
+            f.write(f"Manual round-trip period: {results['round_trip_period']} bins\n")
+            f.write(f"Estimated period: {results['estimated_period']} bins\n")
+            f.write(f"Ratio (manual/estimated): {results['round_trip_period']/results['estimated_period']:.3f}\n")
+        else:
+            f.write(f"Estimated period: {results['estimated_period']} bins\n")
+            f.write(f"Final round-trip period: {results['round_trip_period']} bins\n")
+            f.write(f"Ratio (final/estimated): {results['round_trip_period']/results['estimated_period']:.3f}\n")
         
         f.write(f"\nENHANCEMENTS USED:\n")
         f.write(f"- Smallest window detection for {results['activity_fraction']*100:.0f}% of events\n")
-        f.write(f"- Iterative peak refinement with second-half checking\n")
+        if results.get('manual_period_used', False):
+            f.write(f"- Manual round trip period: {results['round_trip_period']} bins\n")
+        else:
+            f.write(f"- Iterative peak refinement with second-half checking\n")
+            f.write(f"- Iterative refinement (2 iterations)\n")
         f.write(f"- Global maximum reverse correlation peak finding\n")
-        f.write(f"- Iterative refinement (2 iterations)\n")
         f.write(f"- Window size: {window_size} bins (vs full signal: {results['full_length']} bins)\n")
     
     print(f"Results saved to {results_path}")
     
     # Print summary
     print(f"\nSUMMARY:")
+    period_method = "Manual" if results.get('manual_period_used', False) else "Automatic"
+    print(f"Period calculation: {period_method}")
     print(f"Activity fraction: {results['activity_fraction']*100:.0f}%")
     print(f"Smallest window size: {window_size} bins")
-    print(f"Estimated period: {results['estimated_period']*time_bin_us/1000:.1f} ms")
-    print(f"Final round-trip period: {results['round_trip_period']*time_bin_us/1000:.1f} ms")
+    print(f"Round-trip period: {results['round_trip_period']*time_bin_us/1000:.1f} ms")
     print(f"One-way period: {results['one_way_period']*time_bin_us/1000:.1f} ms") 
     print(f"Total scanning time: {main_ms:.1f} ms")
     print(f"Number of one-way scans: {results['n_cycles']}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Enhanced scanning analysis with iterative refinement')
+    parser = argparse.ArgumentParser(description='Enhanced scanning analysis with manual or automatic period detection')
     parser.add_argument('raw_file', help='Path to RAW event file')
     parser.add_argument('--output_dir', default=None, help='Output directory')
     parser.add_argument('--time_bin_us', type=int, default=1000, help='Time bin size in microseconds')
@@ -951,6 +1015,10 @@ def main():
                        help='Fraction of events to include in active region (default: 0.80)')
     parser.add_argument('--max_iterations', type=int, default=2,
                        help='Maximum number of refinement iterations (default: 2)')
+    parser.add_argument('--round_trip_period', type=int, default=1688,
+                       help='Manual round trip period in bins (default: 1688). Use --auto_calculate_period to override.')
+    parser.add_argument('--auto_calculate_period', action='store_true',
+                       help='Automatically calculate round trip period using autocorrelation (overrides --round_trip_period)')
     
     args = parser.parse_args()
     
@@ -958,6 +1026,14 @@ def main():
     if not 0.1 <= args.activity_fraction <= 1.0:
         print(f"Error: activity_fraction must be between 0.1 and 1.0, got {args.activity_fraction}")
         return
+    
+    # Determine period calculation method
+    if args.auto_calculate_period:
+        manual_period = None
+        print(f"Using automatic period calculation (autocorrelation-based)")
+    else:
+        manual_period = args.round_trip_period
+        print(f"Using manual round trip period: {manual_period} bins")
     
     # Set output directory
     if args.output_dir is None:
@@ -969,7 +1045,8 @@ def main():
     
     print(f"Analyzing: {args.raw_file}")
     print(f"Activity fraction: {args.activity_fraction*100:.0f}%")
-    print(f"Max iterations: {args.max_iterations}")
+    if manual_period is None:
+        print(f"Max iterations: {args.max_iterations}")
     
     # Read raw data
     x, y, t, p, width, height = read_raw_simple(args.raw_file)
@@ -987,8 +1064,8 @@ def main():
     # Convert to activity signal
     activity, t_min, time_bin_us = events_to_activity_signal(t, args.time_bin_us)
     
-    # Analyze pattern with iterative refinement
-    results = analyze_scanning_pattern(activity, args.activity_fraction, args.max_iterations)
+    # Analyze pattern with manual period or iterative refinement
+    results = analyze_scanning_pattern(activity, args.activity_fraction, args.max_iterations, manual_period)
     
     if results is not None:
         # Plot and save results

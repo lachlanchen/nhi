@@ -1,7 +1,16 @@
-# data*/*
-# !data/*
-archived*/*
-frames*/*
-dispersed_frames*/*
-*.pt
-# *.mp4
+# Ignore everything by default
+*
+
+# Allow directories so git descends into them
+!*/
+
+# Keep this ignore file
+!.gitignore
+
+# Only track Python source files
+!*.py
+
+# Ignore macOS resource forks and caches
+._*
+__pycache__/
+*.py[cod]
