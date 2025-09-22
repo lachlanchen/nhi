@@ -60,12 +60,12 @@ python scanning_alignment_visualization_save.py \
   --output_dir led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/FIXED_visualization
 ```
 
-4) Compare Cumulative 2 ms‑Step Means vs 2 ms Bin/Shift Means
+4) Compare Cumulative 2 ms‑Step Means vs Multi‑Bin Means (2/50/100ms, all 2ms shift)
 
 No frames are saved; this computes per‑pixel means only and plots:
 
 ```
-python compare_cumulative_vs_bin2ms.py \
+python scanning_alignment_visualization_cumulative_compare.py \
   led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/Scan_1_Forward_events.npz \
   --sensor_width 1280 --sensor_height 720
 ```
@@ -73,7 +73,7 @@ python compare_cumulative_vs_bin2ms.py \
 Optional output directory and label:
 
 ```
-python compare_cumulative_vs_bin2ms.py \
+python scanning_alignment_visualization_cumulative_compare.py \
   led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/Scan_1_Forward_events.npz \
   --sensor_width 1280 --sensor_height 720 \
   --output_dir led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/cumulative_vs_bin2ms \
@@ -85,4 +85,3 @@ Tips
 - Reuse trained params: supply `--load_params <params.npz>` to the trainer to skip optimization.
 - GPU memory: the trainer uses chunked processing throughout; adjust `--chunk_size` if needed.
 - For other datasets, replace the paths above with your *.raw and segment *.npz files.
-
