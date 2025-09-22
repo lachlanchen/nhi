@@ -10,8 +10,6 @@ import os
 import sys
 import platform
 from datetime import datetime
-from PIL import Image, ImageTk
-import io
 
 # Add the camera SDK paths (modify these paths according to your setup)
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -62,41 +60,36 @@ else:
     WINDOWS_AVAILABLE = False
 
 
-def cv2_to_tkinter_optimized(cv_image, target_width, target_height, scale_factor=1.0):
-    """Optimized conversion from OpenCV to tkinter PhotoImage"""
-    if cv_image is None:
-        return None
+def set_window_always_on_top(window_title, always_on_top=True):
+    """Set a window to always on top (Windows only)"""
+    if not WINDOWS_AVAILABLE:
+        return False
     
     try:
-        # Calculate final dimensions based on scale factor
-        final_width = int(target_width * scale_factor)
-        final_height = int(target_height * scale_factor)
-        
-        # Resize image efficiently
-        if final_width != cv_image.shape[1] or final_height != cv_image.shape[0]:
-            cv_image = cv2.resize(cv_image, (final_width, final_height), interpolation=cv2.INTER_LINEAR)
-        
-        # Convert BGR to RGB more efficiently
-        rgb_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-        
-        # Convert to PIL Image and then PhotoImage
-        pil_image = Image.fromarray(rgb_image)
-        return ImageTk.PhotoImage(pil_image)
+        hwnd = win32gui.FindWindow(None, window_title)
+        if hwnd:
+            if always_on_top:
+                win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
+                                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            else:
+                win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0,
+                                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            return True
     except Exception as e:
-        print(f"Image conversion error: {e}")
-        return None
+        print(f"Error setting window always on top: {e}")
+    return False
 
 
 class FrameCameraController:
-    """Optimized Frame Camera Controller with better performance"""
+    """Modified version of CameraRecorder for GUI integration"""
     
-    def __init__(self, status_callback=None, preview_widget=None, scale_callback=None):
+    def __init__(self, status_callback=None, screen_info=None):
         self.cam = None
         self.device_info = None
         self.recording_thread = None
         self.preview_thread = None
         self.command_queue = queue.Queue()
-        self.frame_queue = queue.Queue(maxsize=15)  # Larger queue for better performance
+        self.frame_queue = queue.Queue(maxsize=5)
         self.is_recording = False
         self.is_grabbing = False
         self.show_preview = False
@@ -105,20 +98,17 @@ class FrameCameraController:
         self.record_params = None
         self.stats_lock = threading.Lock()
         self.status_callback = status_callback
-        self.preview_widget = preview_widget
-        self.scale_callback = scale_callback  # Callback to get current scale factor
+        self.screen_info = screen_info or {}
         
-        # Frame transformation settings
+        # Always on top state - DEFAULT TO TRUE
+        self.preview_always_on_top = True
+        
+        # Frame transformation settings - DEFAULT VERTICAL FLIP ON
         self.vertical_flip = True
         self.horizontal_flip = False
-        self.rotation_angle = 0
-        self.use_opencv_recording = False
+        self.rotation_angle = 0  # 0, 90, 180, 270
+        self.use_opencv_recording = False  # Use OpenCV when transformations are applied
         self.opencv_writer = None
-        
-        # Performance optimization
-        self.frame_skip_counter = 0
-        self.preview_fps_limit = 30  # Limit preview FPS for performance
-        self.last_preview_time = 0
         
         self.stats = {
             'frames_captured': 0,
@@ -138,6 +128,7 @@ class FrameCameraController:
             return []
         
         try:
+            # Initialize SDK
             MvCamera.MV_CC_Initialize()
         except:
             pass
@@ -179,8 +170,10 @@ class FrameCameraController:
             return False
             
         try:
+            # Force disconnect any existing camera first
             self.force_disconnect()
             
+            # Initialize SDK if not already done
             try:
                 MvCamera.MV_CC_Initialize()
             except:
@@ -189,19 +182,25 @@ class FrameCameraController:
             self.cam = MvCamera()
             self.device_info = device_info
             
+            # Create handle
             if self.cam.MV_CC_CreateHandle(device_info) != 0:
                 return False
             
+            # Open device
             if self.cam.MV_CC_OpenDevice(MV_ACCESS_Exclusive, 0) != 0:
                 self.cam.MV_CC_DestroyHandle()
                 return False
             
+            # For GigE, set optimal packet size
             if device_info.nTLayerType == MV_GIGE_DEVICE:
                 pkt = self.cam.MV_CC_GetOptimalPacketSize()
                 if pkt > 0:
                     self.cam.MV_CC_SetIntValue("GevSCPSPacketSize", pkt)
             
+            # Turn off trigger mode
             self.cam.MV_CC_SetEnumValue("TriggerMode", MV_TRIGGER_MODE_OFF)
+            
+            # Setup recording parameters
             self._setup_recording_params()
             
             self._notify_status("Frame camera connected")
@@ -217,19 +216,27 @@ class FrameCameraController:
         self._notify_status("Frame camera disconnected")
     
     def force_disconnect(self):
-        """Force disconnect with cleanup"""
+        """Force disconnect with brutal cleanup"""
         try:
+            # Stop all operations first
             self.stop_grabbing()
+            
+            # Give threads time to finish
             time.sleep(0.1)
             
+            # Force close camera
             if self.cam:
                 try:
                     self.cam.MV_CC_CloseDevice()
+                except:
+                    pass
+                try:
                     self.cam.MV_CC_DestroyHandle()
                 except:
                     pass
                 self.cam = None
             
+            # Close OpenCV writer if open
             if self.opencv_writer:
                 try:
                     self.opencv_writer.release()
@@ -237,6 +244,7 @@ class FrameCameraController:
                     pass
                 self.opencv_writer = None
             
+            # Reset all flags
             self.device_info = None
             self.is_recording = False
             self.is_grabbing = False
@@ -267,6 +275,7 @@ class FrameCameraController:
         record_param = MV_CC_RECORD_PARAM()
         memset(byref(record_param), 0, sizeof(MV_CC_RECORD_PARAM))
         
+        # Get camera parameters
         st_param = MVCC_INTVALUE()
         memset(byref(st_param), 0, sizeof(MVCC_INTVALUE))
         
@@ -344,6 +353,7 @@ class FrameCameraController:
     
     def start_recording(self, filename=None):
         """Start recording"""
+        # Auto-start grabbing if needed
         if not self.is_grabbing:
             if not self.start_grabbing():
                 return False
@@ -355,12 +365,15 @@ class FrameCameraController:
         
         self.current_filename = filename
         
+        # Determine recording method based on transformations
         has_transformations = (self.vertical_flip or self.horizontal_flip or self.rotation_angle != 0)
         
         if has_transformations:
+            # Use OpenCV recording for transformed frames
             self.use_opencv_recording = True
             self.command_queue.put(('START_OPENCV_RECORDING', filename))
         else:
+            # Use SDK recording for non-transformed frames
             self.use_opencv_recording = False
             self.command_queue.put(('START_RECORDING', filename))
         
@@ -375,6 +388,7 @@ class FrameCameraController:
     
     def start_preview(self):
         """Start preview with auto-start grabbing"""
+        # Auto-start grabbing if needed
         if not self.is_grabbing:
             if not self.start_grabbing():
                 return False
@@ -392,8 +406,13 @@ class FrameCameraController:
             self.show_preview = False
             if self.preview_thread:
                 self.preview_thread.join(timeout=2.0)
-            if self.preview_widget:
-                self.preview_widget.configure(image='', text="Frame Camera\nNot Active")
+    
+    def toggle_preview_always_on_top(self):
+        """Toggle always on top for preview window"""
+        self.preview_always_on_top = not self.preview_always_on_top
+        if WINDOWS_AVAILABLE:
+            set_window_always_on_top("Frame Camera Preview", self.preview_always_on_top)
+        self._notify_status(f"Frame preview always on top: {'ON' if self.preview_always_on_top else 'OFF'}")
     
     def toggle_vertical_flip(self):
         """Toggle vertical flip"""
@@ -418,13 +437,19 @@ class FrameCameraController:
         if img is None:
             return img
         
+        # Apply vertical flip
         if self.vertical_flip:
             img = cv2.flip(img, 0)
         
+        # Apply horizontal flip
         if self.horizontal_flip:
             img = cv2.flip(img, 1)
         
+        # Apply rotation
         if self.rotation_angle != 0:
+            height, width = img.shape[:2]
+            center = (width // 2, height // 2)
+            
             if self.rotation_angle == 90:
                 img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
             elif self.rotation_angle == 180:
@@ -477,14 +502,12 @@ class FrameCameraController:
         return ret == 0
     
     def _recording_worker(self):
-        """Optimized recording worker thread"""
+        """Recording worker thread"""
         frame_out = MV_FRAME_OUT()
         memset(byref(frame_out), 0, sizeof(frame_out))
         
         input_frame_info = MV_CC_INPUT_FRAME_INFO()
         memset(byref(input_frame_info), 0, sizeof(MV_CC_INPUT_FRAME_INFO))
-        
-        frame_count = 0
         
         while not self.exit_flag:
             # Process commands
@@ -514,9 +537,11 @@ class FrameCameraController:
                 elif cmd == 'START_OPENCV_RECORDING':
                     filename = cmd_data[1]
                     if not self.is_recording and self.is_grabbing and self.record_params:
+                        # Setup OpenCV VideoWriter
                         fourcc = cv2.VideoWriter_fourcc(*'XVID')
                         fps = self.record_params.fFrameRate
                         
+                        # Get frame size (considering rotation)
                         width = self.record_params.nWidth
                         height = self.record_params.nHeight
                         if self.rotation_angle in [90, 270]:
@@ -544,20 +569,24 @@ class FrameCameraController:
             
             # Capture frames
             if self.is_grabbing:
-                ret = self.cam.MV_CC_GetImageBuffer(frame_out, 50)  # Reduced timeout for better performance
+                ret = self.cam.MV_CC_GetImageBuffer(frame_out, 100)
                 if frame_out.pBufAddr and ret == 0:
+                    # Convert frame for processing
                     img = self._convert_to_display_format(frame_out.stFrameInfo, frame_out.pBufAddr)
                     
                     if img is not None:
+                        # Apply transformations
                         transformed_img = self._apply_transformations(img)
                         
                         # Handle recording
                         if self.is_recording:
                             if self.use_opencv_recording and self.opencv_writer and transformed_img is not None:
+                                # Record transformed frame with OpenCV
                                 self.opencv_writer.write(transformed_img)
                                 with self.stats_lock:
                                     self.stats['frames_captured'] += 1
                             elif not self.use_opencv_recording:
+                                # Record original frame with SDK
                                 input_frame_info.pData = cast(frame_out.pBufAddr, POINTER(c_ubyte))
                                 input_frame_info.nDataLen = frame_out.stFrameInfo.nFrameLen
                                 ret = self.cam.MV_CC_InputOneFrame(input_frame_info)
@@ -565,98 +594,90 @@ class FrameCameraController:
                                     with self.stats_lock:
                                         self.stats['frames_captured'] += 1
                         
-                        # Send to preview with frame skipping for performance
+                        # Send to preview (always transformed)
                         if self.show_preview and transformed_img is not None:
-                            frame_count += 1
-                            # Skip frames if queue is getting full (keep only latest frames)
-                            if frame_count % 2 == 0 or self.frame_queue.qsize() < 5:  # Skip every other frame if queue is filling up
-                                try:
-                                    # Clear old frames if queue is full
-                                    if self.frame_queue.full():
-                                        try:
-                                            self.frame_queue.get_nowait()
-                                        except:
-                                            pass
-                                    self.frame_queue.put_nowait(transformed_img)
-                                except queue.Full:
-                                    pass
+                            try:
+                                self.frame_queue.put_nowait(transformed_img)
+                            except queue.Full:
+                                pass
                     
                     self.cam.MV_CC_FreeImageBuffer(frame_out)
             else:
-                time.sleep(0.005)  # Shorter sleep for better responsiveness
+                time.sleep(0.01)
     
     def _preview_worker(self):
-        """Optimized preview worker thread"""
-        self._notify_status("Frame preview started - embedded mode")
+        """Preview worker thread"""
+        window_name = "Frame Camera Preview"
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
         
-        frame_counter = 0
-        last_update_time = time.time()
+        # Position window on TOP HALF of right side of screen
+        if self.screen_info:
+            window_width = self.screen_info.get('right_half_width', 640)
+            window_height = self.screen_info.get('top_half_height', 360) - 50  # Leave space for title bar
+            window_x = self.screen_info.get('right_half_x', 700)
+            window_y = 0  # TOP of screen
+            
+            # Resize and position the window
+            cv2.resizeWindow(window_name, window_width, window_height)
+            cv2.moveWindow(window_name, window_x, window_y)
+        
+        # Set initial always on top state - ALWAYS SET BY DEFAULT
+        if WINDOWS_AVAILABLE:
+            # Give window time to be created
+            time.sleep(0.1)
+            set_window_always_on_top(window_name, self.preview_always_on_top)
+        
+        # Enable mouse callback for right-click menu
+        def mouse_callback(event, x, y, flags, param):
+            if event == cv2.EVENT_RBUTTONDOWN:
+                # Create a simple menu using messagebox
+                self.toggle_preview_always_on_top()
+        
+        cv2.setMouseCallback(window_name, mouse_callback)
+        
+        self._notify_status("Frame preview controls: Right-click to toggle always on top, 'T' to toggle, ESC to close")
         
         while not self.exit_flag and self.show_preview:
             try:
-                frame = self.frame_queue.get(timeout=0.05)  # Shorter timeout
+                frame = self.frame_queue.get(timeout=0.1)
                 
-                current_time = time.time()
-                frame_counter += 1
+                # Add overlay text showing transformation status
+                overlay_frame = frame.copy()
                 
-                # Limit preview update rate for performance
-                if current_time - last_update_time >= (1.0 / self.preview_fps_limit):
-                    if self.preview_widget and frame is not None:
-                        # Get current scale factor
-                        scale_factor = 1.0
-                        if self.scale_callback:
-                            scale_factor = self.scale_callback()
-                        
-                        # Add overlay text less frequently for performance
-                        if frame_counter % 10 == 0:  # Only add overlay every 10th frame
-                            overlay_frame = frame.copy()
-                            
-                            transform_info = []
-                            if self.vertical_flip:
-                                transform_info.append("V-Flip")
-                            if self.horizontal_flip:
-                                transform_info.append("H-Flip")
-                            if self.rotation_angle != 0:
-                                transform_info.append(f"Rot{self.rotation_angle}°")
-                            
-                            transform_text = " | ".join(transform_info) if transform_info else "No transforms"
-                            
-                            cv2.putText(overlay_frame, f"Frame: {transform_text}", (10, 25), 
-                                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
-                            if self.is_recording:
-                                cv2.putText(overlay_frame, "RECORDING", (10, 45), 
-                                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
-                        else:
-                            overlay_frame = frame
-                        
-                        # Get widget dimensions
-                        widget_width = self.preview_widget.winfo_width()
-                        widget_height = self.preview_widget.winfo_height()
-                        
-                        if widget_width > 1 and widget_height > 1:  # Valid dimensions
-                            # Convert to tkinter format with scale
-                            tk_image = cv2_to_tkinter_optimized(overlay_frame, widget_width, widget_height, scale_factor)
-                            if tk_image:
-                                try:
-                                    self.preview_widget.configure(image=tk_image, text="")
-                                    self.preview_widget.image = tk_image
-                                except:
-                                    pass
-                    
-                    last_update_time = current_time
+                # Create status text
+                transform_info = []
+                if self.vertical_flip:
+                    transform_info.append("V-Flip")
+                if self.horizontal_flip:
+                    transform_info.append("H-Flip")
+                if self.rotation_angle != 0:
+                    transform_info.append(f"Rot{self.rotation_angle}°")
+                
+                transform_text = " | ".join(transform_info) if transform_info else "No transforms"
+                aot_text = f"Always on top: {'ON' if self.preview_always_on_top else 'OFF'}"
+                
+                cv2.putText(overlay_frame, f"Transforms: {transform_text}", (10, 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv2.putText(overlay_frame, f"{aot_text} (Right-click/T to toggle)", (10, 60), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                
+                cv2.imshow(window_name, overlay_frame)
+                
+                key = cv2.waitKey(1) & 0xFF
+                if key == 27:  # ESC
+                    self.show_preview = False
+                    break
+                elif key == ord('t') or key == ord('T'):  # Toggle always on top
+                    self.toggle_preview_always_on_top()
                     
             except queue.Empty:
-                continue
+                if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+                    self.show_preview = False
+                    break
             except Exception as e:
                 break
         
-        # Clear preview when stopped
-        if self.preview_widget:
-            try:
-                self.preview_widget.configure(image='', text="Frame Camera\nNot Active")
-                self.preview_widget.image = None
-            except:
-                pass
+        cv2.destroyWindow(window_name)
     
     def _convert_to_display_format(self, frame_info, raw_data):
         """Convert raw camera data to displayable format"""
@@ -702,9 +723,9 @@ class FrameCameraController:
 
 
 class EventCameraController:
-    """Optimized Event Camera Controller with better performance"""
+    """Modified version of EventCameraRecorder for GUI integration - simplified connection like old working code"""
     
-    def __init__(self, status_callback=None, preview_widget=None, scale_callback=None):
+    def __init__(self, status_callback=None, screen_info=None):
         self.device = None
         self.mv_iterator = None
         self.height = None
@@ -716,35 +737,31 @@ class EventCameraController:
         self.capturing = False
         
         self.record_lock = threading.Lock()
-        self.event_queue = queue.Queue(maxsize=2000)  # Larger queue for events
-        self.frame_queue = queue.Queue(maxsize=10)    # Separate frame queue for visualization
+        self.event_queue = queue.Queue(maxsize=1000)
         self.status_callback = status_callback
-        self.preview_widget = preview_widget
-        self.scale_callback = scale_callback
+        self.screen_info = screen_info or {}
         
         self.current_log_path = None
         
         # Threads
         self.event_thread = None
         self.viz_thread = None
-        self.preview_thread = None
         
-        # Frame generation for visualization
-        self.event_frame_gen = None
-        
-        # Performance optimization
-        self.event_fps_limit = 25  # Limit event visualization FPS
-        self.last_viz_time = 0
+        # Window reference for proper cleanup and always on top - DEFAULT TO TRUE
+        self.window = None
+        self.window_always_on_top = True
     
     def find_cameras(self):
-        """Find available event cameras"""
+        """Find available event cameras - simplified approach"""
         if not EVENT_CAMERA_AVAILABLE:
             return []
         
+        # Don't actually try to enumerate - just return a placeholder
+        # The actual connection test will happen in connect_camera()
         return [(0, "Event Camera (Auto-detect)", "")]
     
     def connect_camera(self, device_path=""):
-        """Connect to event camera"""
+        """Connect to event camera - using simple approach from old working code"""
         if not EVENT_CAMERA_AVAILABLE:
             self._notify_status("Event camera SDK not available")
             return False
@@ -752,33 +769,30 @@ class EventCameraController:
         try:
             self._notify_status("Connecting to event camera...")
             
+            # Simple cleanup first
             self.stop_all()
             
+            # Use the exact same approach as the old working code
             self.device = initiate_device("")
             
             if self.device is None:
                 self._notify_status("Event camera connection failed: initiate_device returned None")
                 return False
             
+            # Test the connection by creating iterator - exactly like old code
             self.mv_iterator = EventsIterator.from_device(device=self.device, delta_t=1000)
             self.height, self.width = self.mv_iterator.get_size()
-            
-            # Initialize frame generator for embedded preview
-            self.event_frame_gen = PeriodicFrameGenerationAlgorithm(
-                sensor_width=self.width, sensor_height=self.height, 
-                fps=self.event_fps_limit, palette=ColorPalette.Dark
-            )
             
             self._notify_status(f"Event camera connected successfully: {self.width}x{self.height}")
             return True
             
         except Exception as e:
             self._notify_status(f"Event camera connection failed: {e}")
+            # Clean up failed attempt
             try:
                 if self.device:
                     self.device = None
                 self.mv_iterator = None
-                self.event_frame_gen = None
             except:
                 pass
             return False
@@ -788,7 +802,6 @@ class EventCameraController:
         self.stop_all()
         self.device = None
         self.mv_iterator = None
-        self.event_frame_gen = None
         self._notify_status("Event camera disconnected")
     
     def start_capture(self):
@@ -814,6 +827,7 @@ class EventCameraController:
     
     def start_recording(self, output_dir="", filename_prefix=""):
         """Start recording events"""
+        # Auto-start capture if needed
         if not self.capturing:
             if not self.start_capture():
                 return False
@@ -854,20 +868,16 @@ class EventCameraController:
     
     def start_visualization(self):
         """Start event visualization with auto-start capture"""
+        # Auto-start capture if needed
         if not self.capturing:
             if not self.start_capture():
                 return False
         
-        if not self.device or self.visualization_running or not self.event_frame_gen:
+        if not self.device or self.visualization_running:
             return False
         
         self.viz_thread = threading.Thread(target=self._visualization_thread, daemon=True)
         self.viz_thread.start()
-        
-        # Start separate preview thread for better performance
-        self.preview_thread = threading.Thread(target=self._preview_worker, daemon=True)
-        self.preview_thread.start()
-        
         return True
     
     def stop_visualization(self):
@@ -875,15 +885,23 @@ class EventCameraController:
         if self.visualization_running:
             self.visualization_running = False
             
+            # Force close window
+            if self.window:
+                try:
+                    self.window.set_close_flag()
+                except:
+                    pass
+                self.window = None
+            
             if self.viz_thread:
                 self.viz_thread.join(timeout=3.0)
-            
-            if self.preview_thread:
-                self.preview_thread.join(timeout=3.0)
-            
-            # Clear the preview widget
-            if self.preview_widget:
-                self.preview_widget.configure(image='', text="Event Camera\nNot Active")
+    
+    def toggle_visualization_always_on_top(self):
+        """Toggle always on top for visualization window"""
+        self.window_always_on_top = not self.window_always_on_top
+        if WINDOWS_AVAILABLE:
+            set_window_always_on_top("Event Camera Preview", self.window_always_on_top)
+        self._notify_status(f"Event preview always on top: {'ON' if self.window_always_on_top else 'OFF'}")
     
     def stop_all(self):
         """Stop all operations"""
@@ -922,20 +940,14 @@ class EventCameraController:
             return False
     
     def _event_processing_thread(self):
-        """Thread for reading events from camera"""
+        """Thread for reading events from camera - exactly like old working code"""
         try:
             for evs in self.mv_iterator:
                 if self.should_exit:
                     break
                 
                 try:
-                    # Clear old events if queue is getting full
-                    if self.event_queue.full():
-                        try:
-                            self.event_queue.get_nowait()
-                        except:
-                            pass
-                    self.event_queue.put_nowait(evs)
+                    self.event_queue.put(evs, block=False)
                 except queue.Full:
                     pass
                 
@@ -947,108 +959,102 @@ class EventCameraController:
             self.capturing = False
     
     def _visualization_thread(self):
-        """Thread for event frame generation - separate from preview"""
+        """Thread for event visualization - like old working code but with always on top"""
         try:
-            frame_counter = 0
+            event_frame_gen = PeriodicFrameGenerationAlgorithm(
+                sensor_width=self.width, sensor_height=self.height, 
+                fps=25, palette=ColorPalette.Dark
+            )
             
-            def on_cd_frame_cb(ts, cd_frame):
-                nonlocal frame_counter
-                frame_counter += 1
+            # Calculate window dimensions for BOTTOM half of right side
+            if self.screen_info:
+                window_width = min(self.width, self.screen_info.get('right_half_width', self.width))
+                # Calculate height to fit in bottom portion
+                available_height = self.screen_info.get('height', 720) - self.screen_info.get('top_half_height', 360)
+                window_height = min(self.height, available_height - 50)  # Leave space for title bar
+            else:
+                window_width = self.width
+                window_height = self.height
+            
+            with MTWindow(title="Event Camera Preview", width=window_width, height=window_height,
+                         mode=BaseWindow.RenderMode.BGR) as window:
                 
-                # Add status overlay less frequently for performance
-                if frame_counter % 10 == 0:  # Only every 10th frame
-                    overlay_frame = cd_frame.copy()
-                    if self.is_recording:
-                        cv2.putText(overlay_frame, "Event: RECORDING", (10, 25), 
-                                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
-                    else:
-                        cv2.putText(overlay_frame, "Event: Live", (10, 25), 
-                                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
-                else:
-                    overlay_frame = cd_frame
+                self.window = window
                 
-                # Send to preview queue with frame dropping if full
-                try:
-                    if self.frame_queue.full():
+                # Position window on BOTTOM half of right side using Windows API
+                if WINDOWS_AVAILABLE and self.screen_info:
+                    def position_window():
+                        time.sleep(0.3)  # Give window time to be created
                         try:
-                            self.frame_queue.get_nowait()  # Drop old frame
-                        except:
-                            pass
-                    self.frame_queue.put_nowait(overlay_frame)
-                except queue.Full:
-                    pass
-            
-            self.event_frame_gen.set_output_callback(on_cd_frame_cb)
-            self.visualization_running = True
-            self._notify_status("Event visualization started - embedded mode")
-            
-            # Process events with timing control
-            event_counter = 0
-            while not self.should_exit and self.visualization_running:
-                try:
-                    evs = self.event_queue.get(timeout=0.01)
-                    event_counter += 1
+                            hwnd = win32gui.FindWindow(None, "Event Camera Preview")
+                            if hwnd:
+                                x = self.screen_info.get('right_half_x', 700)
+                                # Position right after the top window with minimal gap
+                                top_window_height = self.screen_info.get('top_half_height', 360)
+                                y = top_window_height - 20  # Small gap between windows
+                                width = self.screen_info.get('right_half_width', 640)
+                                # Calculate height to fit remaining space
+                                remaining_height = self.screen_info.get('height', 720) - y - 50  # Leave space at bottom
+                                height = min(window_height, remaining_height)
+                                
+                                win32gui.SetWindowPos(hwnd, 0, x, y, width, height, 
+                                                    win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE)
+                        except Exception as e:
+                            print(f"Could not position event window: {e}")
                     
-                    # Process every Nth event batch for performance
-                    if event_counter % 2 == 0:  # Process every other event batch
-                        self.event_frame_gen.process_events(evs)
-                        
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    break
+                    # Position window in a separate thread to avoid blocking
+                    import threading
+                    threading.Thread(target=position_window, daemon=True).start()
+                
+                def keyboard_cb(key, scancode, action, mods):
+                    if action != UIAction.RELEASE:
+                        return
+                    if key == UIKeyEvent.KEY_ESCAPE or key == UIKeyEvent.KEY_Q:
+                        window.set_close_flag()
+                    elif key == UIKeyEvent.KEY_T:
+                        # Toggle always on top with 'T' key
+                        self.toggle_visualization_always_on_top()
+                
+                window.set_keyboard_callback(keyboard_cb)
+                
+                def on_cd_frame_cb(ts, cd_frame):
+                    # Add status overlay to the frame
+                    overlay_frame = cd_frame.copy()
+                    status_text = f"Always on top: {'ON' if self.window_always_on_top else 'OFF'} (T to toggle)"
+                    cv2.putText(overlay_frame, status_text, (10, 30), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                    window.show_async(overlay_frame)
+                
+                event_frame_gen.set_output_callback(on_cd_frame_cb)
+                
+                self.visualization_running = True
+                self._notify_status("Event visualization started - Press 'T' to toggle always on top")
+                
+                # Set initial always on top state - ALWAYS SET BY DEFAULT
+                if WINDOWS_AVAILABLE:
+                    time.sleep(0.4)  # Give window time to be created and positioned
+                    set_window_always_on_top("Event Camera Preview", self.window_always_on_top)
+                
+                # Simple event loop like old working code
+                while not self.should_exit and self.visualization_running:
+                    if window.should_close():
+                        break
+                    
+                    try:
+                        evs = self.event_queue.get(timeout=0.01)
+                        EventLoop.poll_and_dispatch()
+                        event_frame_gen.process_events(evs)
+                    except queue.Empty:
+                        EventLoop.poll_and_dispatch()
+                    except Exception as e:
+                        break
             
         except Exception as e:
             self._notify_status(f"Visualization error: {e}")
         finally:
             self.visualization_running = False
+            self.window = None
             self._notify_status("Event visualization stopped")
-    
-    def _preview_worker(self):
-        """Separate thread for updating preview widget"""
-        last_update_time = time.time()
-        
-        while not self.should_exit and self.visualization_running:
-            try:
-                cd_frame = self.frame_queue.get(timeout=0.05)
-                
-                current_time = time.time()
-                
-                # Limit preview update rate
-                if current_time - last_update_time >= (1.0 / self.event_fps_limit):
-                    if self.preview_widget and cd_frame is not None:
-                        # Get current scale factor
-                        scale_factor = 1.0
-                        if self.scale_callback:
-                            scale_factor = self.scale_callback()
-                        
-                        # Get widget dimensions
-                        widget_width = self.preview_widget.winfo_width()
-                        widget_height = self.preview_widget.winfo_height()
-                        
-                        if widget_width > 1 and widget_height > 1:
-                            tk_image = cv2_to_tkinter_optimized(cd_frame, widget_width, widget_height, scale_factor)
-                            if tk_image:
-                                try:
-                                    self.preview_widget.configure(image=tk_image, text="")
-                                    self.preview_widget.image = tk_image
-                                except:
-                                    pass
-                    
-                    last_update_time = current_time
-                        
-            except queue.Empty:
-                continue
-            except Exception as e:
-                break
-        
-        # Clear preview when stopped
-        if self.preview_widget:
-            try:
-                self.preview_widget.configure(image='', text="Event Camera\nNot Active")
-                self.preview_widget.image = None
-            except:
-                pass
     
     def _notify_status(self, message):
         """Notify status callback"""
@@ -1066,34 +1072,34 @@ class EventCameraController:
 
 
 class DualCameraGUI:
-    """Main GUI application with optimized embedded previews"""
+    """Main GUI application"""
     
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Dual Camera Control System - Optimized Embedded Previews")
+        self.root.title("Dual Camera Control System")
         
-        # Get screen dimensions
+        # Get screen dimensions for optimal window positioning
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         
-        # Make window almost full screen
+        # Position main window on left half of screen
         main_width = screen_width - 20
-        main_height = screen_height - 90
+        main_height = screen_height - 90  # Leave space for taskbar
         self.root.geometry(f"{main_width}x{main_height}+0+0")
         
-        # Preview scaling variables
-        self.frame_scale_var = tk.DoubleVar(value=100.0)  # Default 100%
-        self.event_scale_var = tk.DoubleVar(value=100.0)  # Default 100%
-        self.frame_scale_text_var = tk.StringVar(value="100")
-        self.event_scale_text_var = tk.StringVar(value="100")
+        # Store screen info for camera preview positioning - UPDATED calculations
+        self.screen_info = {
+            'width': screen_width,
+            'height': screen_height,
+            'right_half_x': screen_width // 2,
+            'right_half_width': screen_width // 2,
+            'top_half_height': (screen_height - 100) // 2,  # Account for taskbar, split in half
+            'bottom_half_y': (screen_height - 100) // 2 - 20  # Position for bottom window with small gap
+        }
         
-        # Create preview widgets first
-        self.frame_preview_widget = None
-        self.event_preview_widget = None
-        
-        # Camera controllers
-        self.frame_camera = None
-        self.event_camera = None
+        # Camera controllers with screen info
+        self.frame_camera = FrameCameraController(self.update_status, self.screen_info)
+        self.event_camera = EventCameraController(self.update_status, self.screen_info)
         
         # GUI variables
         self.frame_cameras_list = []
@@ -1102,7 +1108,7 @@ class DualCameraGUI:
         # Status update queue
         self.status_queue = queue.Queue()
         
-        # Parameter variables
+        # Parameter variables for text boxes
         self.exposure_text_var = tk.StringVar()
         self.gain_text_var = tk.StringVar()
         self.bias_text_vars = {}
@@ -1121,51 +1127,11 @@ class DualCameraGUI:
         # Auto-scan for cameras
         self.scan_cameras()
     
-    def get_frame_scale_factor(self):
-        """Get current frame camera scale factor"""
-        return self.frame_scale_var.get() / 100.0
-    
-    def get_event_scale_factor(self):
-        """Get current event camera scale factor"""
-        return self.event_scale_var.get() / 100.0
-    
     def create_widgets(self):
-        """Create GUI widgets with optimized embedded previews"""
-        # Main horizontal paned window
-        main_paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        main_paned.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
-        
-        # Left side - controls (60%)
-        controls_frame = ttk.Frame(main_paned)
-        main_paned.add(controls_frame, weight=60)
-        
-        # Right side - previews (40%)
-        preview_frame = ttk.Frame(main_paned)
-        main_paned.add(preview_frame, weight=40)
-        
-        # Create controls in left frame
-        self.create_controls_section(controls_frame)
-        
-        # Create preview section in right frame
-        self.create_preview_section(preview_frame)
-        
-        # Initialize camera controllers with preview widgets and scale callbacks
-        self.frame_camera = FrameCameraController(
-            self.update_status, 
-            self.frame_preview_widget, 
-            self.get_frame_scale_factor
-        )
-        self.event_camera = EventCameraController(
-            self.update_status, 
-            self.event_preview_widget, 
-            self.get_event_scale_factor
-        )
-    
-    def create_controls_section(self, parent):
-        """Create all control widgets"""
+        """Create GUI widgets"""
         # Main container with scrollable frame
-        main_canvas = tk.Canvas(parent)
-        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=main_canvas.yview)
+        main_canvas = tk.Canvas(self.root)
+        scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=main_canvas.yview)
         scrollable_frame = ttk.Frame(main_canvas)
         
         scrollable_frame.bind(
@@ -1203,6 +1169,11 @@ class DualCameraGUI:
         unified_section.pack(fill=tk.X, padx=5, pady=5)
         self.create_unified_controls_section(unified_section)
         
+        # Always on top controls section
+        aot_section = ttk.LabelFrame(scrollable_frame, text="Preview Window Controls")
+        aot_section.pack(fill=tk.X, padx=5, pady=5)
+        self.create_always_on_top_section(aot_section)
+        
         # Status section
         status_section = ttk.LabelFrame(scrollable_frame, text="Status Log")
         status_section.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -1211,104 +1182,8 @@ class DualCameraGUI:
         # Status bar
         self.status_var = tk.StringVar()
         self.status_var.set("Ready")
-        status_bar = ttk.Label(parent, textvariable=self.status_var, relief=tk.SUNKEN)
+        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN)
         status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-    
-    def create_preview_section(self, parent):
-        """Create optimized embedded preview section"""
-        # Preview scaling controls
-        scale_control_frame = ttk.LabelFrame(parent, text="Preview Scaling (50% - 200%)")
-        scale_control_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Frame camera scale
-        ttk.Label(scale_control_frame, text="Frame Scale:").grid(row=0, column=0, padx=5, pady=2)
-        frame_scale = ttk.Scale(scale_control_frame, from_=50, to=200, variable=self.frame_scale_var,
-                               orient=tk.HORIZONTAL, command=self.on_frame_scale_change)
-        frame_scale.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
-        
-        frame_scale_entry = ttk.Entry(scale_control_frame, textvariable=self.frame_scale_text_var, width=8)
-        frame_scale_entry.grid(row=0, column=2, padx=5, pady=2)
-        frame_scale_entry.bind('<Return>', self.on_frame_scale_entry_change)
-        frame_scale_entry.bind('<FocusOut>', self.on_frame_scale_entry_change)
-        
-        ttk.Label(scale_control_frame, text="%").grid(row=0, column=3, padx=2, pady=2)
-        
-        # Event camera scale
-        ttk.Label(scale_control_frame, text="Event Scale:").grid(row=1, column=0, padx=5, pady=2)
-        event_scale = ttk.Scale(scale_control_frame, from_=50, to=200, variable=self.event_scale_var,
-                               orient=tk.HORIZONTAL, command=self.on_event_scale_change)
-        event_scale.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
-        
-        event_scale_entry = ttk.Entry(scale_control_frame, textvariable=self.event_scale_text_var, width=8)
-        event_scale_entry.grid(row=1, column=2, padx=5, pady=2)
-        event_scale_entry.bind('<Return>', self.on_event_scale_entry_change)
-        event_scale_entry.bind('<FocusOut>', self.on_event_scale_entry_change)
-        
-        ttk.Label(scale_control_frame, text="%").grid(row=1, column=3, padx=2, pady=2)
-        
-        scale_control_frame.columnconfigure(1, weight=1)
-        
-        # Vertical paned window for top/bottom previews
-        preview_paned = ttk.PanedWindow(parent, orient=tk.VERTICAL)
-        preview_paned.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
-        
-        # Top preview - Frame Camera
-        frame_preview_frame = ttk.LabelFrame(preview_paned, text="Frame Camera Preview")
-        preview_paned.add(frame_preview_frame, weight=1)
-        
-        self.frame_preview_widget = ttk.Label(
-            frame_preview_frame, 
-            text="Frame Camera\nNot Active", 
-            anchor=tk.CENTER,
-            background="black",
-            foreground="white",
-            font=('TkDefaultFont', 12)
-        )
-        self.frame_preview_widget.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-        
-        # Bottom preview - Event Camera
-        event_preview_frame = ttk.LabelFrame(preview_paned, text="Event Camera Preview")
-        preview_paned.add(event_preview_frame, weight=1)
-        
-        self.event_preview_widget = ttk.Label(
-            event_preview_frame, 
-            text="Event Camera\nNot Active", 
-            anchor=tk.CENTER,
-            background="black",
-            foreground="white",
-            font=('TkDefaultFont', 12)
-        )
-        self.event_preview_widget.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-    
-    def on_frame_scale_change(self, value):
-        """Handle frame scale change"""
-        scale_value = float(value)
-        self.frame_scale_text_var.set(f"{scale_value:.0f}")
-    
-    def on_frame_scale_entry_change(self, event=None):
-        """Handle frame scale text entry change"""
-        try:
-            scale_value = float(self.frame_scale_text_var.get())
-            scale_value = max(50, min(200, scale_value))  # Clamp to valid range
-            self.frame_scale_var.set(scale_value)
-            self.frame_scale_text_var.set(f"{scale_value:.0f}")
-        except ValueError:
-            self.frame_scale_text_var.set(f"{self.frame_scale_var.get():.0f}")
-    
-    def on_event_scale_change(self, value):
-        """Handle event scale change"""
-        scale_value = float(value)
-        self.event_scale_text_var.set(f"{scale_value:.0f}")
-    
-    def on_event_scale_entry_change(self, event=None):
-        """Handle event scale text entry change"""
-        try:
-            scale_value = float(self.event_scale_text_var.get())
-            scale_value = max(50, min(200, scale_value))  # Clamp to valid range
-            self.event_scale_var.set(scale_value)
-            self.event_scale_text_var.set(f"{scale_value:.0f}")
-        except ValueError:
-            self.event_scale_text_var.set(f"{self.event_scale_var.get():.0f}")
     
     def create_frame_camera_section(self, parent):
         """Create frame camera control section"""
@@ -1355,6 +1230,9 @@ class DualCameraGUI:
         self.rotate_btn = ttk.Button(transform_frame, text="Rotate 90° [0°]", 
                                     command=self.rotate_frame, width=15)
         self.rotate_btn.grid(row=0, column=2, padx=5, pady=5)
+        
+        ttk.Label(transform_frame, text="Note: Transforms apply to both preview and recording", 
+                 font=('TkDefaultFont', 8)).grid(row=1, column=0, columnspan=3, padx=5, pady=2)
         
         # Parameters frame
         param_frame = ttk.LabelFrame(parent, text="Parameters")
@@ -1415,7 +1293,7 @@ class DualCameraGUI:
         self.event_record_btn = ttk.Button(control_frame, text="Start Recording", command=self.toggle_event_recording)
         self.event_record_btn.grid(row=0, column=2, padx=5, pady=5)
         
-        # Bias parameters frame (simplified for space)
+        # Bias parameters frame
         bias_frame = ttk.LabelFrame(parent, text="Bias Parameters")
         bias_frame.pack(fill=tk.X, padx=5, pady=5)
         
@@ -1434,6 +1312,7 @@ class DualCameraGUI:
                              command=lambda val, name=bias_name: self.on_bias_scale_change(name, val))
             scale.grid(row=row, column=col+1, padx=5, pady=2, sticky="ew")
             
+            # Text entry for bias
             text_var = tk.StringVar()
             entry = ttk.Entry(bias_frame, textvariable=text_var, width=8)
             entry.grid(row=row, column=col+2, padx=5, pady=2)
@@ -1464,34 +1343,54 @@ class DualCameraGUI:
                                             command=self.toggle_unified_recording)
         self.unified_record_btn.grid(row=0, column=1, padx=10, pady=5)
     
+    def create_always_on_top_section(self, parent):
+        """Create always on top controls section"""
+        info_text = "Preview Window Controls (Default: Always On Top Enabled):"
+        if not WINDOWS_AVAILABLE:
+            info_text += " (Windows only - install pywin32 for full support)"
+        
+        ttk.Label(parent, text=info_text, font=('TkDefaultFont', 9)).pack(padx=5, pady=2)
+        
+        controls_frame = ttk.Frame(parent)
+        controls_frame.pack(padx=5, pady=5)
+        
+        ttk.Button(controls_frame, text="Toggle Frame Preview Always On Top", 
+                  command=self.frame_camera.toggle_preview_always_on_top).grid(row=0, column=0, padx=5, pady=2)
+        
+        ttk.Button(controls_frame, text="Toggle Event Preview Always On Top", 
+                  command=self.event_camera.toggle_visualization_always_on_top).grid(row=0, column=1, padx=5, pady=2)
+        
+        ttk.Label(parent, text="• Frame Preview: Right-click or press 'T' in preview window\n• Event Preview: Press 'T' in preview window\n• Frame: TOP half, Event: BOTTOM half", 
+                 font=('TkDefaultFont', 8)).pack(padx=5, pady=2)
+    
     def create_status_section(self, parent):
         """Create status section"""
-        self.status_text = tk.Text(parent, height=6, state=tk.DISABLED)  # Reduced height
+        self.status_text = tk.Text(parent, height=12, state=tk.DISABLED)
         status_scroll = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=self.status_text.yview)
         self.status_text.configure(yscrollcommand=status_scroll.set)
         
         self.status_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         status_scroll.pack(side=tk.RIGHT, fill=tk.Y)
     
-    # [All the remaining methods stay the same as before - scan_cameras, connect methods, toggles, etc.]
     def scan_cameras(self):
         """Scan for available cameras"""
-        if self.frame_camera:
-            self.frame_cameras_list = self.frame_camera.find_cameras()
-            frame_names = [f"{idx}: {name}" for idx, name, _ in self.frame_cameras_list]
-            self.frame_camera_combo['values'] = frame_names
-            if frame_names:
-                self.frame_camera_combo.current(0)
+        # Frame cameras
+        self.frame_cameras_list = self.frame_camera.find_cameras()
+        frame_names = [f"{idx}: {name}" for idx, name, _ in self.frame_cameras_list]
+        self.frame_camera_combo['values'] = frame_names
+        if frame_names:
+            self.frame_camera_combo.current(0)
         
-        if self.event_camera:
-            self.event_cameras_list = self.event_camera.find_cameras()
-            event_names = [f"{idx}: {name}" for idx, name, _ in self.event_cameras_list]
-            self.event_camera_combo['values'] = event_names
-            if event_names:
-                self.event_camera_combo.current(0)
+        # Event cameras - simplified approach
+        self.event_cameras_list = self.event_camera.find_cameras()
+        event_names = [f"{idx}: {name}" for idx, name, _ in self.event_cameras_list]
+        self.event_camera_combo['values'] = event_names
+        if event_names:
+            self.event_camera_combo.current(0)
         
-        frame_count = len(self.frame_cameras_list) if hasattr(self, 'frame_cameras_list') else 0
-        event_count = len(self.event_cameras_list) if hasattr(self, 'event_cameras_list') else 0
+        # Update status
+        frame_count = len(self.frame_cameras_list)
+        event_count = len(self.event_cameras_list)
         self.update_status(f"Found {frame_count} frame cameras, {event_count} event cameras")
     
     def connect_frame_camera(self):
@@ -1520,7 +1419,7 @@ class DualCameraGUI:
         self.reset_frame_button_states()
     
     def connect_event_camera(self):
-        """Connect to event camera"""
+        """Connect to event camera - simplified approach"""
         if self.event_camera.connect_camera():
             self.event_connect_btn.config(text="Disconnect", command=self.disconnect_event_camera)
             self.update_event_parameters()
@@ -1580,10 +1479,11 @@ class DualCameraGUI:
             self.reset_frame_button_states()
     
     def toggle_frame_preview(self):
-        """Toggle frame preview"""
+        """Toggle frame preview with auto-start grabbing"""
         if not self.frame_camera.show_preview:
             if self.frame_camera.start_preview():
                 self.frame_preview_btn.config(text="Stop Preview")
+                # Update grabbing button if auto-started
                 if self.frame_camera.is_grabbing:
                     self.frame_grab_btn.config(text="Stop Grabbing")
         else:
@@ -1591,7 +1491,7 @@ class DualCameraGUI:
             self.frame_preview_btn.config(text="Start Preview")
     
     def toggle_frame_recording(self):
-        """Toggle frame recording"""
+        """Toggle frame recording with auto-start grabbing"""
         if not self.frame_camera.is_recording:
             prefix = self.filename_prefix_var.get()
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1599,6 +1499,7 @@ class DualCameraGUI:
             
             if self.frame_camera.start_recording(filename):
                 self.frame_record_btn.config(text="Stop Recording")
+                # Update grabbing button if auto-started
                 if self.frame_camera.is_grabbing:
                     self.frame_grab_btn.config(text="Stop Grabbing")
         else:
@@ -1630,10 +1531,11 @@ class DualCameraGUI:
             self.reset_event_button_states()
     
     def toggle_event_visualization(self):
-        """Toggle event visualization"""
+        """Toggle event visualization with auto-start capture"""
         if not self.event_camera.visualization_running:
             if self.event_camera.start_visualization():
                 self.event_viz_btn.config(text="Stop Visualization")
+                # Update capture button if auto-started
                 if self.event_camera.capturing:
                     self.event_capture_btn.config(text="Stop Capture")
         else:
@@ -1641,11 +1543,12 @@ class DualCameraGUI:
             self.event_viz_btn.config(text="Start Visualization")
     
     def toggle_event_recording(self):
-        """Toggle event recording"""
+        """Toggle event recording with auto-start capture"""
         if not self.event_camera.is_recording:
             prefix = self.filename_prefix_var.get()
             if self.event_camera.start_recording(filename_prefix=prefix):
                 self.event_record_btn.config(text="Stop Recording")
+                # Update capture button if auto-started
                 if self.event_camera.capturing:
                     self.event_capture_btn.config(text="Stop Capture")
         else:
@@ -1655,9 +1558,11 @@ class DualCameraGUI:
     def toggle_unified_preview(self):
         """Toggle unified preview for both cameras"""
         if not self.unified_preview_active:
+            # Start unified preview
             frame_started = False
             event_started = False
             
+            # Start frame camera preview if connected
             if self.frame_camera.cam is not None:
                 frame_started = self.frame_camera.start_preview()
                 if frame_started:
@@ -1665,6 +1570,7 @@ class DualCameraGUI:
                     if self.frame_camera.is_grabbing:
                         self.frame_grab_btn.config(text="Stop Grabbing")
             
+            # Start event camera preview if connected
             if self.event_camera.device is not None:
                 event_started = self.event_camera.start_visualization()
                 if event_started:
@@ -1679,6 +1585,7 @@ class DualCameraGUI:
             else:
                 self.update_status("No cameras available for unified preview")
         else:
+            # Stop unified preview
             if self.frame_camera.show_preview:
                 self.frame_camera.stop_preview()
                 self.frame_preview_btn.config(text="Start Preview")
@@ -1694,11 +1601,13 @@ class DualCameraGUI:
     def toggle_unified_recording(self):
         """Toggle unified recording for both cameras"""
         if not self.unified_recording_active:
+            # Start unified recording
             frame_started = False
             event_started = False
             prefix = self.filename_prefix_var.get()
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
+            # Start frame camera recording if connected
             if self.frame_camera.cam is not None:
                 filename = f"{prefix}_frame_{timestamp}.avi" if prefix else None
                 frame_started = self.frame_camera.start_recording(filename)
@@ -1707,6 +1616,7 @@ class DualCameraGUI:
                     if self.frame_camera.is_grabbing:
                         self.frame_grab_btn.config(text="Stop Grabbing")
             
+            # Start event camera recording if connected
             if self.event_camera.device is not None:
                 event_started = self.event_camera.start_recording(filename_prefix=f"{prefix}_event" if prefix else "")
                 if event_started:
@@ -1721,6 +1631,7 @@ class DualCameraGUI:
             else:
                 self.update_status("No cameras available for unified recording")
         else:
+            # Stop unified recording
             if self.frame_camera.is_recording:
                 self.frame_camera.stop_recording()
                 self.frame_record_btn.config(text="Start Recording")
@@ -1738,20 +1649,23 @@ class DualCameraGUI:
         exposure = float(value)
         self.exposure_text_var.set(f"{exposure:.0f}")
         if self.frame_camera.set_exposure(exposure):
-            pass
+            pass  # Success
     
     def on_exposure_entry_change(self, event=None):
         """Handle exposure text entry change"""
         try:
             exposure = float(self.exposure_text_var.get())
+            # Get current range
             exposure_range = self.frame_camera.get_exposure_range()
             if exposure_range:
                 min_exp, max_exp, _ = exposure_range
+                # Clamp to valid range
                 exposure = max(min_exp, min(max_exp, exposure))
                 self.exposure_var.set(exposure)
                 self.exposure_text_var.set(f"{exposure:.0f}")
                 self.frame_camera.set_exposure(exposure)
         except ValueError:
+            # Reset to current scale value
             self.exposure_text_var.set(f"{self.exposure_var.get():.0f}")
     
     def on_gain_scale_change(self, value):
@@ -1759,20 +1673,23 @@ class DualCameraGUI:
         gain = float(value)
         self.gain_text_var.set(f"{gain:.1f}")
         if self.frame_camera.set_gain(gain):
-            pass
+            pass  # Success
     
     def on_gain_entry_change(self, event=None):
         """Handle gain text entry change"""
         try:
             gain = float(self.gain_text_var.get())
+            # Get current range
             gain_range = self.frame_camera.get_gain_range()
             if gain_range:
                 min_gain, max_gain, _ = gain_range
+                # Clamp to valid range
                 gain = max(min_gain, min(max_gain, gain))
                 self.gain_var.set(gain)
                 self.gain_text_var.set(f"{gain:.1f}")
                 self.frame_camera.set_gain(gain)
         except ValueError:
+            # Reset to current scale value
             self.gain_text_var.set(f"{self.gain_var.get():.1f}")
     
     def on_bias_scale_change(self, bias_name, value):
@@ -1785,11 +1702,13 @@ class DualCameraGUI:
         """Handle bias text entry change"""
         try:
             bias_value = int(self.bias_text_vars[bias_name].get())
+            # Clamp to valid range (0-255)
             bias_value = max(0, min(255, bias_value))
             self.bias_vars[bias_name].set(bias_value)
             self.bias_text_vars[bias_name].set(str(bias_value))
             self.event_camera.set_bias_value(bias_name, bias_value)
         except ValueError:
+            # Reset to current scale value
             self.bias_text_vars[bias_name].set(str(self.bias_vars[bias_name].get()))
     
     def update_status(self, message):
@@ -1804,6 +1723,7 @@ class DualCameraGUI:
                     message = self.status_queue.get_nowait()
                     self.status_var.set(message)
                     
+                    # Also add to status text
                     timestamp = datetime.now().strftime("%H:%M:%S")
                     full_message = f"[{timestamp}] {message}\n"
                     
@@ -1814,19 +1734,20 @@ class DualCameraGUI:
             except queue.Empty:
                 pass
             
+            # Schedule next update
             self.root.after(100, update)
         
+        # Start the update loop
         update()
     
     def run(self):
         """Run the GUI application"""
         def on_closing():
+            # Cleanup with force disconnect
             try:
-                if self.frame_camera:
-                    self.frame_camera.force_disconnect()
-                if self.event_camera:
-                    self.event_camera.stop_all()
-                time.sleep(0.2)
+                self.frame_camera.force_disconnect()
+                self.event_camera.stop_all()
+                time.sleep(0.2)  # Give time for cleanup
             except:
                 pass
             self.root.destroy()
