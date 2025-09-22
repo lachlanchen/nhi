@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Weighted cumulative means visualization (2ms steps) with adjustable
+Weighted cumulative means visualization (configurable step size) with adjustable
 polarity scaling and optional compensation.
 
 Usage:
   python visualize_cumulative_weighted.py <segment_npz>
     --sensor_width 1280 --sensor_height 720 \
     --pos_scale 1.0 --neg_scale 1.5 \
+    --step_us 100 \
     --ymin 0.1 --ymax 2.0 \
-    [--no_comp]
+    [--no_comp] [--exp] [--auto_scale]
 
 Notes:
 - Loads learned parameters (NPZ) next to the segment file to compute
@@ -94,7 +95,7 @@ def main():
     ap.add_argument("--sensor_height", type=int, default=720)
     ap.add_argument("--pos_scale", type=float, default=1.0, help="Weight for positive events (default 1.0)")
     ap.add_argument("--neg_scale", type=float, default=1.5, help="Weight for negative events (default 1.5)")
-    ap.add_argument("--step_us", type=float, default=2000.0, help="Step size in microseconds (default 2000)")
+    ap.add_argument("--step_us", type=float, default=100.0, help="Step size in microseconds (default 100)")
     ap.add_argument("--ymin", type=float, default=0.1, help="Y-axis min for plotting (default 0.1)")
     ap.add_argument("--ymax", type=float, default=2.0, help="Y-axis max for plotting (default 2.0)")
     ap.add_argument("--exp", action='store_true', help="Plot exponential of accumulation (apply exp() to series)")
@@ -207,7 +208,9 @@ def main():
     plt.xlabel('Time (ms)')
     plt.ylabel('Per-pixel mean (weighted)' + (" (exp)" if args.exp else ""))
     plt.ylim(args.ymin, args.ymax)
-    plt.title('Weighted Cumulative Means (2ms steps)')
+    # Title reflects chosen step size
+    step_label = (f"{args.step_us/1000:.3f} ms" if args.step_us >= 1000.0 else f"{args.step_us:.0f} μs")
+    plt.title(f'Weighted Cumulative Means ({step_label} steps)')
     plt.grid(True, alpha=0.3)
     plt.legend()
     suffix = "_exp" if args.exp else ""
