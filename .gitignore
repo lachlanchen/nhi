@@ -9,6 +9,9 @@
 
 # Track core text-based artifacts (scoped to avoid data bloat)
 !*.py
+!rotor/**/*.ino
+!rotor/**/*.h
+!rotor/**/*.cpp
 !*.md
 
 # Notebooks
