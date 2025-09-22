@@ -97,6 +97,7 @@ def main():
     ap.add_argument("--step_us", type=float, default=2000.0, help="Step size in microseconds (default 2000)")
     ap.add_argument("--ymin", type=float, default=0.1, help="Y-axis min for plotting (default 0.1)")
     ap.add_argument("--ymax", type=float, default=2.0, help="Y-axis max for plotting (default 2.0)")
+    ap.add_argument("--exp", action='store_true', help="Plot exponential of accumulation (apply exp() to series)")
     ap.add_argument("--no_comp", action='store_true', help="Do not compute/show compensated series")
     args = ap.parse_args()
 
@@ -125,25 +126,34 @@ def main():
         else:
             print("Warning: no learned params found; skipping compensated series")
 
+    # Optional exponential transform
+    if args.exp:
+        plot_orig = np.exp(cum_means_orig)
+        plot_comp = np.exp(cum_means_comp) if cum_means_comp is not None else None
+    else:
+        plot_orig = cum_means_orig
+        plot_comp = cum_means_comp
+
     # Output directory
     out_dir = os.path.join(os.path.dirname(args.segment_npz), f"FIXED_visualization_{datetime.now().strftime('%Y%m%d_%H%M%S')}", "cumulative_weighted")
     os.makedirs(out_dir, exist_ok=True)
 
     # Plot
     plt.figure(figsize=(10, 5))
-    plt.plot(edges_ms, cum_means_orig, 'b-', label=f'Orig (pos={args.pos_scale}, neg={args.neg_scale})')
-    if cum_means_comp is not None:
+    plt.plot(edges_ms, plot_orig, 'b-', label=f'Orig (pos={args.pos_scale}, neg={args.neg_scale})')
+    if plot_comp is not None:
         lbl = f'Comp (pos={args.pos_scale}, neg={args.neg_scale})'
         if a_avg is not None and b_avg is not None:
             lbl += f" | a_avg={a_avg:.3f}, b_avg={b_avg:.3f}"
-        plt.plot(edges_ms, cum_means_comp, 'r-', label=lbl)
+        plt.plot(edges_ms, plot_comp, 'r-', label=lbl)
     plt.xlabel('Time (ms)')
-    plt.ylabel('Per-pixel mean (weighted)')
+    plt.ylabel('Per-pixel mean (weighted)' + (" (exp)" if args.exp else ""))
     plt.ylim(args.ymin, args.ymax)
     plt.title('Weighted Cumulative Means (2ms steps)')
     plt.grid(True, alpha=0.3)
     plt.legend()
-    out_png = os.path.join(out_dir, f"weighted_cumulative_pos{args.pos_scale}_neg{args.neg_scale}.png")
+    suffix = "_exp" if args.exp else ""
+    out_png = os.path.join(out_dir, f"weighted_cumulative_pos{args.pos_scale}_neg{args.neg_scale}{suffix}.png")
     plt.savefig(out_png, dpi=150, bbox_inches='tight')
     print(f"\n✓ Weighted cumulative plot saved: {out_png}")
     plt.show()
@@ -151,4 +161,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
