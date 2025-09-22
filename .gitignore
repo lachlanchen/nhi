@@ -25,6 +25,9 @@
 !.githooks/**
 !.lfsconfig
 
+# Ignore local scan angle data folder
+/scan_angle_20/
+
 # Text/CSV/JSON in safe locations
 !/*.txt
 !/*.csv
