@@ -12,7 +12,7 @@ Paths used below are for the led_12v_no_acc_glass dataset you ran. Adjust for yo
 Manual period (bins at 1 ms): default 1688 bins used in your run.
 
 ```
-python simple_autocorr_analysis_segment_robust_fixed.py \
+python segment_robust_fixed.py \
   led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556.raw \
   --segment_events \
   --output_dir led_12v_no_acc_glass/glass/
@@ -32,7 +32,7 @@ led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_23
 Use the forward segment; tune args as desired (GPU used automatically if available):
 
 ```
-python scanning_alignment_with_merge_multi_gpt5_saved_params_comp.py \
+python compensate_multiwindow_train_saved_params.py \
   led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/Scan_1_Forward_events.npz \
   --bin_width 50000 \
   --visualize --plot_params --a_trainable \
@@ -48,7 +48,7 @@ This saves learned parameter files (NPZ/JSON/CSV) next to the input segment NPZ.
 This script auto-loads the most recent learned params in the same folder:
 
 ```
-python scanning_alignment_visualization_save.py \
+python visualize_boundaries_and_frames.py \
   led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/Scan_1_Forward_events.npz
 ```
 
@@ -65,7 +65,7 @@ python scanning_alignment_visualization_save.py \
 No frames are saved; this computes per‑pixel means only and plots:
 
 ```
-python scanning_alignment_visualization_cumulative_compare.py \
+python visualize_cumulative_compare.py \
   led_12v_no_acc_glass/glass/sync_recording_12v_led_no_acc_blank_event_20250804_232556_segments/Scan_1_Forward_events.npz \
   --sensor_width 1280 --sensor_height 720
 ```

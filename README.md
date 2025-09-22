@@ -10,7 +10,7 @@ This repository reconstructs spectra from an event camera while the scene is ill
 
 Below is a concise mathematical description of the three main scripts and how they fit together.
 
-1) Segment: simple_autocorr_analysis_segment_robust_fixed.py
+1) Segment: segment_robust_fixed.py
 
 Goal: From raw events, recover the scan timing (start/end, period) and slice the recording into 6 one-way scans (F, B, F, B, F, B).
 
@@ -45,7 +45,7 @@ Goal: From raw events, recover the scan timing (start/end, period) and slice the
 
   alternating Forward/Backward directions. Each segment is saved as NPZ with x, y, t, p plus metadata (start_time, duration_us, direction, scan_id).
 
-2) Compensate: scanning_alignment_with_merge_multi_gpt5_saved_params_comp.py
+2) Compensate: compensate_multiwindow_train_saved_params.py
 
 Goal: Learn a time-warp that removes scan-induced temporal shear so that events for the same wavelength align across the sensor. The model is multi-window, piecewise linear in x and y with soft transitions across temporal boundaries.
 
@@ -92,7 +92,7 @@ Goal: Learn a time-warp that removes scan-induced temporal shear so that events 
 
   and optimize L = L_var + λ L_smooth over trainable parameters (a, b, and optionally boundaries).
 
-3) Visualize: scanning_alignment_visualization_save.py
+3) Visualize: visualize_boundaries_and_frames.py
 
 Goal: Summarize learned parameters and show qualitative improvements.
 
@@ -119,23 +119,22 @@ Quick Start
 
 1) Segment a RAW file into 6 scans (forward/backward):
 
-    python simple_autocorr_analysis_segment_robust_fixed.py <path/to/file.raw> \
+    python segment_robust_fixed.py <path/to/file.raw> \
       --segment_events --output_dir <output_dir>
 
    Optionally pass a manual round-trip period (bins @ 1 ms):
 
-    python simple_autocorr_analysis_segment_robust_fixed.py <file.raw> \
+    python segment_robust_fixed.py <file.raw> \
       --segment_events --output_dir <out> --round_trip_period 1688
 
 2) Train compensation on a segment (e.g., Scan_1_Forward):
 
-    python scanning_alignment_with_merge_multi_gpt5_saved_params_comp.py <segment.npz> \
+    python compensate_multiwindow_train_saved_params.py <segment.npz> \
       --bin_width 50000 --plot_params --visualize --a_trainable \
       --iterations 1000 --b_default 0 --smoothness_weight 0.001
 
 3) Visualize results with overlays and time-binned comparisons:
 
-    python scanning_alignment_visualization_save.py <segment.npz>
+    python visualize_boundaries_and_frames.py <segment.npz>
 
 The visualization automatically loads the most recent learned parameter NPZ co-located with the segment file.
-
