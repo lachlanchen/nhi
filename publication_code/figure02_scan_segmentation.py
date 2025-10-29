@@ -324,18 +324,7 @@ def render_correlation_figure(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     # Annotate reverse-corr blue peak with its lag value
-    if reverse_peak_index is not None and 0 <= reverse_peak_index < len(lags_s):
-        peak_x = float(lags_s[reverse_peak_index])
-        peak_y = float(reverse_corr[reverse_peak_index])
-        ax.annotate(
-            f"{peak_x:.2f} s, {peak_y:.2f}",
-            xy=(peak_x, peak_y),
-            xytext=(8, 10),
-            textcoords="offset points",
-            fontsize=8,
-            color="#003a73",
-            bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#cfcfcf", alpha=0.9),
-        )
+    # No text callout for reverse peak (keep blue dot only)
 
     legend = ax.legend(loc="upper left", fontsize=8, frameon=True)
     legend.get_frame().set_facecolor("white")
