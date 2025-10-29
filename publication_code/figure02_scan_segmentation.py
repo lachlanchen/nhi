@@ -303,7 +303,11 @@ def render_correlation_figure(
     ax.set_xlabel("Lag (s)")
     ax.set_ylabel("Normalised magnitude")
     ax.set_xlim(-4.0, 4.0)
-    ax.set_ylim(-0.05, 1.05)
+    # Dynamic y-limits to avoid truncation on either series
+    y_min = float(min(np.min(auto_corr), np.min(reverse_corr)))
+    y_max = float(max(np.max(auto_corr), np.max(reverse_corr)))
+    pad = 0.05 * (y_max - y_min if y_max > y_min else 1.0)
+    ax.set_ylim(y_min - pad, y_max + pad)
     # No grid per request
     ax.grid(False)
     ax.spines["top"].set_visible(False)
