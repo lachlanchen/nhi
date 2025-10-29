@@ -275,22 +275,37 @@ def render_correlation_figure(
     """Create the standalone correlation figure."""
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
-    ax.plot(lags_s, auto_corr, color="#1f77b4", linewidth=1.4, label="Auto-correlation")
-    ax.plot(lags_s, reverse_corr, color="#d62728", linewidth=1.4, label="Reverse correlation")
+    auto_line_color = "#1f77b4"   # blue (line)
+    center_dot_blue = "#0066cc"   # distinct blue for center peak
+    side_dot_red = "#d62728"      # red for side peaks
+    rev_line_color = "#d62728"    # solid red for reverse corr line
 
-    # Mark peaks with dots instead of vertical guide lines
+    ax.plot(lags_s, auto_corr, color=auto_line_color, linewidth=1.4, label="Auto-correlation")
+    ax.plot(lags_s, reverse_corr, color=rev_line_color, linewidth=1.4, label="Reverse correlation")
+
+    # Mark peaks: center (closest to 0 lag) in blue, side peaks in red
     if auto_peak_indices:
-        xs = [lags_s[i] for i in auto_peak_indices if 0 <= i < len(lags_s)]
-        ys = [auto_corr[i] for i in auto_peak_indices if 0 <= i < len(auto_corr)]
-        ax.scatter(xs, ys, color="#1f77b4", s=28, zorder=4)
+        # identify center by minimum |lag|
+        valid = [i for i in auto_peak_indices if 0 <= i < len(lags_s)]
+        if valid:
+            center_idx = min(valid, key=lambda i: abs(lags_s[i]))
+            side = [i for i in valid if i != center_idx]
+            # center dot
+            ax.scatter([lags_s[center_idx]], [auto_corr[center_idx]], color=center_dot_blue, s=40, zorder=5)
+            # side dots
+            if side:
+                ax.scatter([lags_s[i] for i in side], [auto_corr[i] for i in side], color=side_dot_red, s=36, zorder=5)
+
+    # Mark reverse-corr global peak with blue dot as requested
     if reverse_peak_index is not None and 0 <= reverse_peak_index < len(lags_s):
-        ax.scatter([lags_s[reverse_peak_index]], [reverse_corr[reverse_peak_index]], color="#d62728", s=36, zorder=4)
+        ax.scatter([lags_s[reverse_peak_index]], [reverse_corr[reverse_peak_index]], color=center_dot_blue, s=42, zorder=5)
 
     ax.set_xlabel("Lag (s)")
     ax.set_ylabel("Normalised magnitude")
     ax.set_xlim(-4.0, 4.0)
     ax.set_ylim(-0.15, 1.1)
-    ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.4)
+    # No grid per request
+    ax.grid(False)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     legend = ax.legend(loc="upper left", fontsize=8, frameon=True)
