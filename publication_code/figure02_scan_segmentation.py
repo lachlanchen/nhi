@@ -317,7 +317,7 @@ def render_correlation_figure(
         peak_x = float(lags_s[reverse_peak_index])
         peak_y = float(reverse_corr[reverse_peak_index])
         ax.annotate(
-            f"{peak_x:.2f} s",
+            f"{peak_x:.2f} s, {peak_y:.2f}",
             xy=(peak_x, peak_y),
             xytext=(8, 10),
             textcoords="offset points",
