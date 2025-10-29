@@ -268,47 +268,32 @@ def render_correlation_figure(
     lags_s: np.ndarray,
     auto_corr: np.ndarray,
     reverse_corr: np.ndarray,
-    one_way_s: float,
-    turnaround_s: float,
+    auto_peak_indices: List[int] | None,
+    reverse_peak_index: int | None,
     save_png: bool,
 ) -> None:
     """Create the standalone correlation figure."""
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
-    ax.plot(lags_s, auto_corr, color="#225ea8", linewidth=1.4, label="Auto-correlation")
-    ax.plot(
-        lags_s,
-        reverse_corr,
-        color="#cb181d",
-        linewidth=1.2,
-        linestyle="--",
-        label="Reverse correlation",
-    )
-    ax.axvline(one_way_s, color="#225ea8", linestyle=":", linewidth=1.0)
-    ax.axvline(-one_way_s, color="#225ea8", linestyle=":", linewidth=1.0)
-    ax.axvline(turnaround_s, color="#cb181d", linestyle=":", linewidth=1.0)
+    ax.plot(lags_s, auto_corr, color="#1f77b4", linewidth=1.4, label="Auto-correlation")
+    ax.plot(lags_s, reverse_corr, color="#d62728", linewidth=1.4, label="Reverse correlation")
+
+    # Mark peaks with dots instead of vertical guide lines
+    if auto_peak_indices:
+        xs = [lags_s[i] for i in auto_peak_indices if 0 <= i < len(lags_s)]
+        ys = [auto_corr[i] for i in auto_peak_indices if 0 <= i < len(auto_corr)]
+        ax.scatter(xs, ys, color="#1f77b4", s=28, zorder=4)
+    if reverse_peak_index is not None and 0 <= reverse_peak_index < len(lags_s):
+        ax.scatter([lags_s[reverse_peak_index]], [reverse_corr[reverse_peak_index]], color="#d62728", s=36, zorder=4)
+
     ax.set_xlabel("Lag (s)")
-    ax.set_ylabel("")
+    ax.set_ylabel("Normalised magnitude")
     ax.set_xlim(-4.0, 4.0)
     ax.set_ylim(-0.15, 1.1)
     ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.text(
-        0.015,
-        0.5,
-        "Normalised magnitude",
-        rotation=90,
-        transform=ax.transAxes,
-        va="center",
-        ha="center",
-        fontsize=9,
-    )
-    legend = ax.legend(
-        loc="upper left",
-        fontsize=8,
-        frameon=True,
-    )
+    legend = ax.legend(loc="upper left", fontsize=8, frameon=True)
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
@@ -485,13 +470,17 @@ def main() -> None:
         results=results,
         save_png=args.save_png,
     )
+    # Prepare peak indices for panel (b)
+    auto_peak_indices = results.get("autocorr_peaks", [])
+    reverse_peak_index = results.get("center_idx", 0) + results.get("reverse_peak_lag", 0)
+
     render_correlation_figure(
         output_dir=output_dir,
         lags_s=lags_s,
         auto_corr=auto_corr,
         reverse_corr=reverse_corr,
-        one_way_s=one_way_s,
-        turnaround_s=turnaround_s,
+        auto_peak_indices=auto_peak_indices,
+        reverse_peak_index=reverse_peak_index,
         save_png=args.save_png,
     )
     render_duration_figure(output_dir=output_dir, all_segments=all_segments, save_png=args.save_png)
