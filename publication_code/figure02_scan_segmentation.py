@@ -204,15 +204,15 @@ def render_activity_figure(
 ) -> None:
     """Create the standalone activity figure."""
 
-    fig, ax = plt.subplots(figsize=(3.4, 3.0))
+    fig, ax = plt.subplots(figsize=(4.6, 3.1))
     ax.plot(time_s, activity, color="#08306b", linewidth=1.1, zorder=2)
 
     prelude_end = time_s[min(results["scan_start"], len(time_s) - 1)]
     aftermath_start = time_s[min(results["scan_end"], len(time_s) - 1)]
 
-    prelude_patch = ax.axvspan(time_s[0], prelude_end, color="#fdae6b", alpha=0.25, zorder=1)
-    main_patch = ax.axvspan(prelude_end, aftermath_start, color="#9ecae1", alpha=0.18, zorder=1)
-    aftermath_patch = ax.axvspan(aftermath_start, time_s[-1], color="#bdbdbd", alpha=0.25, zorder=1)
+    prescan_patch = ax.axvspan(time_s[0], prelude_end, color="#fdd0a2", alpha=0.35, zorder=1)
+    main_patch = ax.axvspan(prelude_end, aftermath_start, color="#9ecae1", alpha=0.25, zorder=1)
+    postscan_patch = ax.axvspan(aftermath_start, time_s[-1], color="#d9d9d9", alpha=0.35, zorder=1)
 
     boundary_times: List[float] = []
     for i in range(results["n_cycles"] + 1):
@@ -231,21 +231,29 @@ def render_activity_figure(
     ax.set_ylabel("Events per 1 ms bin")
     ax.set_xlabel("Time (s)")
     ax.set_xlim(time_s[0], time_s[-1])
-    ymin, ymax = ax.get_ylim()
-    ax.set_ylim(0, ymax * 1.2)
+    ymax = max(1.0, float(activity.max()))
+    ax.set_ylim(0, ymax * 1.15)
     ax.grid(axis="y", linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     legend_handles = [
-        mpatches.Patch(color="#fdae6b", alpha=0.25, label="Prelude"),
+        mpatches.Patch(color="#fdd0a2", alpha=0.35, label="Pre-scan"),
         mpatches.Patch(color="#9ecae1", alpha=0.18, label="Main scanning"),
-        mpatches.Patch(color="#bdbdbd", alpha=0.25, label="Aftermath"),
+        mpatches.Patch(color="#d9d9d9", alpha=0.35, label="Post-scan"),
         forward_line,
         backward_line,
     ]
-    ax.legend(handles=legend_handles, loc="upper right", fontsize=8, frameon=False, ncol=1)
-    fig.text(0.015, 0.97, "(a)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.95, bottom=0.22, left=0.16, right=0.99)
+    fig.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.08),
+        fontsize=8,
+        frameon=False,
+        ncol=3,
+        columnspacing=1.6,
+    )
+    fig.text(0.02, 0.98, "(a)", fontweight="bold", ha="left", va="top")
+    fig.subplots_adjust(top=0.88, bottom=0.22, left=0.13, right=0.98)
 
     pdf_path = output_dir / "figure02_activity.pdf"
     fig.savefig(pdf_path, dpi=400)
@@ -266,7 +274,7 @@ def render_correlation_figure(
 ) -> None:
     """Create the standalone correlation figure."""
 
-    fig, ax = plt.subplots(figsize=(3.4, 3.0))
+    fig, ax = plt.subplots(figsize=(4.6, 3.1))
     ax.plot(lags_s, auto_corr, color="#225ea8", linewidth=1.4, label="Auto-correlation")
     ax.plot(
         lags_s,
@@ -287,8 +295,8 @@ def render_correlation_figure(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.legend(loc="upper right", fontsize=8, frameon=False, ncol=1)
-    fig.text(0.015, 0.97, "(b)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.95, bottom=0.22, left=0.16, right=0.99)
+    fig.text(0.02, 0.98, "(b)", fontweight="bold", ha="left", va="top")
+    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.13, right=0.99)
 
     pdf_path = output_dir / "figure02_correlation.pdf"
     fig.savefig(pdf_path, dpi=400)
