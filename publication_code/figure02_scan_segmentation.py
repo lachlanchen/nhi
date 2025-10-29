@@ -16,16 +16,19 @@ in the activity/correlation outputs.
 from __future__ import annotations
 
 import argparse
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 DEFAULT_SEGMENTS = (
     REPO_ROOT
     / "scan_angle_20_led_2835b"
@@ -33,6 +36,9 @@ DEFAULT_SEGMENTS = (
     / "angle_20_blank_2835_event_20250925_184747_segments"
 )
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "figures"
+
+from segment_robust_fixed import analyze_scanning_pattern, events_to_activity_signal
+from simple_raw_reader import read_raw_simple
 
 
 @dataclass
@@ -65,6 +71,17 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1000,
         help="Temporal bin size in microseconds when forming the activity trace.",
+    )
+    parser.add_argument(
+        "--activity-fraction",
+        type=float,
+        default=0.90,
+        help="Fraction of events used when detecting the densest window.",
+    )
+    parser.add_argument(
+        "--raw-file",
+        type=Path,
+        help="Optional path to the RAW event file; inferred from dataset if omitted.",
     )
     parser.add_argument(
         "--output-dir",
@@ -125,52 +142,41 @@ def load_segment_infos(segment_dir: Path) -> List[SegmentInfo]:
     return infos
 
 
-def compute_activity_trace(
-    segments: Sequence[SegmentInfo],
-    time_bin_us: int,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Return time (seconds) and activity (events per millisecond) arrays."""
+def infer_raw_file(source: Path) -> Path:
+    """Guess the RAW event file path relative to the provided dataset."""
 
-    if not segments:
-        raise ValueError("No segments available to build activity trace.")
+    if source.is_file() and source.suffix == ".raw":
+        return source
 
-    start_us = min(seg.start_us for seg in segments)
-    end_us = max(seg.end_us for seg in segments)
-    num_bins = int(np.ceil((end_us - start_us) / time_bin_us))
+    search_roots = []
+    if source.is_dir():
+        if source.name.endswith("_segments"):
+            search_roots.append(source.parent)
+        search_roots.append(source)
+    else:
+        search_roots.append(source.parent)
 
-    activity = np.zeros(num_bins, dtype=np.int64)
-    for seg in segments:
-        with np.load(seg.npz_path) as data:
-            bin_indices = ((data["t"].astype(np.int64) - start_us) // time_bin_us).astype(np.int64)
-        counts = np.bincount(bin_indices, minlength=num_bins)
-        activity[: len(counts)] += counts
-
-    centres_us = start_us + (np.arange(num_bins) + 0.5) * time_bin_us
-    reference_us = segments[0].start_us
-    time_s = (centres_us - reference_us) / 1_000_000.0
-    activity_millions = activity.astype(np.float64) / 1_000_000.0
-    return time_s, activity_millions
-
-
-def compute_correlations(activity: np.ndarray, time_bin_us: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Compute auto- and reverse-correlations of the activity sequence."""
-
-    demeaned = activity - np.mean(activity)
-    auto = np.correlate(demeaned, demeaned, mode="full")
-    reverse = np.correlate(demeaned, demeaned[::-1], mode="full")
-    auto /= np.max(np.abs(auto))
-    reverse /= np.max(np.abs(reverse))
-    lags_ms = np.arange(-len(activity) + 1, len(activity)) * (time_bin_us / 1000.0)
-    return lags_ms, auto, reverse
+    tried: List[Path] = []
+    for root in search_roots:
+        candidates = sorted(root.glob("*event*.raw"))
+        if candidates:
+            return candidates[0]
+        tried.append(root)
+    raise FileNotFoundError(
+        f"Could not locate a RAW file near {source}. "
+        f"Tried: {', '.join(str(p) for p in tried)}"
+    )
 
 
-def find_positive_peak(lags_ms: np.ndarray, corr: np.ndarray) -> float:
-    """Return the lag associated with the strongest positive-side peak."""
+def load_activity_from_raw(raw_path: Path, time_bin_us: int) -> Tuple[np.ndarray, np.ndarray, int]:
+    """Read the RAW file and convert timestamps into an activity trace."""
 
-    midpoint = len(corr) // 2
-    positive = corr[midpoint + 1 :]
-    peak_idx = np.argmax(positive)
-    return lags_ms[midpoint + 1 + peak_idx]
+    print(f"Loading RAW events from {raw_path} ...")
+    _, _, t, _, width, height = read_raw_simple(str(raw_path))
+    print(f"Sensor size: {width} x {height}")
+    activity, t_min, _ = events_to_activity_signal(t, time_bin_us=time_bin_us)
+    time_s = (np.arange(len(activity)) * time_bin_us + t_min) / 1_000_000.0
+    return time_s, activity, t_min
 
 
 def setup_figure_style() -> None:
@@ -192,32 +198,54 @@ def setup_figure_style() -> None:
 def render_activity_figure(
     output_dir: Path,
     time_s: np.ndarray,
-    activity_millions: np.ndarray,
-    segments: Sequence[SegmentInfo],
+    activity: np.ndarray,
+    results: dict,
     save_png: bool,
 ) -> None:
     """Create the standalone activity figure."""
 
     fig, ax = plt.subplots(figsize=(3.4, 3.0))
-    palette = {"Forward": "#1f77b4", "Backward": "#d94801"}
-    ax.plot(time_s, activity_millions, color="#08306b", linewidth=1.4, zorder=2)
-    for seg in segments:
-        seg_start = (seg.start_us - segments[0].start_us) / 1_000_000.0
-        seg_end = (seg.end_us - segments[0].start_us) / 1_000_000.0
-        ax.axvspan(seg_start, seg_end, color=palette[seg.direction], alpha=0.12, lw=0, zorder=1)
-    forward_patch = mpatches.Patch(color=palette["Forward"], alpha=0.18, label="Forward")
-    backward_patch = mpatches.Patch(color=palette["Backward"], alpha=0.18, label="Backward")
-    ax.set_ylabel("Events per ms (×10⁶)")
-    ax.set_xlabel("Time relative to scan start (s)")
+    ax.plot(time_s, activity, color="#08306b", linewidth=1.1, zorder=2)
+
+    prelude_end = time_s[min(results["scan_start"], len(time_s) - 1)]
+    aftermath_start = time_s[min(results["scan_end"], len(time_s) - 1)]
+
+    prelude_patch = ax.axvspan(time_s[0], prelude_end, color="#fdae6b", alpha=0.25, zorder=1)
+    main_patch = ax.axvspan(prelude_end, aftermath_start, color="#9ecae1", alpha=0.18, zorder=1)
+    aftermath_patch = ax.axvspan(aftermath_start, time_s[-1], color="#bdbdbd", alpha=0.25, zorder=1)
+
+    boundary_times: List[float] = []
+    for i in range(results["n_cycles"] + 1):
+        idx = results["scan_start"] + i * results["one_way_period"]
+        if idx < results["scan_end"]:
+            boundary_times.append(time_s[idx])
+    boundary_times.append(time_s[min(results["scan_end"], len(time_s) - 1)])
+
+    forward_line = Line2D([], [], color="#1f77b4", linestyle="--", linewidth=1.1, label="Forward boundary")
+    backward_line = Line2D([], [], color="#d94801", linestyle="--", linewidth=1.1, label="Backward boundary")
+
+    for i, t_boundary in enumerate(boundary_times[:-1]):
+        color = "#1f77b4" if i % 2 == 0 else "#d94801"
+        ax.axvline(t_boundary, color=color, linestyle="--", linewidth=1.1, alpha=0.9, zorder=3)
+
+    ax.set_ylabel("Events per 1 ms bin")
+    ax.set_xlabel("Time (s)")
     ax.set_xlim(time_s[0], time_s[-1])
     ymin, ymax = ax.get_ylim()
-    ax.set_ylim(ymin, ymax * 1.18)
+    ax.set_ylim(0, ymax * 1.2)
     ax.grid(axis="y", linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.legend(handles=[forward_patch, backward_patch], loc="upper right", fontsize=8, frameon=False)
+    legend_handles = [
+        mpatches.Patch(color="#fdae6b", alpha=0.25, label="Prelude"),
+        mpatches.Patch(color="#9ecae1", alpha=0.18, label="Main scanning"),
+        mpatches.Patch(color="#bdbdbd", alpha=0.25, label="Aftermath"),
+        forward_line,
+        backward_line,
+    ]
+    ax.legend(handles=legend_handles, loc="upper right", fontsize=8, frameon=False, ncol=1)
     fig.text(0.015, 0.97, "(a)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.17, right=0.98)
+    fig.subplots_adjust(top=0.95, bottom=0.22, left=0.16, right=0.99)
 
     pdf_path = output_dir / "figure02_activity.pdf"
     fig.savefig(pdf_path, dpi=400)
@@ -229,28 +257,28 @@ def render_activity_figure(
 
 def render_correlation_figure(
     output_dir: Path,
-    lags_ms: np.ndarray,
+    lags_s: np.ndarray,
     auto_corr: np.ndarray,
     reverse_corr: np.ndarray,
-    one_way_ms: float,
-    turnaround_ms: float,
+    one_way_s: float,
+    turnaround_s: float,
     save_png: bool,
 ) -> None:
     """Create the standalone correlation figure."""
 
     fig, ax = plt.subplots(figsize=(3.4, 3.0))
-    ax.plot(lags_ms / 1000.0, auto_corr, color="#225ea8", linewidth=1.4, label="Auto-correlation")
+    ax.plot(lags_s, auto_corr, color="#225ea8", linewidth=1.4, label="Auto-correlation")
     ax.plot(
-        lags_ms / 1000.0,
+        lags_s,
         reverse_corr,
         color="#cb181d",
         linewidth=1.2,
         linestyle="--",
         label="Reverse correlation",
     )
-    ax.axvline(one_way_ms / 1000.0, color="#225ea8", linestyle=":", linewidth=1.0)
-    ax.axvline(-one_way_ms / 1000.0, color="#225ea8", linestyle=":", linewidth=1.0)
-    ax.axvline(turnaround_ms / 1000.0, color="#cb181d", linestyle=":", linewidth=1.0)
+    ax.axvline(one_way_s, color="#225ea8", linestyle=":", linewidth=1.0)
+    ax.axvline(-one_way_s, color="#225ea8", linestyle=":", linewidth=1.0)
+    ax.axvline(turnaround_s, color="#cb181d", linestyle=":", linewidth=1.0)
     ax.set_xlabel("Lag (s)")
     ax.set_ylabel("Normalised magnitude")
     ax.set_xlim(-4.0, 4.0)
@@ -260,7 +288,7 @@ def render_correlation_figure(
     ax.spines["right"].set_visible(False)
     ax.legend(loc="upper right", fontsize=8, frameon=False, ncol=1)
     fig.text(0.015, 0.97, "(b)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.17, right=0.98)
+    fig.subplots_adjust(top=0.95, bottom=0.22, left=0.16, right=0.99)
 
     pdf_path = output_dir / "figure02_correlation.pdf"
     fig.savefig(pdf_path, dpi=400)
@@ -276,6 +304,9 @@ def render_duration_figure(
     save_png: bool,
 ) -> None:
     """Create a supporting histogram of half-scan durations."""
+
+    if not all_segments:
+        return
 
     durations_s = np.array([seg.occupancy_us / 1_000_000.0 for seg in all_segments])
     directions = np.array([seg.direction for seg in all_segments])
@@ -395,34 +426,47 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     segment_dirs = find_segment_dirs(dataset_path)
-    if not segment_dirs:
-        raise FileNotFoundError(f"No *_segments directories found beneath {dataset_path}")
-
-    target_segments = load_segment_infos(segment_dirs[0])
+    target_segments: List[SegmentInfo] = []
     all_segments: List[SegmentInfo] = []
-    for seg_dir in find_segment_dirs(segment_dirs[0].parents[1]):
-        all_segments.extend(load_segment_infos(seg_dir))
+    if segment_dirs:
+        target_segments = load_segment_infos(segment_dirs[0])
+        root_for_segments = segment_dirs[0].parents[1]
+        for seg_dir in find_segment_dirs(root_for_segments):
+            all_segments.extend(load_segment_infos(seg_dir))
 
-    time_s, activity_millions = compute_activity_trace(target_segments, args.time_bin_us)
-    lags_ms, auto_corr, reverse_corr = compute_correlations(activity_millions, args.time_bin_us)
-    one_way_ms = find_positive_peak(lags_ms, auto_corr)
-    turnaround_ms = find_positive_peak(lags_ms, reverse_corr)
+    raw_path = args.raw_file.expanduser().resolve() if args.raw_file else infer_raw_file(
+        segment_dirs[0] if segment_dirs else dataset_path
+    )
+
+    time_s, activity, _ = load_activity_from_raw(raw_path, args.time_bin_us)
+    results = analyze_scanning_pattern(
+        activity,
+        activity_fraction=args.activity_fraction,
+        max_iterations=2,
+    )
+
+    auto_corr = results["autocorr"]
+    reverse_corr = results["reverse_corr"]
+    lags_ms = np.arange(-len(activity) + 1, len(activity)) * (args.time_bin_us / 1000.0)
+    lags_s = lags_ms / 1000.0
+    one_way_s = results["one_way_period"] * args.time_bin_us / 1_000_000.0
+    turnaround_s = results["reverse_peak_lag"] * args.time_bin_us / 1_000_000.0
 
     setup_figure_style()
     render_activity_figure(
         output_dir=output_dir,
         time_s=time_s,
-        activity_millions=activity_millions,
-        segments=target_segments,
+        activity=activity,
+        results=results,
         save_png=args.save_png,
     )
     render_correlation_figure(
         output_dir=output_dir,
-        lags_ms=lags_ms,
+        lags_s=lags_s,
         auto_corr=auto_corr,
         reverse_corr=reverse_corr,
-        one_way_ms=one_way_ms,
-        turnaround_ms=turnaround_ms,
+        one_way_s=one_way_s,
+        turnaround_s=turnaround_s,
         save_png=args.save_png,
     )
     render_duration_figure(output_dir=output_dir, all_segments=all_segments, save_png=args.save_png)
