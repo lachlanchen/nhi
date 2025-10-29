@@ -1011,7 +1011,7 @@ def main():
     parser.add_argument('--time_bin_us', type=int, default=1000, help='Time bin size in microseconds')
     parser.add_argument('--max_events', type=int, default=None, help='Maximum events to load')
     parser.add_argument('--segment_events', action='store_true', help='Segment events into forward/backward scans')
-    parser.add_argument('--activity_fraction', type=float, default=0.80, 
+    parser.add_argument('--activity_fraction', type=float, default=0.90, 
                        help='Fraction of events to include in active region (default: 0.80)')
     parser.add_argument('--max_iterations', type=int, default=2,
                        help='Maximum number of refinement iterations (default: 2)')

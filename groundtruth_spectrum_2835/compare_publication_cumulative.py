@@ -110,13 +110,28 @@ def build_compensated_cumulative(
 
 
 def load_gt_curves(gt_dir: Path) -> List[Tuple[str, np.ndarray, np.ndarray]]:
-    curves: List[Tuple[str, np.ndarray, np.ndarray]] = []
+    """Collect spectrometer curves from a directory, skipping non-spectral txt files.
+
+    The folder may also contain analysis summaries (txt) that do not follow the
+    OceanView export format. We attempt to parse each and keep only files that
+    yield a non-empty numeric spectrum.
+    """
+    valid: List[Tuple[str, np.ndarray, np.ndarray]] = []
     for txt in sorted(gt_dir.glob("*.txt")):
-        wl, val = load_ground_truth(txt)
-        curves.append((txt.stem, wl, val))
-    if len(curves) < 2:
-        raise FileNotFoundError(f"Expected at least two ground-truth .txt files in {gt_dir}")
-    return curves[:2]
+        try:
+            wl, val = load_ground_truth(txt)
+        except Exception:
+            continue
+        if isinstance(wl, np.ndarray) and wl.size >= 50 and isinstance(val, np.ndarray) and val.size == wl.size:
+            valid.append((txt.stem, wl, val))
+    if len(valid) < 2:
+        raise FileNotFoundError(
+            f"Found {len(valid)} spectrometer files in {gt_dir}; need at least two (*.txt with spectral data)"
+        )
+    # Heuristic: prefer files beginning with 'USB' if present
+    valid.sort(key=lambda t: (0 if t[0].upper().startswith('USB') else 1, t[0]))
+    return valid[:2]
+
 
 
 def detect_visible_edges(curves: Sequence[Tuple[str, np.ndarray, np.ndarray]]) -> Tuple[float, float]:
@@ -227,12 +242,12 @@ def main() -> None:
 
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.axvspan(380, 780, color="0.92", zorder=0)
-        # Plot two GT curves
+        # Plot two GT curves with short labels: GT 1, GT 2
         colors = ["#1f77b4", "#ff7f0e"]
-        for (name, wl, gt), c in zip(gt_norm_curves, colors):
-            ax.plot(wl, gt, color=c, linewidth=3.0, label=f"GT {name}")
-        # Plot reconstruction
-        ax.plot(wl_recon, recon_norm, color="#2ca02c", linewidth=3.0, label="Reconstruction (cumulative)")
+        for i, ((_, wl, gt), c) in enumerate(zip(gt_norm_curves, colors), start=1):
+            ax.plot(wl, gt, color=c, linewidth=3.0, label=f"GT {i}")
+        # Plot reconstruction with short label: Recon
+        ax.plot(wl_recon, recon_norm, color="#2ca02c", linewidth=3.0, label="Recon")
 
         ax.set_xlim(*args.xlim)
         ax.set_ylim(-0.05, 1.05)
