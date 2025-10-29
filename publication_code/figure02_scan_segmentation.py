@@ -210,20 +210,14 @@ def render_activity_figure(
     ax.set_ylabel("Events per ms (×10⁶)")
     ax.set_xlabel("Time relative to scan start (s)")
     ax.set_xlim(time_s[0], time_s[-1])
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(ymin, ymax * 1.18)
     ax.grid(axis="y", linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    fig.legend(
-        handles=[forward_patch, backward_patch],
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.08),
-        ncol=2,
-        fontsize=8,
-        frameon=False,
-        columnspacing=1.4,
-    )
+    ax.legend(handles=[forward_patch, backward_patch], loc="upper right", fontsize=8, frameon=False)
     fig.text(0.015, 0.97, "(a)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.86, bottom=0.22, left=0.17, right=0.98)
+    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.17, right=0.98)
 
     pdf_path = output_dir / "figure02_activity.pdf"
     fig.savefig(pdf_path, dpi=400)
@@ -260,20 +254,13 @@ def render_correlation_figure(
     ax.set_xlabel("Lag (s)")
     ax.set_ylabel("Normalised magnitude")
     ax.set_xlim(-4.0, 4.0)
-    ax.set_ylim(-0.1, 1.05)
+    ax.set_ylim(-0.1, 1.2)
     ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    fig.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.08),
-        fontsize=8,
-        frameon=False,
-        ncol=2,
-        columnspacing=1.6,
-    )
+    ax.legend(loc="upper right", fontsize=8, frameon=False, ncol=1)
     fig.text(0.015, 0.97, "(b)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.84, bottom=0.22, left=0.17, right=0.98)
+    fig.subplots_adjust(top=0.96, bottom=0.22, left=0.17, right=0.98)
 
     pdf_path = output_dir / "figure02_correlation.pdf"
     fig.savefig(pdf_path, dpi=400)
