@@ -24,6 +24,8 @@
 !.githooks/
 !.githooks/**
 !.lfsconfig
+!publication_code/
+!publication_code/**
 
 # Ignore local scan angle data folder
 /scan_angle_20/
