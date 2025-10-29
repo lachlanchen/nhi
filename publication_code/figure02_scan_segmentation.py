@@ -198,24 +198,32 @@ def render_activity_figure(
 ) -> None:
     """Create the standalone activity figure."""
 
-    fig, ax = plt.subplots(figsize=(3.4, 2.8))
+    fig, ax = plt.subplots(figsize=(3.4, 3.0))
     palette = {"Forward": "#1f77b4", "Backward": "#d94801"}
-    ax.plot(time_s, activity_millions, color="#08306b", linewidth=1.4)
+    ax.plot(time_s, activity_millions, color="#08306b", linewidth=1.4, zorder=2)
     for seg in segments:
         seg_start = (seg.start_us - segments[0].start_us) / 1_000_000.0
         seg_end = (seg.end_us - segments[0].start_us) / 1_000_000.0
-        ax.axvspan(seg_start, seg_end, color=palette[seg.direction], alpha=0.18, lw=0)
-    forward_patch = mpatches.Patch(color=palette["Forward"], alpha=0.25, label="Forward scans")
-    backward_patch = mpatches.Patch(color=palette["Backward"], alpha=0.25, label="Backward scans")
-    ax.legend(handles=[forward_patch, backward_patch], loc="upper right", fontsize=8)
+        ax.axvspan(seg_start, seg_end, color=palette[seg.direction], alpha=0.12, lw=0, zorder=1)
+    forward_patch = mpatches.Patch(color=palette["Forward"], alpha=0.18, label="Forward")
+    backward_patch = mpatches.Patch(color=palette["Backward"], alpha=0.18, label="Backward")
     ax.set_ylabel("Events per ms (×10⁶)")
     ax.set_xlabel("Time relative to scan start (s)")
     ax.set_xlim(time_s[0], time_s[-1])
-    ax.grid(axis="y", linestyle=":", linewidth=0.6, alpha=0.5)
+    ax.grid(axis="y", linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.text(0.02, 0.94, "(a)", transform=ax.transAxes, fontweight="bold", ha="left", va="top")
-    fig.tight_layout()
+    fig.legend(
+        handles=[forward_patch, backward_patch],
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.08),
+        ncol=2,
+        fontsize=8,
+        frameon=False,
+        columnspacing=1.4,
+    )
+    fig.text(0.015, 0.97, "(a)", fontweight="bold", ha="left", va="top")
+    fig.subplots_adjust(top=0.86, bottom=0.22, left=0.17, right=0.98)
 
     pdf_path = output_dir / "figure02_activity.pdf"
     fig.savefig(pdf_path, dpi=400)
@@ -236,7 +244,7 @@ def render_correlation_figure(
 ) -> None:
     """Create the standalone correlation figure."""
 
-    fig, ax = plt.subplots(figsize=(3.4, 2.8))
+    fig, ax = plt.subplots(figsize=(3.4, 3.0))
     ax.plot(lags_ms / 1000.0, auto_corr, color="#225ea8", linewidth=1.4, label="Auto-correlation")
     ax.plot(
         lags_ms / 1000.0,
@@ -253,12 +261,19 @@ def render_correlation_figure(
     ax.set_ylabel("Normalised magnitude")
     ax.set_xlim(-4.0, 4.0)
     ax.set_ylim(-0.1, 1.05)
-    ax.legend(loc="upper right", fontsize=8)
-    ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.5)
+    ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.4)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.text(0.02, 0.94, "(b)", transform=ax.transAxes, fontweight="bold", ha="left", va="top")
-    fig.tight_layout()
+    fig.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.08),
+        fontsize=8,
+        frameon=False,
+        ncol=2,
+        columnspacing=1.6,
+    )
+    fig.text(0.015, 0.97, "(b)", fontweight="bold", ha="left", va="top")
+    fig.subplots_adjust(top=0.84, bottom=0.22, left=0.17, right=0.98)
 
     pdf_path = output_dir / "figure02_correlation.pdf"
     fig.savefig(pdf_path, dpi=400)
