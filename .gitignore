@@ -26,6 +26,7 @@
 !.lfsconfig
 !publication_code/
 !publication_code/**
+!publication/**/*.tex
 
 # Ignore local scan angle data folder
 /scan_angle_20/
