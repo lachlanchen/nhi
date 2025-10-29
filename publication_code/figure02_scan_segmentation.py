@@ -302,7 +302,18 @@ def render_correlation_figure(
 
     ax.set_xlabel("Lag (s)")
     ax.set_ylabel("Normalised magnitude")
-    ax.set_xlim(-4.0, 4.0)
+    # Choose x-limits to encompass all marked peaks (center/side and reverse)
+    peak_positions: List[float] = []
+    if auto_peak_indices:
+        peak_positions += [float(lags_s[i]) for i in auto_peak_indices if 0 <= i < len(lags_s)]
+    if reverse_peak_index is not None and 0 <= reverse_peak_index < len(lags_s):
+        peak_positions.append(float(lags_s[reverse_peak_index]))
+    if peak_positions:
+        max_abs = max(abs(p) for p in peak_positions)
+        target = min(max_abs + 0.3, 6.0)  # small padding; cap width at ±6 s
+        ax.set_xlim(-target, target)
+    else:
+        ax.set_xlim(-4.0, 4.0)
     # Dynamic y-limits to avoid truncation on either series
     y_min = float(min(np.min(auto_corr), np.min(reverse_corr)))
     y_max = float(max(np.max(auto_corr), np.max(reverse_corr)))
