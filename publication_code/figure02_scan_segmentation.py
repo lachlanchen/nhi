@@ -204,7 +204,7 @@ def render_activity_figure(
 ) -> None:
     """Create the standalone activity figure."""
 
-    fig, ax = plt.subplots(figsize=(5.4, 3.2))
+    fig, ax = plt.subplots(figsize=(5.0, 3.0))
     ax.plot(time_s, activity, color="#08306b", linewidth=1.1, zorder=2)
 
     prelude_end = time_s[min(results["scan_start"], len(time_s) - 1)]
@@ -245,19 +245,15 @@ def render_activity_figure(
     ]
     legend = ax.legend(
         handles=legend_handles,
-        loc="upper right",
-        bbox_to_anchor=(0.58, 0.98),
+        loc="upper left",
         fontsize=8,
         frameon=True,
-        ncol=1,
-        borderpad=0.3,
-        labelspacing=0.4,
     )
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
-    fig.text(0.012, 0.98, "(a)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.9, bottom=0.16, left=0.11, right=0.99)
+    fig.text(0.012, 0.985, "(a)", fontweight="bold", ha="left", va="top")
+    fig.tight_layout()
 
     pdf_path = output_dir / "figure02_activity.pdf"
     fig.savefig(pdf_path, dpi=400)
@@ -278,7 +274,7 @@ def render_correlation_figure(
 ) -> None:
     """Create the standalone correlation figure."""
 
-    fig, ax = plt.subplots(figsize=(5.4, 3.2))
+    fig, ax = plt.subplots(figsize=(5.0, 3.0))
     ax.plot(lags_s, auto_corr, color="#225ea8", linewidth=1.4, label="Auto-correlation")
     ax.plot(
         lags_s,
@@ -288,9 +284,9 @@ def render_correlation_figure(
         linestyle="--",
         label="Reverse correlation",
     )
-    ax.axvline(one_way_s, color="#225ea8", linestyle=":", linewidth=1.0, ymin=0.0, ymax=0.82)
-    ax.axvline(-one_way_s, color="#225ea8", linestyle=":", linewidth=1.0, ymin=0.0, ymax=0.82)
-    ax.axvline(turnaround_s, color="#cb181d", linestyle=":", linewidth=1.0, ymin=0.0, ymax=0.82)
+    ax.axvline(one_way_s, color="#225ea8", linestyle=":", linewidth=1.0)
+    ax.axvline(-one_way_s, color="#225ea8", linestyle=":", linewidth=1.0)
+    ax.axvline(turnaround_s, color="#cb181d", linestyle=":", linewidth=1.0)
     ax.set_xlabel("Lag (s)")
     ax.set_ylabel("")
     ax.set_xlim(-4.0, 4.0)
@@ -309,18 +305,15 @@ def render_correlation_figure(
         fontsize=9,
     )
     legend = ax.legend(
-        loc="upper right",
-        bbox_to_anchor=(0.98, 0.98),
+        loc="upper left",
         fontsize=8,
         frameon=True,
-        ncol=1,
-        columnspacing=1.2,
     )
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
-    fig.text(0.012, 0.98, "(b)", fontweight="bold", ha="left", va="top")
-    fig.subplots_adjust(top=0.9, bottom=0.16, left=0.08, right=0.99)
+    fig.text(0.012, 0.985, "(b)", fontweight="bold", ha="left", va="top")
+    fig.tight_layout()
 
     pdf_path = output_dir / "figure02_correlation.pdf"
     fig.savefig(pdf_path, dpi=400)
