@@ -123,21 +123,30 @@ def render(out_path: Path) -> None:
     # Into sample (down)
     add_arrow(ax, 6.2, 4.6, 6.2, 3.7)
 
-    # Sample and objective
-    sample_x, sample_w = 5.1, 1.6  # moved slightly left
-    samp = add_block(ax, (sample_x, 3.3), "Sample\n(trans)", sample_w)
-    obj = add_block(ax, (7.3, 3.3), "Objective", 1.4)
-    # start from sample right edge to objective
-    add_arrow(ax, sample_x + sample_w, 3.65, 7.3, 3.65)
-
-    # Tube lens and beamsplitter node
-    tube = add_block(ax, (8.8, 3.3), "Tube\nlens", 1.4)
-    add_arrow(ax, 7.3 + 1.4, 3.65, 8.8, 3.65)
-
+    # Evenly spaced optical chain within the existing microscope:
+    # choose equal edge-to-edge spacing L between Sample -> Objective -> Tube lens -> Beamsplitter
     bs_cx, bs_cy = 10.5, 3.65
-    # Clear arrow between tube lens and reflector (beamsplitter), drawn above other elements
-    add_arrow(ax, 8.8 + 1.4, 3.65, bs_cx - 0.18, 3.65, lw=1.4, z=10)
-    add_beamsplitter(ax, bs_cx, bs_cy, size=0.28)
+    bs_size = 0.28
+    b_left = bs_cx - bs_size / 2.0
+    L = 0.35
+    sample_w, obj_w, tube_w = 1.6, 1.4, 1.4
+
+    # Solve positions from right to left so gaps are equal (edge-to-edge):
+    tube_x = b_left - L - tube_w
+    objective_x = (tube_x - L) - obj_w
+    sample_x = (objective_x - L) - sample_w
+
+    # Blocks
+    samp = add_block(ax, (sample_x, 3.3), "Sample\n(trans)", sample_w)
+    obj = add_block(ax, (objective_x, 3.3), "Objective", obj_w)
+    tube = add_block(ax, (tube_x, 3.3), "Tube\nlens", tube_w)
+
+    # Arrows between blocks (edge to edge), equalised length L
+    add_arrow(ax, sample_x + sample_w, 3.65, objective_x, 3.65)
+    add_arrow(ax, objective_x + obj_w, 3.65, tube_x, 3.65)
+    # tube lens to beamsplitter left edge, drawn above elements
+    add_arrow(ax, tube_x + tube_w, 3.65, b_left, 3.65, lw=1.4, z=10)
+    add_beamsplitter(ax, bs_cx, bs_cy, size=bs_size)
 
     # Branch 1: top row to frame camera via an additional 4f relay
     relay_r_w = 1.4
