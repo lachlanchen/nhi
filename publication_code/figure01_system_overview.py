@@ -49,7 +49,8 @@ def add_plugin_box(ax, x, y, w, h, label, ec="#2b8cbe"):
                           linewidth=1.1, edgecolor=ec, facecolor="none",
                           linestyle=(0, (4, 3)))
     ax.add_patch(rect)
-    ax.text(x + 0.06, y + h + 0.06, label, fontsize=8, color=ec, ha="left", va="bottom")
+    # Place label inside top-left to avoid overlapping outside
+    ax.text(x + 0.08, y + h - 0.08, label, fontsize=8, color=ec, ha="left", va="top")
 
 
 def add_beamsplitter(ax, cx, cy, size=0.25, ec="#4d4d4d", fc="#e0e0e0"):
@@ -68,9 +69,9 @@ def render(out_path: Path) -> None:
         "axes.linewidth": 0.8,
     })
 
-    fig_w, fig_h = 7.0, 3.6  # inches (wider to avoid crowding)
+    fig_w, fig_h = 7.2, 3.4  # inches (wider to avoid crowding)
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
-    ax.set_xlim(0, 12.5)
+    ax.set_xlim(0, 13.6)
     ax.set_ylim(0, 5.5)
     ax.axis("off")
 
@@ -81,52 +82,50 @@ def render(out_path: Path) -> None:
     # Camera row: y = 0.8
 
     # Illumination chain (left to right)
-    src = add_block(ax, (0.4, 4.15), "Broadband\nsource", 1.6)
-    slit = add_block(ax, (2.3, 4.15), "Slit", 1.2)
-    grat = add_block(ax, (3.9, 4.15), "Grating", 1.4)
-    fold = add_block(ax, (5.6, 4.15), "Fold\nmirror", 1.4)
+    src = add_block(ax, (0.4, 4.15), "Source", 1.4)
+    slit = add_block(ax, (2.2, 4.15), "Slit", 1.1)
+    grat = add_block(ax, (3.7, 4.15), "Grating", 1.2)
+    fold = add_block(ax, (5.2, 4.15), "Fold", 1.0)
 
-    add_arrow(ax, 0.4 + 1.6, 4.5, 2.3, 4.5)
-    add_arrow(ax, 2.3 + 1.2, 4.5, 3.9, 4.5)
-    add_arrow(ax, 3.9 + 1.4, 4.5, 5.6, 4.5)
+    add_arrow(ax, 0.4 + 1.4, 4.5, 2.2, 4.5)
+    add_arrow(ax, 2.2 + 1.1, 4.5, 3.7, 4.5)
+    add_arrow(ax, 3.7 + 1.2, 4.5, 5.2, 4.5)
 
     # Into sample (down)
-    add_arrow(ax, 6.3, 4.15, 6.3, 3.4)
+    add_arrow(ax, 5.7, 4.15, 5.7, 3.4)
 
     # Sample and objective
-    samp = add_block(ax, (5.6, 3.0), "Sample\n(transmission)", 1.4)
-    obj = add_block(ax, (7.4, 3.0), "Objective", 1.4)
-    add_arrow(ax, 6.3 + 0.7, 3.35, 7.4, 3.35)
+    samp = add_block(ax, (5.0, 3.0), "Sample (trans)", 1.5)
+    obj = add_block(ax, (7.0, 3.0), "Objective", 1.3)
+    add_arrow(ax, 5.7 + 0.6, 3.35, 7.0, 3.35)
 
     # Tube lens and beamsplitter node
-    tube = add_block(ax, (9.0, 3.0), "Tube lens", 1.4)
-    add_arrow(ax, 7.4 + 1.4, 3.35, 9.0, 3.35)
+    tube = add_block(ax, (8.6, 3.0), "Tube lens", 1.3)
+    add_arrow(ax, 7.0 + 1.3, 3.35, 8.6, 3.35)
 
-    bs_cx, bs_cy = 10.7, 3.35
-    add_arrow(ax, 9.0 + 1.4, 3.35, bs_cx - 0.15, 3.35)
+    bs_cx, bs_cy = 10.2, 3.35
+    add_arrow(ax, 8.6 + 1.3, 3.35, bs_cx - 0.15, 3.35)
     add_beamsplitter(ax, bs_cx, bs_cy, size=0.28)
 
     # Branch 1: existing microscope camera (straight ahead)
-    add_arrow(ax, bs_cx + 0.15, 3.35, 11.8, 3.35)
-    add_block(ax, (11.8, 3.0), "Original\nmicroscope camera", 1.4)
+    add_arrow(ax, bs_cx + 0.15, 3.35, 12.2, 3.35)
+    add_block(ax, (12.2, 3.0), "Microscope cam", 1.2)
 
     # Branch 2: to 4f relay + event camera (downwards)
     add_arrow(ax, bs_cx, bs_cy - 0.14, bs_cx, 2.2)
-    relay = add_block(ax, (10.0, 1.8), "4f relay", 1.4)
-    add_arrow(ax, 10.7, 1.8, 10.7, 1.2)
-    evt = add_block(ax, (9.5, 0.6), "Event +\nframe sensor", 2.2)
+    relay = add_block(ax, (9.5, 1.8), "4f relay", 1.2)
+    add_arrow(ax, bs_cx, 1.8, bs_cx, 1.2)
+    evt = add_block(ax, (9.1, 0.6), "Event+Frame", 1.8)
 
     # Plugin boxes
     # Illumination plug-in around source->fold
-    add_plugin_box(ax, 0.25, 4.0, 6.95, 1.2, label="Illumination plug-in (drop-in before sample)")
+    add_plugin_box(ax, 0.2, 4.0, 6.2, 1.2, label="Illumination plug-in")
     # Detection add-on around relay->event
-    add_plugin_box(ax, 9.2, 0.45, 3.3, 2.0, label="Detection add-on (4f relay; keeps original camera)", ec="#41ab5d")
+    add_plugin_box(ax, 8.8, 0.45, 3.8, 2.0, label="Detection add-on (4f)", ec="#41ab5d")
     # Existing microscope frame around sample->tube lens (+ original camera)
-    add_plugin_box(ax, 5.4, 2.65, 8.0, 1.8, label="Existing microscope (sample, objective, tube lens)", ec="#969696")
+    add_plugin_box(ax, 4.8, 2.65, 7.8, 1.8, label="Existing microscope", ec="#969696")
 
-    # Small annotations
-    ax.text(6.3, 4.9, "Dispersed illumination", fontsize=8, ha="center")
-    ax.text(10.7, 2.6, "Optional splitter/port", fontsize=8, ha="center")
+    # Keep diagram clean: avoid extra annotations that can overlap
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=400, bbox_inches="tight")
@@ -146,4 +145,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
