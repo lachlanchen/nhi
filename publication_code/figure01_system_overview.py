@@ -128,7 +128,8 @@ def render(out_path: Path) -> None:
     bs_cx, bs_cy = 10.5, 3.65
     bs_size = 0.28
     b_left = bs_cx - bs_size / 2.0
-    L = 0.35
+    # Equal edge-to-edge spacing (increase slightly to shift the microscope left)
+    L = 0.40
     sample_w, obj_w, tube_w = 1.6, 1.4, 1.2  # tighten Tube lens width to remove slack
 
     # Solve positions from right to left so gaps are equal (edge-to-edge):
@@ -195,7 +196,7 @@ def render(out_path: Path) -> None:
     mic_margin = 0.15
     mic_left = sample_x - mic_margin
     mic_right = cam_x + cam_w + mic_margin
-    add_plugin_box(ax, mic_left, 3.0, mic_right - mic_left, 1.3,
+    add_plugin_box(ax, mic_left, 3.0, mic_right - mic_left, 1.15,
                    label="Existing microscope", ec="#969696", label_pos="outside-tr")
 
     # Keep diagram clean: avoid extra annotations that can overlap
