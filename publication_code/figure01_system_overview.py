@@ -126,22 +126,30 @@ def render(out_path: Path) -> None:
     add_beamsplitter(ax, bs_cx, bs_cy, size=0.28)
 
     # Branch 1: existing microscope camera (straight ahead)
-    add_arrow(ax, bs_cx + 0.15, 3.65, 12.6, 3.65)
-    add_block(ax, (12.6, 3.3), "Microscope\ncam", 1.4)
+    add_arrow(ax, bs_cx + 0.15, 3.65, 12.8, 3.65)
+    add_block(ax, (12.8, 3.3), "Microscope cam/\nFrame camera", 2.0)
 
-    # Branch 2: to 4f relay + event camera (downwards)
-    add_arrow(ax, bs_cx, bs_cy - 0.14, bs_cx, 2.4)
-    relay = add_block(ax, (9.1, 2.0), "4f relay", 1.3)
-    add_arrow(ax, bs_cx, 2.0, bs_cx, 1.2)
-    evt = add_block(ax, (8.6, 0.7), "Event+\nFrame", 2.1)
+    # Branch 2: to 4f relay + event camera (downwards), centered on the vertical arrow
+    relay_w = 1.4
+    relay_y = 2.2
+    relay_x = bs_cx - relay_w / 2.0
+    # Arrow from splitter down to the center of the relay block
+    add_arrow(ax, bs_cx, bs_cy - 0.14, bs_cx, relay_y + 0.35)
+    relay = add_block(ax, (relay_x, relay_y), "4f relay", relay_w)
+    # Arrow from relay center down to the event block center
+    evt_w = 1.4
+    evt_y = 0.8
+    evt_x = bs_cx - evt_w / 2.0
+    add_arrow(ax, bs_cx, relay_y + 0.35, bs_cx, evt_y + 0.35)
+    evt = add_block(ax, (evt_x, evt_y), "Event", evt_w)
 
     # Plugin boxes
     # Illumination plug-in around source->fold (label outside top-left)
     add_plugin_box(ax, 0.4, 4.25, 6.6, 1.35, label="Illumination plug-in", label_pos="outside-tl")
     # Detection add-on around relay->event (label outside bottom-left)
-    add_plugin_box(ax, 8.2, 0.5, 4.4, 2.3, label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bl")
+    add_plugin_box(ax, 8.5, 0.5, 4.5, 2.3, label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bl")
     # Existing microscope frame around sample->tube lens (+ original camera), label outside top-right
-    add_plugin_box(ax, 5.0, 2.95, 8.6, 2.1, label="Existing microscope", ec="#969696", label_pos="outside-tr")
+    add_plugin_box(ax, 4.9, 3.0, 9.9, 1.6, label="Existing microscope", ec="#969696", label_pos="outside-tr")
 
     # Keep diagram clean: avoid extra annotations that can overlap
 
