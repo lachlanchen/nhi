@@ -129,7 +129,7 @@ def render(out_path: Path) -> None:
     bs_size = 0.28
     b_left = bs_cx - bs_size / 2.0
     L = 0.35
-    sample_w, obj_w, tube_w = 1.6, 1.4, 1.4
+    sample_w, obj_w, tube_w = 1.6, 1.4, 1.2  # tighten Tube lens width to remove slack
 
     # Solve positions from right to left so gaps are equal (edge-to-edge):
     tube_x = b_left - L - tube_w
@@ -163,7 +163,7 @@ def render(out_path: Path) -> None:
     add_arrow(ax, bs_cx + 0.15, 3.65, relay_r_x - 0.02, 3.65)
     relay_r = add_block(ax, (relay_r_x, relay_r_y), "4f\nrelay", relay_r_w)
     # Frame camera to the right
-    cam_w = 2.1
+    cam_w = 1.8  # tighter camera box to avoid internal slack
     cam_x = relay_r_x + relay_r_w + 0.2
     cam_y = 3.3
     add_arrow(ax, relay_r_x + relay_r_w, 3.65, cam_x, 3.65)
