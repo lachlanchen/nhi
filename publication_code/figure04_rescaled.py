@@ -3,16 +3,18 @@
 Figure 4 (rescaled): Exponential, polarity-weighted accumulations with background subtraction.
 
 For each 50 ms bin (default) the script renders a two-column comparison:
-    - Left: original timestamps
-    - Right: FAST-compensated timestamps (if learned params exist)
+    - Left: raw event counts (no weighting or background adjustment).
+    - Right: FAST-compensated timestamps (if learned params exist) with
+      polarity weighting, exponential accumulation, and per-frame mean
+      subtraction (background removal).
 
-The accumulation applies:
-    1. Polarity weighting with auto-tuned negative weight (same logic as
-       `visualize_cumulative_weighted.py --exp --auto_scale`).
-    2. Exponential transform of the weighted sum.
-    3. Per-frame mean subtraction (background removal).
+The weighting mirrors `visualize_cumulative_weighted.py --exp --auto_scale`:
+the positive polarity weight is fixed to 1, while the negative weight is
+auto-tuned so that the exponential series has matching plateaus at the start
+and end of the scan.
 
-Outputs are written to `figures/figure04_rescaled/figure04_rescaled_bin_XX.(pdf|png)`.
+Outputs default to timestamped folders to avoid overwriting previous runs,
+e.g. `figures/figure04_rescaled_YYYYMMDD_HHMMSS/figure04_rescaled_bin_XX.*`.
 
 Usage example:
     python publication_code/figure04_rescaled.py \
@@ -25,6 +27,7 @@ from __future__ import annotations
 import argparse
 import glob
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -278,7 +281,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path(__file__).resolve().parent / "figures" / "figure04_rescaled",
+        default=None,
+        help="Optional output directory; defaults to figures/figure04_rescaled_<timestamp>/",
     )
     return parser.parse_args()
 
@@ -289,9 +293,13 @@ def main() -> None:
     if not segment_path.exists():
         raise FileNotFoundError(segment_path)
 
-    default_out_dir = Path(__file__).resolve().parent / "figures" / "figure04_rescaled"
-    if args.diverging and args.output_dir == default_out_dir:
-        args.output_dir = Path(__file__).resolve().parent / "figures" / "figure04_rescaled_diverging"
+    figures_root = Path(__file__).resolve().parent / "figures"
+    if args.output_dir is None:
+        suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base = "figure04_rescaled_diverging" if args.diverging else "figure04_rescaled"
+        args.output_dir = figures_root / f"{base}_{suffix}"
+    else:
+        args.output_dir = args.output_dir.resolve()
 
     x, y, t, p = load_segment_events(segment_path)
     sensor_shape = (args.sensor_height, args.sensor_width)
@@ -306,7 +314,8 @@ def main() -> None:
         neg_scale_init=args.neg_scale,
     )
     print(f"Rescaled weights: pos_scale={args.pos_scale:.3f}, neg_scale={neg_scale:.3f}")
-    weights = np.where(p >= 0, args.pos_scale, -neg_scale).astype(np.float32)
+    comp_weights = np.where(p >= 0, args.pos_scale, -neg_scale).astype(np.float32)
+    raw_weights = np.where(p >= 0, 1.0, -1.0).astype(np.float32)
 
     params_file = find_param_file(segment_path)
     t_comp = None
@@ -330,13 +339,12 @@ def main() -> None:
         mask_orig = (t >= start) & (t < end)
         mask_comp = (t_comp >= start) & (t_comp < end)
 
-        orig_frame = accumulate_bin(x, y, mask_orig, weights, sensor_shape)
-        comp_frame = accumulate_bin(x, y, mask_comp, weights, sensor_shape)
+        orig_frame = accumulate_bin(x, y, mask_orig, raw_weights, sensor_shape)
+        comp_frame = accumulate_bin(x, y, mask_comp, comp_weights, sensor_shape)
 
-        orig_exp = subtract_background(np.exp(orig_frame))
         comp_exp = subtract_background(np.exp(comp_frame))
 
-        originals.append(orig_exp)
+        originals.append(orig_frame)
         compensations.append(comp_exp)
 
     combined = np.concatenate([arr.ravel() for arr in originals + compensations])
