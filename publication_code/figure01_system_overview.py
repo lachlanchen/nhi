@@ -131,7 +131,7 @@ def render(out_path: Path) -> None:
     add_arrow(ax, sample_x + sample_w, 3.65, 7.3, 3.65)
 
     # Tube lens and beamsplitter node
-    tube = add_block(ax, (8.8, 3.3), "Tube lens", 1.4)
+    tube = add_block(ax, (8.8, 3.3), "Tube\nlens", 1.4)
     add_arrow(ax, 7.3 + 1.4, 3.65, 8.8, 3.65)
 
     bs_cx, bs_cy = 10.5, 3.65
@@ -144,27 +144,30 @@ def render(out_path: Path) -> None:
     relay_r_x = 11.0
     relay_r_y = 3.3
     # Arrow from beamsplitter to right 4f relay (top branch)
-    add_arrow(ax, bs_cx + 0.15, 3.65, relay_r_x, 3.65)
+    add_arrow(ax, bs_cx + 0.15, 3.65, relay_r_x - 0.02, 3.65)
     relay_r = add_block(ax, (relay_r_x, relay_r_y), "4f relay", relay_r_w)
     # Frame camera to the right
     cam_w = 2.1
     cam_x = relay_r_x + relay_r_w + 0.2
     cam_y = 3.3
     add_arrow(ax, relay_r_x + relay_r_w, 3.65, cam_x, 3.65)
-    add_block(ax, (cam_x, cam_y), "Frame Camera", cam_w)
+    add_block(ax, (cam_x, cam_y), "Frame\nCamera", cam_w)
 
     # Branch 2: to 4f relay + event (downwards), centered on the vertical arrow
     relay_w = 1.4
+    relay_h = 0.7
     relay_y = 2.2
     relay_x = bs_cx - relay_w / 2.0
     # Arrow from splitter down to the center of the relay block
-    add_arrow(ax, bs_cx, bs_cy - 0.14, bs_cx, relay_y + 0.35, z=10)
+    add_arrow(ax, bs_cx, bs_cy - 0.14, bs_cx, relay_y + relay_h, z=10)
     relay = add_block(ax, (relay_x, relay_y), "4f relay", relay_w)
     # Arrow from relay center down to the event block center
     evt_w = 1.4
+    evt_h = 0.7
     evt_y = 0.8
     evt_x = bs_cx - evt_w / 2.0
-    add_arrow(ax, bs_cx, relay_y + 0.35, bs_cx, evt_y + 0.35, z=10)
+    # From relay bottom edge to event top edge (shorter arrows that just touch boxes)
+    add_arrow(ax, bs_cx, relay_y, bs_cx, evt_y + evt_h, z=10)
     evt = add_block(ax, (evt_x, evt_y), "Event", evt_w)
 
     # Plugin boxes
