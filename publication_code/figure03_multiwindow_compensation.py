@@ -104,14 +104,17 @@ def compute_boundary_lines(a_params: np.ndarray, b_params: np.ndarray, duration_
 
 
 def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int, sample: float, out_dir: Path) -> None:
-    x, y, t, p = load_events(segment_npz)
-    n = len(x)
+    # Load full events first to compute true time extent, then sample
+    x_full, y_full, t_full, p_full = load_events(segment_npz)
+    n = len(x_full)
     k = max(1, int(n * sample))
     idx = np.random.choice(n, k, replace=False)
-    x, y, t, p = x[idx], y[idx], t[idx], p[idx]
-    t0 = float(t.min())
-    t_norm_ms = (t - t0) / 1000.0
-    duration_us = float(t.max() - t.min())
+    x, y, t, p = x_full[idx], y_full[idx], t_full[idx], p_full[idx]
+    # Use full-range normalization (not sample) to match saved FIXED plot
+    t0_full = float(t_full.min())
+    t1_full = float(t_full.max())
+    duration_us = t1_full - t0_full
+    t_norm_ms = (t - t0_full) / 1000.0
 
     pos = p > 0
     neg = ~pos
