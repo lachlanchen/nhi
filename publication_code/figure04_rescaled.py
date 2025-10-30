@@ -30,6 +30,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 
 
 def setup_style() -> None:
@@ -191,17 +192,34 @@ def render_panel(
     compensated: np.ndarray,
     vmin: float,
     vmax: float,
+    absmax: float,
     bin_idx: int,
     bin_width_ms: float,
     colormap: str,
     output_dir: Path,
     save_png: bool,
+    diverging: bool,
 ) -> None:
     setup_style()
     fig, axes = plt.subplots(1, 2, figsize=(6.0, 3.2), constrained_layout=True)
     meta = f"Bin {bin_idx} ({bin_width_ms:.0f} ms)"
 
-    im0 = axes[0].imshow(original, cmap=colormap, vmin=vmin, vmax=vmax, origin="lower")
+    if diverging:
+        norm = TwoSlopeNorm(vmin=-absmax, vcenter=0.0, vmax=absmax)
+    else:
+        norm = None
+
+    im0 = axes[0].imshow(
+        original,
+        cmap=colormap,
+        norm=norm,
+        vmin=None if norm else vmin,
+        vmax=None if norm else vmax,
+        origin="lower",
+        interpolation="nearest",
+    )
+    if diverging and absmax > 0:
+        im0.set_alpha(np.clip(np.abs(original) / absmax, 0.0, 1.0))
     axes[0].set_title("Original")
     axes[0].axis("off")
     axes[0].text(
@@ -214,7 +232,17 @@ def render_panel(
         bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.4, edgecolor="none"),
     )
 
-    im1 = axes[1].imshow(compensated, cmap=colormap, vmin=vmin, vmax=vmax, origin="lower")
+    im1 = axes[1].imshow(
+        compensated,
+        cmap=colormap,
+        norm=norm,
+        vmin=None if norm else vmin,
+        vmax=None if norm else vmax,
+        origin="lower",
+        interpolation="nearest",
+    )
+    if diverging and absmax > 0:
+        im1.set_alpha(np.clip(np.abs(compensated) / absmax, 0.0, 1.0))
     axes[1].set_title("Compensated")
     axes[1].axis("off")
 
@@ -242,7 +270,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sensor-height", type=int, default=720)
     parser.add_argument("--pos-scale", type=float, default=1.0, help="Positive event weight (default 1.0).")
     parser.add_argument("--neg-scale", type=float, default=1.5, help="Initial negative event weight before auto-scaling.")
-    parser.add_argument("--output-dir", type=Path, default=Path(__file__).resolve().parent / "figures" / "figure04_rescaled")
+    parser.add_argument(
+        "--diverging",
+        action="store_true",
+        help="Use a diverging colormap (pos/neg highlighted) with transparency near zero.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path(__file__).resolve().parent / "figures" / "figure04_rescaled",
+    )
     return parser.parse_args()
 
 
@@ -251,6 +288,10 @@ def main() -> None:
     segment_path = args.segment.resolve()
     if not segment_path.exists():
         raise FileNotFoundError(segment_path)
+
+    default_out_dir = Path(__file__).resolve().parent / "figures" / "figure04_rescaled"
+    if args.diverging and args.output_dir == default_out_dir:
+        args.output_dir = Path(__file__).resolve().parent / "figures" / "figure04_rescaled_diverging"
 
     x, y, t, p = load_segment_events(segment_path)
     sensor_shape = (args.sensor_height, args.sensor_width)
@@ -301,8 +342,14 @@ def main() -> None:
     combined = np.concatenate([arr.ravel() for arr in originals + compensations])
     vmin = float(np.percentile(combined, args.percentiles[0]))
     vmax = float(np.percentile(combined, args.percentiles[1]))
+    if args.diverging:
+        absmax = max(abs(vmin), abs(vmax))
+        vmin, vmax = -absmax, absmax
+    else:
+        absmax = max(abs(vmin), abs(vmax))
     if np.isclose(vmin, vmax):
         vmax = vmin + 1e-3
+        absmax = vmax
     print(f"Unified colour scale: [{vmin:.3f}, {vmax:.3f}] from percentiles {args.percentiles}")
 
     out_dir = args.output_dir.resolve()
@@ -312,11 +359,13 @@ def main() -> None:
             comp_frame,
             vmin,
             vmax,
+            absmax,
             idx,
             args.bin_width_us / 1000.0,
             args.colormap,
             out_dir,
             args.save_png,
+            args.diverging,
         )
 
 
