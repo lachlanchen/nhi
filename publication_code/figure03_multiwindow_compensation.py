@@ -125,9 +125,9 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
 
     # X–T
     if np.any(pos):
-        ax1.scatter(x[pos], t_norm_ms[pos], s=0.3, c="#d62728", alpha=0.6, rasterized=True)
+        ax1.scatter(x[pos], t_norm_ms[pos], s=0.25, c="#d62728", alpha=0.5, rasterized=True)
     if np.any(neg):
-        ax1.scatter(x[neg], t_norm_ms[neg], s=0.3, c="#1f77b4", alpha=0.6, rasterized=True)
+        ax1.scatter(x[neg], t_norm_ms[neg], s=0.25, c="#1f77b4", alpha=0.5, rasterized=True)
     for ln in x_lines:
         ax1.plot(xs, ln / 1000.0, color="#4d4d4d", linewidth=1.0, alpha=0.9)
     ax1.set_xlabel("X (pixels)")
@@ -138,9 +138,9 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
 
     # Y–T
     if np.any(pos):
-        ax2.scatter(y[pos], t_norm_ms[pos], s=0.3, c="#d62728", alpha=0.6, rasterized=True)
+        ax2.scatter(y[pos], t_norm_ms[pos], s=0.25, c="#d62728", alpha=0.5, rasterized=True)
     if np.any(neg):
-        ax2.scatter(y[neg], t_norm_ms[neg], s=0.3, c="#1f77b4", alpha=0.6, rasterized=True)
+        ax2.scatter(y[neg], t_norm_ms[neg], s=0.25, c="#1f77b4", alpha=0.5, rasterized=True)
     for ln in y_lines:
         ax2.plot(ys, ln / 1000.0, color="#4d4d4d", linewidth=1.0, alpha=0.9)
     ax2.set_xlabel("Y (pixels)")
@@ -241,12 +241,13 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # Shared colorbar
-    cbar = fig.colorbar(im2, ax=[ax1, ax2], fraction=0.046, pad=0.04)
+    # Shared colorbar at the right side (outside of image area)
+    fig.subplots_adjust(right=0.86, left=0.08, top=0.94, bottom=0.12, wspace=0.12)
+    cax = fig.add_axes([0.88, 0.14, 0.02, 0.72])
+    cbar = fig.colorbar(im2, cax=cax)
     cbar.ax.set_ylabel("Value", rotation=90)
 
     fig.text(0.012, 0.985, "(c)", fontweight="bold", ha="left", va="top")
-    fig.tight_layout()
     out_path = out_dir / "figure03_c_bin50ms.pdf"
     fig.savefig(out_path, dpi=400)
     fig.savefig(out_dir / "figure03_c_bin50ms.png", dpi=300)
@@ -259,7 +260,7 @@ def main() -> None:
     parser.add_argument("segment_npz", type=Path, help="Path to Scan_*_events.npz segment file")
     parser.add_argument("--sensor_width", type=int, default=1280)
     parser.add_argument("--sensor_height", type=int, default=720)
-    parser.add_argument("--sample", type=float, default=0.10, help="Event sampling fraction for panel (a)")
+    parser.add_argument("--sample", type=float, default=0.05, help="Event sampling fraction for panel (a)")
     parser.add_argument("--output_dir", type=Path, default=Path(__file__).resolve().parent / "figures")
     args = parser.parse_args()
 
