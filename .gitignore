@@ -49,3 +49,5 @@
 ._*
 __pycache__/
 *.py[cod]
+# Hyperspectral ground-truth dumps
+hyperspectral_data_sanqin_gt/
