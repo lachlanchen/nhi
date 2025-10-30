@@ -122,7 +122,8 @@ def render(out_path: Path) -> None:
     add_arrow(ax, 7.3 + 1.4, 3.65, 9.0, 3.65)
 
     bs_cx, bs_cy = 10.5, 3.65
-    add_arrow(ax, 9.0 + 1.4, 3.65, bs_cx - 0.15, 3.65)
+    # Clear arrow between tube lens and reflector (beamsplitter)
+    add_arrow(ax, 9.0 + 1.4, 3.65, bs_cx - 0.18, 3.65, lw=1.4)
     add_beamsplitter(ax, bs_cx, bs_cy, size=0.28)
 
     # Branch 1: existing microscope camera (straight ahead)
