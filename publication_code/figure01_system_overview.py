@@ -176,7 +176,8 @@ def render(out_path: Path) -> None:
     # Detection add-on around relay->event (label outside bottom-left)
     add_plugin_box(ax, 8.5, 0.5, 4.5, 2.3, label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bl")
     # Existing microscope frame around sample->tube lens (+ original camera), label outside top-right
-    add_plugin_box(ax, 4.9, 3.0, 9.9, 1.6, label="Existing microscope", ec="#969696", label_pos="outside-tr")
+    # Shorter height to reduce visual weight while covering components
+    add_plugin_box(ax, 4.9, 3.0, 9.9, 1.3, label="Existing microscope", ec="#969696", label_pos="outside-tr")
 
     # Keep diagram clean: avoid extra annotations that can overlap
 
