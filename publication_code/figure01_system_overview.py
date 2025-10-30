@@ -72,6 +72,8 @@ def add_plugin_box(ax, x, y, w, h, label, ec="#2b8cbe", label_pos: str = "inside
         lx, ly, ha, va = x - 0.1, y - 0.12, "left", "top"
     elif label_pos == "outside-br":
         lx, ly, ha, va = x + w + 0.1, y - 0.12, "right", "top"
+    elif label_pos == "outside-bc":
+        lx, ly, ha, va = x + w / 2.0, y - 0.14, "center", "top"
     else:
         lx, ly, ha, va = x + 0.1, y + h - 0.1, "left", "top"
 
@@ -125,10 +127,11 @@ def render(out_path: Path) -> None:
 
     # Evenly spaced optical chain within the existing microscope:
     # choose equal edge-to-edge spacing L between Sample -> Objective -> Tube lens -> Beamsplitter
-    bs_cx, bs_cy = 10.5, 3.65
+    bs_cx, bs_cy = 10.0, 3.65
     bs_size = 0.28
     b_left = bs_cx - bs_size / 2.0
-    # Equal edge-to-edge spacing (increase slightly to shift the microscope left)
+    b_right = bs_cx + bs_size / 2.0
+    # Equal edge-to-edge spacing across the existing microscope chain
     L = 0.40
     sample_w, obj_w, tube_w = 1.6, 1.4, 1.2  # tighten Tube lens width to remove slack
 
@@ -157,17 +160,18 @@ def render(out_path: Path) -> None:
     add_arrow(ax, fold_cx, 4.6, sample_cx, sample_y + block_h)
 
     # Branch 1: top row to frame camera via an additional 4f relay
+    arrow_pad = 0.02
     relay_r_w = 1.4
-    relay_r_x = 11.0
+    relay_r_x = b_right + L + 2 * arrow_pad  # align beamsplitter->relay spacing with L
     relay_r_y = 3.3
     # Arrow from beamsplitter to right 4f relay (top branch)
-    add_arrow(ax, bs_cx + 0.15, 3.65, relay_r_x - 0.02, 3.65)
+    add_arrow(ax, b_right + arrow_pad, 3.65, relay_r_x - arrow_pad, 3.65)
     relay_r = add_block(ax, (relay_r_x, relay_r_y), "4f\nrelay", relay_r_w)
     # Frame camera to the right
-    cam_w = 1.8  # tighter camera box to avoid internal slack
-    cam_x = relay_r_x + relay_r_w + 0.2
+    cam_w = 1.7  # keep chain tight while staying inside figure bounds
+    cam_x = relay_r_x + relay_r_w + L + 2 * arrow_pad
     cam_y = 3.3
-    add_arrow(ax, relay_r_x + relay_r_w, 3.65, cam_x, 3.65)
+    add_arrow(ax, relay_r_x + relay_r_w + arrow_pad, 3.65, cam_x - arrow_pad, 3.65)
     add_block(ax, (cam_x, cam_y), "Frame\nCamera", cam_w)
 
     # Branch 2: to 4f relay + event (downwards), centered on the vertical arrow
@@ -189,14 +193,16 @@ def render(out_path: Path) -> None:
 
     # Plugin boxes
     # Illumination plug-in around source->fold (label outside top-left)
-    add_plugin_box(ax, 0.4, 4.25, 6.6, 1.35, label="Illumination plug-in", label_pos="outside-tl")
+    add_plugin_box(ax, 0.4, 4.35, 6.6, 1.2, label="Illumination plug-in", label_pos="outside-tl")
     # Detection add-on around relay->event (label outside bottom-left)
-    add_plugin_box(ax, 8.5, 0.5, 4.5, 2.3, label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bl")
+    det_half_width = 1.6  # keep margins symmetric around the relay/event stack
+    add_plugin_box(ax, bs_cx - det_half_width, 0.65, 2 * det_half_width, 2.35,
+                   label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bc")
     # Existing microscope frame around sample->tube lens + frame camera (dynamic width), label outside top-right
-    mic_margin = 0.15
+    mic_margin = 0.07
     mic_left = sample_x - mic_margin
     mic_right = cam_x + cam_w + mic_margin
-    add_plugin_box(ax, mic_left, 3.0, mic_right - mic_left, 1.15,
+    add_plugin_box(ax, mic_left, 3.1, mic_right - mic_left, 1.05,
                    label="Existing microscope", ec="#969696", label_pos="outside-tr")
 
     # Keep diagram clean: avoid extra annotations that can overlap
