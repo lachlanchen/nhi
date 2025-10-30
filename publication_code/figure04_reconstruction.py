@@ -27,8 +27,9 @@ Options
 
 Outputs
 -------
-  figure04_reconstruction.pdf  – two-panel figure (a) original, (b) compensated.
-  figure04_reconstruction.png  – optional raster preview if --save-png is set.
+  figure04_reconstruction.pdf  – aggregated comparison (default behaviour).
+  figure04_bin_XX.pdf          – per-bin comparisons when --all-bins is used.
+  PNG counterparts are emitted alongside PDFs if --save-png is set.
 """
 
 from __future__ import annotations
@@ -108,6 +109,11 @@ def parse_args() -> argparse.Namespace:
         help="Lower/upper percentiles for colour scaling (default: 1 99).",
     )
     parser.add_argument(
+        "--all-bins",
+        action="store_true",
+        help="Render every available bin as an individual comparison figure.",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path(__file__).resolve().parent / "figures" / "figure04",
@@ -152,6 +158,20 @@ def normalise_images(orig: np.ndarray, comp: np.ndarray, low: float, high: float
     return float(vmin), float(vmax)
 
 
+def compute_global_limits(data: dict[str, np.ndarray], bins: List[int], low: float, high: float) -> tuple[float, float]:
+    """Compute colour limits across all requested bins and both modalities."""
+    arrays = []
+    for idx in bins:
+        arrays.append(data[f"original_bin_{idx}"])
+        arrays.append(data[f"compensated_bin_{idx}"])
+    combined = np.concatenate([arr.ravel() for arr in arrays]).astype(np.float32)
+    vmin = np.percentile(combined, low)
+    vmax = np.percentile(combined, high)
+    if np.isclose(vmin, vmax):
+        vmax = vmin + 1e-3
+    return float(vmin), float(vmax)
+
+
 def render_figure(
     original: np.ndarray,
     compensated: np.ndarray,
@@ -162,11 +182,15 @@ def render_figure(
     vmax: float,
     output_dir: Path,
     save_png: bool,
+    output_basename: str,
 ) -> None:
     setup_style()
     fig, axes = plt.subplots(1, 2, figsize=(6.0, 3.2), constrained_layout=True)
 
-    metadata = f"Bins {', '.join(str(b) for b in bins)} × {bin_width_ms:.0f} ms"
+    if len(bins) == 1:
+        metadata = f"Bin {bins[0]} ({bin_width_ms:.0f} ms)"
+    else:
+        metadata = f"Bins {', '.join(str(b) for b in bins)} × {bin_width_ms:.0f} ms"
 
     im0 = axes[0].imshow(original, cmap=colormap, vmin=vmin, vmax=vmax, origin="lower")
     axes[0].set_title("Original")
@@ -189,12 +213,11 @@ def render_figure(
     cbar.ax.set_ylabel("Accumulated events (a.u.)", rotation=90)
 
     fig.text(0.012, 0.97, "(a)", fontweight="bold", ha="left", va="top")
-    fig.text(0.512, 0.97, "(b)", fontweight="bold", ha="left", va="top")
     output_dir.mkdir(parents=True, exist_ok=True)
-    pdf_path = output_dir / "figure04_reconstruction.pdf"
+    pdf_path = output_dir / f"{output_basename}.pdf"
     fig.savefig(pdf_path, dpi=400, bbox_inches="tight")
     if save_png:
-        fig.savefig(output_dir / "figure04_reconstruction.png", dpi=300, bbox_inches="tight")
+        fig.savefig(output_dir / f"{output_basename}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved figure to {pdf_path}")
 
@@ -209,26 +232,50 @@ def main() -> None:
     timebin_npz = locate_timebin_npz(segment_npz)
     print(f"Using time-binned frames: {timebin_npz}")
 
+    output_dir = args.output_dir.resolve()
+
     with np.load(timebin_npz, allow_pickle=True) as data:
         num_bins = int(data["num_bins"])
-        bins = select_bins(num_bins, args.bins)
-        original, compensated = aggregate_frames(data, bins, args.aggregate)
         bin_width_ms = float(data["bin_width_ms"])
 
-    vmin, vmax = normalise_images(original, compensated, *args.percentiles)
-    print(f"Value range [{vmin:.3f}, {vmax:.3f}] based on percentiles {args.percentiles}")
-
-    render_figure(
-        original,
-        compensated,
-        bins,
-        bin_width_ms,
-        args.colormap,
-        vmin,
-        vmax,
-        args.output_dir.resolve(),
-        args.save_png,
-    )
+        if args.all_bins:
+            if args.bins:
+                bins = select_bins(num_bins, args.bins)
+            else:
+                bins = list(range(num_bins))
+            vmin, vmax = compute_global_limits(data, bins, *args.percentiles)
+            print(f"Global value range [{vmin:.3f}, {vmax:.3f}] across bins {bins}")
+            for idx in bins:
+                original, compensated = aggregate_frames(data, [idx], args.aggregate)
+                render_figure(
+                    original,
+                    compensated,
+                    [idx],
+                    bin_width_ms,
+                    args.colormap,
+                    vmin,
+                    vmax,
+                    output_dir,
+                    args.save_png,
+                    output_basename=f"figure04_bin_{idx:02d}",
+                )
+        else:
+            bins = select_bins(num_bins, args.bins)
+            original, compensated = aggregate_frames(data, bins, args.aggregate)
+            vmin, vmax = normalise_images(original, compensated, *args.percentiles)
+            print(f"Value range [{vmin:.3f}, {vmax:.3f}] based on percentiles {args.percentiles}")
+            render_figure(
+                original,
+                compensated,
+                bins,
+                bin_width_ms,
+                args.colormap,
+                vmin,
+                vmax,
+                output_dir,
+                args.save_png,
+                output_basename="figure04_reconstruction",
+            )
 
 
 if __name__ == "__main__":
