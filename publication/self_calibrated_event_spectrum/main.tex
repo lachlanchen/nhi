@@ -54,22 +54,11 @@ where $d$ is the grating dispersion constant, $z_2$ and $z_1$ denote distances f
 \end{equation}
 which drives event emission when the logarithmic intensity crosses the sensor threshold. Because $\partial \lambda/\partial t$ is governed by the motor trajectory, reconstructing $I_0^{(x,y)}(\lambda)$ reduces to integrating polarity-weighted events along a synchronized wavelength axis.
 
-\begin{figure*}[htbp]
+\begin{figure*}[t]
   \centering
-  \begin{minipage}{0.24\linewidth}
-    \phfig{(a) Optical path: LED $\rightarrow$ sample $\rightarrow$ grating scan $\rightarrow$ DVS/frame plane.}
-  \end{minipage}\hfill
-  \begin{minipage}{0.24\linewidth}
-    \phfig{(b) Illustration of \eqref{eq:lambda_mapping}: wavelength fronts sweeping across $x$.}
-  \end{minipage}\hfill
-  \begin{minipage}{0.24\linewidth}
-    \phfig{(c) Example $I_0(\lambda)$ with event polarities marking $\partial I_0/\partial \lambda$.}
-  \end{minipage}\hfill
-  \begin{minipage}{0.24\linewidth}
-    \phfig{(d) Planned hardware photograph highlighting compact 4$f$ relay and sensors.}
-  \end{minipage}
-  \caption{Figure~1 placeholder: system overview and sensing concept. Panel (a) will depict the transmission optics, (b) the wavelength--time relationship, (c) the event-generation mechanism, and (d) the laboratory implementation.}
-\label{fig:overview}
+  \includegraphics[width=0.98\linewidth]{../../publication_code/figures/figure01_overview.pdf}
+  \caption{System overview and modular integration. A dispersed illumination path (left, blue dashed box) acts as a drop-in module before the sample, while a non-intrusive detection add-on (right, green dashed box) uses a 4$f$ relay to feed an event+frame sensor. An optional splitter or camera port preserves the original microscope camera.}
+  \label{fig:overview}
 \end{figure*}
 
 \section{Event-trigger probability model}
