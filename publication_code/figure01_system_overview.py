@@ -21,7 +21,7 @@ import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, FancyArrow, Rectangle
+from matplotlib.patches import FancyBboxPatch, FancyArrow
 
 
 def add_block(ax, xy, text, width=1.6, height=0.7, fc="#f7f7f7", ec="#4d4d4d",
@@ -84,14 +84,22 @@ def add_plugin_box(ax, x, y, w, h, label, ec="#2b8cbe", label_pos: str = "inside
     )
 
 
-def add_beamsplitter(ax, cx, cy, size=0.25, ec="#4d4d4d", fc="#e0e0e0"):
-    # Draw a small square rotated by 45° to indicate a beamsplitter cube
-    s = size
-    # As a simple square (no rotation) plus diagonal line
-    r = Rectangle((cx - s/2, cy - s/2), s, s, linewidth=1.0, edgecolor=ec, facecolor=fc)
-    ax.add_patch(r)
-    ax.plot([cx - s/2, cx + s/2], [cy - s/2, cy + s/2], color=ec, linewidth=1.0)
-    return r
+def add_split_block(ax, xy, width, height, text_upper="4f", text_lower="relay",
+                    fc="#f7f7f7", ec="#4d4d4d", lw=1.1, radius=0.08, fontsize=8):
+    x, y = xy
+    box = FancyBboxPatch((x, y), width, height,
+                         boxstyle=f"round,pad=0.02,rounding_size={radius}",
+                         linewidth=lw, edgecolor=ec, facecolor=fc)
+    ax.add_patch(box)
+    # Diagonal split to indicate combined beamsplitter + relay optics
+    ax.plot([x, x + width], [y + height, y], color=ec, linewidth=lw * 0.9)
+    pad_x = width * 0.08
+    pad_y = height * 0.08
+    ax.text(x + width - pad_x, y + height - pad_y, text_upper,
+            ha="right", va="top", fontsize=fontsize)
+    ax.text(x + pad_x, y + pad_y, text_lower,
+            ha="left", va="bottom", fontsize=fontsize)
+    return box
 
 
 def render(out_path: Path) -> None:
@@ -126,77 +134,73 @@ def render(out_path: Path) -> None:
     # Placeholder; will draw actual arrow after computing sample positions
 
     # Evenly spaced optical chain within the existing microscope:
-    # choose equal edge-to-edge spacing L between Sample -> Objective -> Tube lens -> Beamsplitter
-    bs_cx, bs_cy = 10.0, 3.65
-    bs_size = 0.28
-    b_left = bs_cx - bs_size / 2.0
-    b_right = bs_cx + bs_size / 2.0
-    # Equal edge-to-edge spacing across the existing microscope chain
+    # choose equal edge-to-edge spacing L between Sample -> Objective -> Tube lens -> 4f relay block
+    bs_cx = 10.0
     L = 0.40
     sample_w, obj_w, tube_w = 1.6, 1.4, 1.2  # tighten Tube lens width to remove slack
+    sample_y = 3.3
+    block_h = 0.7
+    evt_w = 1.4
+    evt_h = 0.7
+    evt_y = 2.2
+    evt_top = evt_y + evt_h
+
+    # Combined reflector + 4f relay block, shared between the frame and event paths
+    relay_block_w = block_h * 1.5  # wider footprint to balance the diagonal labels
+    relay_block_h = block_h  # keep consistent height with microscope elements
+    relay_block_y = sample_y
+    relay_block_top = relay_block_y + relay_block_h
+    relay_block_x = bs_cx - relay_block_w / 2.0
+    relay_block_right = relay_block_x + relay_block_w
 
     # Solve positions from right to left so gaps are equal (edge-to-edge):
-    tube_x = b_left - L - tube_w
+    tube_x = relay_block_x - L - tube_w
     objective_x = (tube_x - L) - obj_w
     sample_x = (objective_x - L) - sample_w
 
     # Blocks
-    sample_y = 3.3
-    block_h = 0.7
     samp = add_block(ax, (sample_x, sample_y), "Sample\n(trans)", sample_w)
     obj = add_block(ax, (objective_x, sample_y), "Objective", obj_w)
     tube = add_block(ax, (tube_x, sample_y), "Tube\nlens", tube_w)
+    relay_block = add_split_block(ax, (relay_block_x, relay_block_y), relay_block_w, relay_block_h)
 
     # Arrows between blocks (edge to edge), equalised length L
-    add_arrow(ax, sample_x + sample_w, 3.65, objective_x, 3.65)
-    add_arrow(ax, objective_x + obj_w, 3.65, tube_x, 3.65)
+    chain_y = sample_y + block_h / 2.0
+    add_arrow(ax, sample_x + sample_w, chain_y, objective_x, chain_y)
+    add_arrow(ax, objective_x + obj_w, chain_y, tube_x, chain_y)
     # tube lens to beamsplitter left edge, drawn above elements
-    add_arrow(ax, tube_x + tube_w, 3.65, b_left, 3.65, lw=1.4, z=10)
-    add_beamsplitter(ax, bs_cx, bs_cy, size=bs_size)
+    add_arrow(ax, tube_x + tube_w, chain_y, relay_block_x, chain_y, lw=1.4, z=10)
 
     # Now draw the arrow from Fold to the center top of Sample box
     fold_cx = 5.7 + 0.5  # fold x + width/2
     sample_cx = sample_x + sample_w / 2.0
     add_arrow(ax, fold_cx, 4.6, sample_cx, sample_y + block_h)
 
-    # Branch 1: top row to frame camera via an additional 4f relay
-    arrow_pad = 0.02
-    relay_r_w = 1.4
-    relay_r_x = b_right + L + 2 * arrow_pad  # align beamsplitter->relay spacing with L
-    relay_r_y = 3.3
-    # Arrow from beamsplitter to right 4f relay (top branch)
-    add_arrow(ax, b_right + arrow_pad, 3.65, relay_r_x - arrow_pad, 3.65)
-    relay_r = add_block(ax, (relay_r_x, relay_r_y), "4f\nrelay", relay_r_w)
+    # Branch 1: top row to frame camera directly from the 4f relay block
     # Frame camera to the right
     cam_w = 1.7  # keep chain tight while staying inside figure bounds
-    cam_x = relay_r_x + relay_r_w + L + 2 * arrow_pad
+    cam_x = relay_block_right + L
     cam_y = 3.3
-    add_arrow(ax, relay_r_x + relay_r_w + arrow_pad, 3.65, cam_x - arrow_pad, 3.65)
+    add_arrow(ax, relay_block_right, chain_y, cam_x, chain_y)
     add_block(ax, (cam_x, cam_y), "Frame\nCamera", cam_w)
 
-    # Branch 2: to 4f relay + event (downwards), centered on the vertical arrow
-    relay_w = 1.4
-    relay_h = 0.7
-    relay_y = 2.2
-    relay_x = bs_cx - relay_w / 2.0
-    # Arrow from splitter down to the center of the relay block
-    add_arrow(ax, bs_cx, bs_cy - 0.14, bs_cx, relay_y + relay_h, z=10)
-    relay = add_block(ax, (relay_x, relay_y), "4f\nrelay", relay_w)
-    # Arrow from relay center down to the event block center
-    evt_w = 1.4
-    evt_h = 0.7
-    evt_y = 0.8
+    # Branch 2: down to the event sensor
     evt_x = bs_cx - evt_w / 2.0
     # From relay bottom edge to event top edge (shorter arrows that just touch boxes)
-    add_arrow(ax, bs_cx, relay_y, bs_cx, evt_y + evt_h, z=10)
+    add_arrow(ax, bs_cx, relay_block_y, bs_cx, evt_top, z=10)
     evt = add_block(ax, (evt_x, evt_y), "Event", evt_w)
 
     # Plugin boxes
     # Illumination plug-in around source->fold (label outside top-left)
     add_plugin_box(ax, 0.4, 4.35, 6.6, 1.2, label="Illumination plug-in", label_pos="outside-tl")
-    # Detection add-on around relay->event (label outside bottom-left)
-    det_half_width = 1.6  # keep margins symmetric around the relay/event stack
-    add_plugin_box(ax, bs_cx - det_half_width, 0.65, 2 * det_half_width, 2.35,
+    # Detection add-on around the combined 4f relay and camera/event chain
+    det_margin_x = 0.15
+    det_margin_y = 0.2
+    det_left = min(relay_block_x, evt_x) - det_margin_x
+    det_right = cam_x + cam_w + det_margin_x
+    det_bottom = evt_y - det_margin_y
+    det_top = relay_block_top + det_margin_y
+    add_plugin_box(ax, det_left, det_bottom, det_right - det_left, det_top - det_bottom,
                    label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bc")
     # Existing microscope frame around sample->tube lens + frame camera (dynamic width), label outside top-right
     mic_margin = 0.07
