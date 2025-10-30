@@ -43,16 +43,30 @@ def add_arrow(ax, x0, y0, x1, y1, lw=1.2, color="#000000"):
                             linewidth=lw, edgecolor=color, facecolor=color))
 
 
-def add_plugin_box(ax, x, y, w, h, label, ec="#2b8cbe"):
+def add_plugin_box(ax, x, y, w, h, label, ec="#2b8cbe", label_pos: str = "inside-tl"):
     rect = FancyBboxPatch((x, y), w, h,
                           boxstyle="round,pad=0.012,rounding_size=0.08",
                           linewidth=1.1, edgecolor=ec, facecolor="none",
                           linestyle=(0, (4, 3)))
     ax.add_patch(rect)
-    # Place label inside top-left with a light background to avoid dashed overlap
+
+    # Compute label anchor by position keyword
+    if label_pos == "inside-tl":
+        lx, ly, ha, va = x + 0.1, y + h - 0.1, "left", "top"
+    elif label_pos == "outside-tl":
+        lx, ly, ha, va = x - 0.1, y + h + 0.12, "left", "bottom"
+    elif label_pos == "outside-tr":
+        lx, ly, ha, va = x + w + 0.1, y + h + 0.12, "right", "bottom"
+    elif label_pos == "outside-bl":
+        lx, ly, ha, va = x - 0.1, y - 0.12, "left", "top"
+    elif label_pos == "outside-br":
+        lx, ly, ha, va = x + w + 0.1, y - 0.12, "right", "top"
+    else:
+        lx, ly, ha, va = x + 0.1, y + h - 0.1, "left", "top"
+
     ax.text(
-        x + 0.1, y + h - 0.1, label,
-        fontsize=8, color=ec, ha="left", va="top",
+        lx, ly, label,
+        fontsize=8, color=ec, ha=ha, va=va,
         bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor=ec, linewidth=0.6, alpha=0.95),
     )
 
@@ -122,12 +136,12 @@ def render(out_path: Path) -> None:
     evt = add_block(ax, (8.6, 0.7), "Event+\nFrame", 2.1)
 
     # Plugin boxes
-    # Illumination plug-in around source->fold
-    add_plugin_box(ax, 0.4, 4.25, 6.6, 1.35, label="Illumination plug-in")
-    # Detection add-on around relay->event
-    add_plugin_box(ax, 8.2, 0.5, 4.4, 2.3, label="Detection add-on (4f)", ec="#41ab5d")
-    # Existing microscope frame around sample->tube lens (+ original camera)
-    add_plugin_box(ax, 5.0, 2.95, 8.6, 2.1, label="Existing microscope", ec="#969696")
+    # Illumination plug-in around source->fold (label outside top-left)
+    add_plugin_box(ax, 0.4, 4.25, 6.6, 1.35, label="Illumination plug-in", label_pos="outside-tl")
+    # Detection add-on around relay->event (label outside bottom-left)
+    add_plugin_box(ax, 8.2, 0.5, 4.4, 2.3, label="Detection add-on (4f)", ec="#41ab5d", label_pos="outside-bl")
+    # Existing microscope frame around sample->tube lens (+ original camera), label outside top-right
+    add_plugin_box(ax, 5.0, 2.95, 8.6, 2.1, label="Existing microscope", ec="#969696", label_pos="outside-tr")
 
     # Keep diagram clean: avoid extra annotations that can overlap
 
