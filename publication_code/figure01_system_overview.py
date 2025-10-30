@@ -36,11 +36,22 @@ def add_block(ax, xy, text, width=1.6, height=0.7, fc="#f7f7f7", ec="#4d4d4d",
     return box
 
 
-def add_arrow(ax, x0, y0, x1, y1, lw=1.2, color="#000000"):
-    ax.add_patch(FancyArrow(x0, y0, x1 - x0, y1 - y0,
-                            width=0.01, length_includes_head=True,
-                            head_width=0.08, head_length=0.12,
-                            linewidth=lw, edgecolor=color, facecolor=color))
+def add_arrow(ax, x0, y0, x1, y1, lw=1.2, color="#000000", z=1.0):
+    arr = FancyArrow(
+        x0,
+        y0,
+        x1 - x0,
+        y1 - y0,
+        width=0.01,
+        length_includes_head=True,
+        head_width=0.08,
+        head_length=0.12,
+        linewidth=lw,
+        edgecolor=color,
+        facecolor=color,
+    )
+    arr.set_zorder(z)
+    ax.add_patch(arr)
 
 
 def add_plugin_box(ax, x, y, w, h, label, ec="#2b8cbe", label_pos: str = "inside-tl"):
@@ -122,15 +133,25 @@ def render(out_path: Path) -> None:
     add_arrow(ax, 7.3 + 1.4, 3.65, 9.0, 3.65)
 
     bs_cx, bs_cy = 10.5, 3.65
-    # Clear arrow between tube lens and reflector (beamsplitter)
-    add_arrow(ax, 9.0 + 1.4, 3.65, bs_cx - 0.18, 3.65, lw=1.4)
+    # Clear arrow between tube lens and reflector (beamsplitter), drawn above other elements
+    add_arrow(ax, 9.0 + 1.4, 3.65, bs_cx - 0.18, 3.65, lw=1.4, z=10)
     add_beamsplitter(ax, bs_cx, bs_cy, size=0.28)
 
-    # Branch 1: existing microscope camera (straight ahead)
-    add_arrow(ax, bs_cx + 0.15, 3.65, 12.8, 3.65)
-    add_block(ax, (12.8, 3.3), "Microscope cam/\nFrame camera", 2.0)
+    # Branch 1: top row to frame camera via an additional 4f relay
+    relay_r_w = 1.4
+    relay_r_x = 11.0
+    relay_r_y = 3.3
+    # Arrow from beamsplitter to right 4f relay (top branch)
+    add_arrow(ax, bs_cx + 0.15, 3.65, relay_r_x, 3.65)
+    relay_r = add_block(ax, (relay_r_x, relay_r_y), "4f relay", relay_r_w)
+    # Frame camera to the right
+    cam_w = 2.1
+    cam_x = relay_r_x + relay_r_w + 0.2
+    cam_y = 3.3
+    add_arrow(ax, relay_r_x + relay_r_w, 3.65, cam_x, 3.65)
+    add_block(ax, (cam_x, cam_y), "Frame Camera", cam_w)
 
-    # Branch 2: to 4f relay + event camera (downwards), centered on the vertical arrow
+    # Branch 2: to 4f relay + event (downwards), centered on the vertical arrow
     relay_w = 1.4
     relay_y = 2.2
     relay_x = bs_cx - relay_w / 2.0
