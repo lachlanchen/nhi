@@ -110,7 +110,7 @@ This data-driven segmentation adapts to slow drifts or perturbations, ensuring t
     \begin{scope}[x={(f2a.south east)}, y={(f2a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(a)};
     \end{scope}
-  \end{tikzpicture}\\[1pt]
+  \end{tikzpicture}\\[-2pt]
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (f2b) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_correlation.pdf}};
@@ -118,6 +118,7 @@ This data-driven segmentation adapts to slow drifts or perturbations, ensuring t
       \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(b)};
     \end{scope}
   \end{tikzpicture}
+  \vspace{-3pt}
   \caption{Self-synchronized scan segmentation. (a) Event activity over the full recording with pre-/post-scan shading and alternating forward/backward boundaries. (b) Auto- and reverse-correlation of the activity signal; the blue marker indicates the mirror-peak used to localize the turnaround.}
   \label{fig:segmentation}
 \end{figure}
