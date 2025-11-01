@@ -41,6 +41,7 @@ from matplotlib.colors import Colormap, ListedColormap, TwoSlopeNorm
 DEFAULT_SHARED_COLORMAP = "coolwarm"
 RAW_LIGHTEN_FRACTION = 0.25
 COMP_LIGHTEN_FRACTION = 0.30
+RESCALE_FINE_STEP_US = 5000.0
 
 
 def setup_style() -> None:
@@ -116,21 +117,22 @@ def auto_scale_neg_weight(
     plateau_frac: float = 0.05,
     auto_min: float = 0.1,
     auto_max: float = 3.0,
-) -> float:
+    return_series: bool = False,
+) -> Tuple[float, Dict[str, np.ndarray]] | float:
     """Reproduce --exp auto-scaling logic from visualize_cumulative_weighted.py."""
 
     def base_binned_sums(times: np.ndarray, weights: np.ndarray, t_min: float, t_max: float) -> Tuple[np.ndarray, int]:
-        K = int((t_max - t_min) // step_us)
+        span = max(t_max - t_min, 0.0)
+        K = int(np.ceil(span / step_us))
         if K <= 0:
             return np.zeros(0, dtype=np.float32), 0
-        in_range = (times >= t_min) & (times < t_min + K * step_us)
-        if not np.any(in_range):
-            return np.zeros(K, dtype=np.float32), K
-        idx = ((times[in_range] - t_min) // step_us).astype(np.int64)
-        sums = np.bincount(idx, weights=weights[in_range], minlength=K).astype(np.float32)
+        edges = t_min + np.arange(K + 1) * step_us
+        idx = np.clip(((times - t_min) // step_us).astype(np.int64), 0, K - 1)
+        sums = np.bincount(idx, weights=weights, minlength=K).astype(np.float32)
         return sums, K
 
-    t_min, t_max = float(np.min(t)), float(np.max(t))
+    t_min = float(np.min(t))
+    t_max = float(np.max(t))
     pos_mask = p >= 0
     neg_mask = ~pos_mask
     ones_pos = np.ones(np.count_nonzero(pos_mask), dtype=np.float32)
@@ -138,19 +140,39 @@ def auto_scale_neg_weight(
     sums_pos, K = base_binned_sums(t[pos_mask], ones_pos, t_min, t_max)
     sums_neg, _ = base_binned_sums(t[neg_mask], ones_neg, t_min, t_max)
 
-    if K <= 0:
-        return neg_scale_init
+    if K <= 0 or sensor_area == 0.0:
+        if return_series:
+            empty = {
+                "time_us": np.zeros(0, dtype=np.float32),
+                "time_ms": np.zeros(0, dtype=np.float32),
+                "pos_counts": np.zeros(0, dtype=np.float32),
+                "neg_counts": np.zeros(0, dtype=np.float32),
+                "diff_unscaled": np.zeros(0, dtype=np.float32),
+                "diff_rescaled": np.zeros(0, dtype=np.float32),
+                "cum_unscaled": np.zeros(0, dtype=np.float32),
+                "cum_rescaled": np.zeros(0, dtype=np.float32),
+                "exp_unscaled": np.zeros(0, dtype=np.float32),
+                "exp_rescaled": np.zeros(0, dtype=np.float32),
+                "neg_scale_init": np.array([neg_scale_init], dtype=np.float32),
+                "step_us": np.array([step_us], dtype=np.float32),
+            }
+            return float(neg_scale_init), empty
+        return float(neg_scale_init)
 
-    def build_series(neg_scale: float) -> np.ndarray:
+    time_edges = t_min + np.arange(K + 1, dtype=np.float64) * step_us
+    time_centers = (time_edges[:-1] + time_edges[1:]) * 0.5
+
+    def compute_components(neg_scale: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         step_sums = pos_scale * sums_pos - neg_scale * sums_neg
-        cm = np.cumsum(step_sums) / sensor_area
-        return np.exp(cm)
+        cumulative = np.cumsum(step_sums, dtype=np.float64) / float(sensor_area)
+        exp_series = np.exp(cumulative)
+        return step_sums.astype(np.float32), cumulative.astype(np.float32), exp_series.astype(np.float32)
 
     def plateau_diff(neg_scale: float) -> float:
-        series = build_series(neg_scale)
-        n = max(5, int(plateau_frac * len(series)))
-        start_mean = float(np.mean(series[:n]))
-        end_mean = float(np.mean(series[-n:]))
+        _, _, exp_series = compute_components(neg_scale)
+        n = max(5, int(plateau_frac * len(exp_series)))
+        start_mean = float(np.mean(exp_series[:n]))
+        end_mean = float(np.mean(exp_series[-n:]))
         return end_mean - start_mean
 
     a = max(auto_min, 1e-6)
@@ -158,25 +180,50 @@ def auto_scale_neg_weight(
     fa = plateau_diff(a)
     fb = plateau_diff(b)
 
+    neg_scale: float
     if fa == 0:
-        return a
-    if fb == 0:
-        return b
-    if fa * fb < 0:
+        neg_scale = a
+    elif fb == 0:
+        neg_scale = b
+    elif fa * fb < 0:
         for _ in range(40):
             m = 0.5 * (a + b)
             fm = plateau_diff(m)
             if abs(fm) < 1e-6:
-                return m
+                neg_scale = m
+                break
             if fa * fm < 0:
                 b, fb = m, fm
             else:
                 a, fa = m, fm
-        return 0.5 * (a + b)
+        else:
+            neg_scale = 0.5 * (a + b)
+    else:
+        grid = np.linspace(a, b, 50)
+        diffs = np.array([abs(plateau_diff(g)) for g in grid])
+        neg_scale = float(grid[int(np.argmin(diffs))])
 
-    grid = np.linspace(a, b, 50)
-    diffs = np.array([abs(plateau_diff(g)) for g in grid])
-    return float(grid[int(np.argmin(diffs))])
+    if not return_series:
+        return float(neg_scale)
+
+    diff_unscaled, cum_unscaled, exp_unscaled = compute_components(neg_scale_init)
+    diff_rescaled, cum_rescaled, exp_rescaled = compute_components(neg_scale)
+    series_payload: Dict[str, np.ndarray] = {
+        "time_us": time_centers.astype(np.float32),
+        "time_ms": ((time_centers - time_centers[0]) / 1000.0).astype(np.float32),
+        "pos_counts": sums_pos.astype(np.float32),
+        "neg_counts": sums_neg.astype(np.float32),
+        "diff_unscaled": diff_unscaled,
+        "diff_rescaled": diff_rescaled,
+        "cum_unscaled": cum_unscaled,
+        "cum_rescaled": cum_rescaled,
+        "exp_unscaled": exp_unscaled,
+        "exp_rescaled": exp_rescaled,
+        "neg_scale_init": np.array([neg_scale_init], dtype=np.float32),
+        "neg_scale_final": np.array([neg_scale], dtype=np.float32),
+        "step_us": np.array([step_us], dtype=np.float32),
+    }
+    return float(neg_scale), series_payload
 
 
 def accumulate_bin(
@@ -341,6 +388,14 @@ def render_panel(
     print(f"Saved {stem}.pdf")
 
 
+def save_rescale_series(series: Dict[str, np.ndarray], output_dir: Path) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    arrays = {key: np.asarray(value) for key, value in series.items()}
+    path = output_dir / "figure04_rescaled_bg_series.npz"
+    np.savez(path, **arrays)
+    return path
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Rescaled exponential accumulations for Figure 4.")
     parser.add_argument("--segment", type=Path, required=True, help="Path to Scan_*_events.npz file.")
@@ -409,13 +464,14 @@ def main() -> None:
     sensor_shape = (args.sensor_height, args.sensor_width)
     sensor_area = float(args.sensor_width * args.sensor_height)
 
-    neg_scale = auto_scale_neg_weight(
+    neg_scale, rescale_series = auto_scale_neg_weight(
         t,
         p,
         sensor_area=sensor_area,
-        step_us=args.bin_width_us,
+        step_us=RESCALE_FINE_STEP_US,
         pos_scale=args.pos_scale,
         neg_scale_init=args.neg_scale,
+        return_series=True,
     )
     print(f"Rescaled weights: pos_scale={args.pos_scale:.3f}, neg_scale={neg_scale:.3f}")
 
@@ -460,11 +516,13 @@ def main() -> None:
 
         originals.append(orig_frame)
         comp_raw_frames.append(comp_frame.astype(np.float32))
+        end_clamped = float(min(end, t_max))
         metadata_bins.append(
             {
                 "index": int(idx),
                 "start_us": float(start),
-                "end_us": float(min(end, t_max)),
+                "end_us": end_clamped,
+                "duration_ms": float((end_clamped - start) / 1000.0),
             }
         )
 
@@ -472,6 +530,7 @@ def main() -> None:
     if args.smooth:
         comp_array = smooth_volume_3d(comp_array)
 
+    bg_values = comp_array.mean(axis=(1, 2))
     compensations = [subtract_background(frame) for frame in comp_array]
 
     for idx, (orig_frame, comp_frame) in enumerate(zip(originals, compensations)):
@@ -499,6 +558,8 @@ def main() -> None:
             args.save_png,
         )
 
+    save_rescale_series(rescale_series, out_dir)
+
     weights_path = out_dir / "figure04_rescaled_weights.json"
     weights_payload = {
         "segment": str(segment_path),
@@ -509,6 +570,9 @@ def main() -> None:
         "num_bins": num_bins,
         "smooth": bool(args.smooth),
         "bin_times_us": metadata_bins,
+        "background_means": bg_values.tolist(),
+        "rescale_step_us": RESCALE_FINE_STEP_US,
+        "bg_series_npz": "figure04_rescaled_bg_series.npz",
     }
     with weights_path.open("w", encoding="utf-8") as fp:
         json.dump(weights_payload, fp, indent=2)

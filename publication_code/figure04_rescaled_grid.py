@@ -26,6 +26,7 @@ from figure04_rescaled import (
     DEFAULT_SHARED_COLORMAP,
     COMP_LIGHTEN_FRACTION,
     RAW_LIGHTEN_FRACTION,
+    RESCALE_FINE_STEP_US,
     accumulate_bin,
     auto_scale_neg_weight,
     compute_fast_comp_times,
@@ -33,6 +34,7 @@ from figure04_rescaled import (
     load_params,
     load_segment_events,
     prepare_colormap,
+    save_rescale_series,
     setup_style,
     smooth_volume_3d,
     subtract_background,
@@ -215,6 +217,7 @@ def render_grid(
 
 
 def plot_background_spectrum(
+    rescale_series: Dict[str, np.ndarray],
     bg_values: np.ndarray,
     metadata: List[Dict[str, float]],
     start_bin: int,
@@ -222,36 +225,48 @@ def plot_background_spectrum(
     output_dir: Path,
     save_png: bool,
 ) -> None:
-    if bg_values.size == 0:
+    time_ms = rescale_series.get("time_ms")
+    if time_ms is None or time_ms.size == 0:
         return
+
+    exp_unscaled = rescale_series.get("exp_unscaled")
+    exp_rescaled = rescale_series.get("exp_rescaled")
 
     indices = [meta["index"] for meta in metadata]
     if not indices:
         return
 
-    centres_ms = []
-    t0 = metadata[0]["start_us"]
-    for meta in metadata:
-        centre = ((meta["start_us"] - t0) / 1000.0) + (meta["duration_ms"] / 2.0)
-        centres_ms.append(centre)
-
+    base_start = metadata[0]["start_us"]
+    centres_ms = [((meta["start_us"] - base_start) / 1000.0) + (meta["duration_ms"] / 2.0) for meta in metadata]
     mask = [start_bin <= idx <= end_bin for idx in indices]
-    fig, ax = plt.subplots(figsize=(4.0, 2.2))
-    ax.plot(centres_ms, bg_values, color="#1f77b4", linewidth=1.4, marker="o", label="Background mean")
+    selected = [meta for meta in metadata if start_bin <= meta["index"] <= end_bin]
+    highlight_start = highlight_end = None
+    if selected:
+        highlight_start = (selected[0]["start_us"] - base_start) / 1000.0
+        highlight_end = (selected[-1]["end_us"] - base_start) / 1000.0
 
+    fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(4.6, 3.6), sharex=False, constrained_layout=True)
+
+    ax0.plot(time_ms, exp_unscaled, color="#7f7f7f", linewidth=1.0, alpha=0.7, label="Original exp")
+    ax0.plot(time_ms, exp_rescaled, color="#1f77b4", linewidth=1.4, label="Rescaled exp")
+    if highlight_start is not None and highlight_end is not None:
+        ax0.axvspan(highlight_start, highlight_end, color="#d62728", alpha=0.08, lw=0)
+    ax0.set_ylabel("exp(cumulative)")
+    ax0.set_title("Rescaled background spectrum")
+    ax0.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    ax0.legend(loc="best", fontsize=8)
+
+    ax1.plot(centres_ms, bg_values, color="#1f77b4", linewidth=1.4, marker="o", label="50 ms mean")
     if any(mask):
         highlight_x = [x for x, m in zip(centres_ms, mask) if m]
         highlight_y = [y for y, m in zip(bg_values, mask) if m]
-        ax.scatter(highlight_x, highlight_y, color="#d62728", s=30, zorder=3, label="Selected bins")
-        left = min(highlight_x)
-        right = max(highlight_x)
-        ax.axvspan(left - 0.5, right + 0.5, color="#d62728", alpha=0.08, lw=0)
-
-    ax.set_xlabel("Relative time (ms)")
-    ax.set_ylabel("Background mean (a.u.)")
-    ax.set_title("Rescaled background spectrum")
-    ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
-    ax.legend(loc="best", fontsize=8)
+        ax1.scatter(highlight_x, highlight_y, color="#d62728", s=30, zorder=3, label="Selected bins")
+    if highlight_start is not None and highlight_end is not None:
+        ax1.axvspan(highlight_start, highlight_end, color="#d62728", alpha=0.08, lw=0)
+    ax1.set_xlabel("Relative time (ms)")
+    ax1.set_ylabel("Background mean (a.u.)")
+    ax1.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    ax1.legend(loc="best", fontsize=8)
 
     out_path = output_dir / "figure04_rescaled_bg_spectrum.pdf"
     fig.savefig(out_path, dpi=400, bbox_inches="tight")
@@ -282,13 +297,14 @@ def main() -> None:
     sensor_shape = (args.sensor_height, args.sensor_width)
     sensor_area = float(args.sensor_width * args.sensor_height)
 
-    neg_scale = auto_scale_neg_weight(
+    neg_scale, rescale_series = auto_scale_neg_weight(
         t,
         p,
         sensor_area=sensor_area,
-        step_us=args.bin_width_us,
+        step_us=RESCALE_FINE_STEP_US,
         pos_scale=args.pos_scale,
         neg_scale_init=args.neg_scale,
+        return_series=True,
     )
     print(f"Rescaled weights: pos_scale={args.pos_scale:.3f}, neg_scale={neg_scale:.3f}")
 
@@ -335,7 +351,10 @@ def main() -> None:
         args.bin_width_us / 1000.0,
     )
 
+    save_rescale_series(rescale_series, out_dir)
+
     plot_background_spectrum(
+        rescale_series,
         bg_values,
         metadata,
         args.start_bin,
@@ -356,6 +375,8 @@ def main() -> None:
         "smooth": bool(args.smooth),
         "bin_times_us": metadata,
         "background_means": bg_values.tolist(),
+        "rescale_step_us": RESCALE_FINE_STEP_US,
+        "bg_series_npz": "figure04_rescaled_bg_series.npz",
     }
     with weights_path.open("w", encoding="utf-8") as fp:
         json.dump(payload, fp, indent=2)
