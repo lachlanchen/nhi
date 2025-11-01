@@ -151,8 +151,8 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img3a) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_a_events.pdf}};
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
-      % Lift panel letter slightly above the image to avoid overlap
-      \node[font=\bfseries, anchor=south west, fill=white, text=black, inner sep=2pt] at (0.010, 1.015) {(a)};
+      % Place panel letter just inside the top-left corner to save space
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.990) {(a)};
     \end{scope}
   \end{tikzpicture}\\[1pt]
   % Figure 3(b): Variance vs time (50 ms bins)
@@ -160,8 +160,8 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img3b) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_b_variance.pdf}};
     \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
-      % Lift panel letter slightly above the image to avoid overlap
-      \node[font=\bfseries, anchor=south west, fill=white, text=black, inner sep=2pt] at (0.010, 1.015) {(b)};
+      % Place panel letter just inside the top-left corner to save space
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.990) {(b)};
     \end{scope}
   \end{tikzpicture}\\[1pt]
   % Figure 3(c): Single 50 ms bin comparison (original vs compensated)
@@ -169,8 +169,8 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img3c) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
     \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
-      % Lift panel letter slightly above the image to avoid overlap
-      \node[font=\bfseries, anchor=south west, fill=white, text=black, inner sep=2pt] at (0.010, 1.015) {(c)};
+      % Place panel letter just inside the top-left corner to save space
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.990) {(c)};
     \end{scope}
   \end{tikzpicture}
   \caption{Multi-window compensation diagnostics. (a) X--T and Y--T event projections with the learned boundary surfaces overlaid (downsampled events; time normalized over the full scan for alignment). (b) Variance per 50~ms bin before and after compensation, showing reductions across most of the scan. (c) Example 50~ms bin illustrating visual improvement from original to compensated.}
