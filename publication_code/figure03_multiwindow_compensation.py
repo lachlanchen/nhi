@@ -260,13 +260,19 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
     ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
     ax.set_xlabel("Time Bin")
-    # Keep headroom so the panel letter (b) doesn't overlap the top tick label
-    ax.set_ylim(0.0, 1.2)
+    # Keep headroom and avoid showing the very top tick label (which could
+    # collide with the panel letter). Compute a data-driven upper limit and
+    # prune the uppermost tick label.
+    ymax = float(max(max(var_orig), max(var_comp))) if var_orig and var_comp else 1.0
+    top = ymax * 1.2 + 1e-6
+    ax.set_ylim(0.0, top)
+    from matplotlib.ticker import MaxNLocator
+    ax.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax.set_ylabel("Variance")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    # Place legend away from panel letter and top tick labels
-    ax.legend(loc="lower right", fontsize=8, framealpha=0.9)
+    # Place legend at the top-right with adequate headroom
+    ax.legend(loc="upper right", fontsize=8, framealpha=0.9)
     fig.tight_layout()
     out_path = out_dir / "figure03_b_variance.pdf"
     fig.savefig(out_path, dpi=400)
