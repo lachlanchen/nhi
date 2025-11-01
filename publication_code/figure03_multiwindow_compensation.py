@@ -61,6 +61,10 @@ def find_param_file(segment_npz: Path) -> Path:
         p = find_latest(str(d / pat))
         if p:
             return Path(p)
+    # Fallback: any learned params in the directory
+    any_params = find_latest(str(d / "*learned_params*.npz"))
+    if any_params:
+        return Path(any_params)
     raise FileNotFoundError("Could not locate learned params NPZ next to segment file.")
 
 
@@ -169,25 +173,88 @@ def find_timebin_csv_and_npz(segments_dir: Path, base: str) -> Tuple[Path, Path]
     return Path(csv), Path(npz)
 
 
-def render_panel_b(segments_dir: Path, base: str, out_dir: Path) -> None:
-    csv_path, _ = find_timebin_csv_and_npz(segments_dir, base)
-    # Read CSV with comments prefixed by '#'
-    # Robust read: seek the real header row starting with 'bin_idx,'
-    lines = [ln.strip() for ln in open(csv_path, "r").read().splitlines()]
-    try:
-        header_idx = next(i for i, ln in enumerate(lines) if ln.startswith("bin_idx,"))
-    except StopIteration:
-        raise RuntimeError(f"Could not find header row in {csv_path}")
-    clean = "\n".join(lines[header_idx:])
-    from io import StringIO
-    import pandas as pd
-    df = pd.read_csv(StringIO(clean))
+def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
+                   mode: str = "npz", var_bin_us: int = 5000,
+                   segment_npz: Path | None = None,
+                   params: dict | None = None,
+                   sensor_w: int = 1280, sensor_h: int = 720) -> None:
+    """
+    Plot per-bin VARIANCE exactly as in the trainer panel using the saved
+    time-binned NPZ (original_bin_i / compensated_bin_i). This matches the
+    numbers shown in the training results figure.
+    """
+    if mode == "npz":
+        # Use trainer-saved 50 ms (or whatever was saved) frames
+        _, allbins_path = find_timebin_csv_and_npz(segments_dir, base)
+        d = np.load(allbins_path, allow_pickle=False)
+        orig_keys = sorted(k for k in d.keys() if k.startswith("original_bin_"))
+        comp_keys = sorted(k for k in d.keys() if k.startswith("compensated_bin_"))
+        if len(orig_keys) == 0 or len(orig_keys) != len(comp_keys):
+            raise RuntimeError(f"Unexpected NPZ structure in {allbins_path}")
+        var_orig = [float(np.var(d[ok].astype(np.float32))) for ok in orig_keys]
+        var_comp = [float(np.var(d[ck].astype(np.float32))) for ck in comp_keys]
+        bins = np.arange(len(var_orig))
+    elif mode == "recompute":
+        # Recompute from full events with chosen bin width using the trainer's model
+        if segment_npz is None or params is None:
+            raise ValueError("segment_npz and params are required for mode='recompute'")
+        # Lazy import to avoid heavy deps unless needed
+        import importlib.util
+        src = Path(__file__).resolve().parent.parent / "compensate_multiwindow_train_saved_params.py"
+        if not src.exists():
+            # Fallback: repo root
+            src = Path.cwd() / "compensate_multiwindow_train_saved_params.py"
+        spec = importlib.util.spec_from_file_location("comp_mod", str(src))
+        comp_mod = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(comp_mod)  # type: ignore
+
+        # Load events
+        dseg = np.load(segment_npz)
+        x = dseg["x"].astype(np.float32)
+        y = dseg["y"].astype(np.float32)
+        t = dseg["t"].astype(np.float32)
+        p = dseg["p"].astype(np.float32)
+        if p.min() >= 0 and p.max() <= 1:
+            p = (p - 0.5) * 2
+
+        # Build model and load parameters
+        num_params = int(params.get("num_params", len(params["a_params"])))
+        model = comp_mod.ScanCompensation(
+            duration=float(t.max() - t.min()),
+            num_params=num_params,
+            device=comp_mod.device,
+            a_fixed=True,
+            b_fixed=False,
+            boundary_trainable=False,
+            a_default=0.0,
+            b_default=-76.0,
+            temperature=float(params.get("temperature", 5000.0)),
+            debug=False,
+        )
+        model.load_parameters(params["a_params"], params["b_params"], debug=False)
+
+        # Compute event tensors for original and compensated at requested bin width
+        t0 = comp_mod.torch.tensor(float(t.min()), device=comp_mod.device, dtype=comp_mod.torch.float32)
+        t1 = comp_mod.torch.tensor(float(t.max()), device=comp_mod.device, dtype=comp_mod.torch.float32)
+        Eo = comp_mod.create_event_frames(model, x, y, t, p, sensor_h, sensor_w, var_bin_us, t0, t1, compensated=False)
+        Ec = comp_mod.create_event_frames(model, x, y, t, p, sensor_h, sensor_w, var_bin_us, t0, t1, compensated=True)
+        # Variances per bin exactly as trainer: torch.var over flattened spatial dims
+        with comp_mod.torch.no_grad():
+            nb, H, W = Eo.shape
+            var_o_t = comp_mod.torch.var(Eo.view(nb, -1), dim=1)
+            var_c_t = comp_mod.torch.var(Ec.view(nb, -1), dim=1)
+            var_orig = [float(v.item()) for v in var_o_t]
+            var_comp = [float(v.item()) for v in var_c_t]
+        bins = np.arange(len(var_orig))
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
-    ax.plot(df["time_ms"], df["orig_std"], color="#7f7f7f", linewidth=1.4, label="Original")
-    ax.plot(df["time_ms"], df["comp_std"], color="#1f77b4", linewidth=1.4, label="Compensated")
-    ax.set_xlabel("Time (ms)")
-    ax.set_ylabel("Variance (std)")
+    ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
+    ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Multi-Window Compensated (Chunked)")
+    ax.set_xlabel("Time Bin")
+    ax.set_ylabel("Variance")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.legend(loc="upper right", fontsize=8)
@@ -257,9 +324,17 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate Figure 3: multi-window compensation panels")
-    parser.add_argument("segment_npz", type=Path, help="Path to Scan_*_events.npz segment file")
+    parser.add_argument(
+        "segment_npz",
+        type=Path,
+        help="Path to Scan_*_events.npz OR a dataset directory (the script will search recursively for a forward segment)",
+    )
     parser.add_argument("--sensor_width", type=int, default=1280)
     parser.add_argument("--sensor_height", type=int, default=720)
+    parser.add_argument("--variance_mode", choices=["npz", "recompute"], default="recompute",
+                        help="Source for panel (b) variance: 'npz' uses saved time_binned_frames; 'recompute' rebuilds from full events")
+    parser.add_argument("--var_bin_us", type=int, default=5000,
+                        help="Bin width in microseconds for variance when variance_mode=recompute (default: 5000us = 5ms)")
     parser.add_argument("--sample", type=float, default=0.05, help="Event sampling fraction for panel (a)")
     parser.add_argument("--output_dir", type=Path, default=Path(__file__).resolve().parent / "figures")
     args = parser.parse_args()
@@ -268,13 +343,51 @@ def main() -> None:
     out_dir = args.output_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    segments_dir = args.segment_npz.parent
-    base = args.segment_npz.stem
-    param_path = find_param_file(args.segment_npz)
+    # Allow passing a dataset directory; search for a forward segment
+    input_path = args.segment_npz.resolve()
+    if input_path.is_dir():
+        candidates = sorted(
+            input_path.rglob("*_segments/Scan_*_Forward_events.npz"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if not candidates:
+            raise FileNotFoundError(f"No forward segment NPZ found under {input_path}")
+        # Prefer candidates that have time-binned CSV/NPZ available
+        chosen = None
+        for cand in candidates:
+            seg_dir = cand.parent
+            base_try = cand.stem
+            try:
+                find_timebin_csv_and_npz(seg_dir, base_try)
+                chosen = cand
+                break
+            except Exception:
+                continue
+        if chosen is None:
+            chosen = candidates[0]
+        print(f"Using forward segment: {chosen}")
+        segment_path = chosen
+    else:
+        segment_path = input_path
+
+    segments_dir = segment_path.parent
+    base = segment_path.stem
+    param_path = find_param_file(segment_path)
     params = load_params_npz(param_path)
 
-    render_panel_a(args.segment_npz, params, args.sensor_width, args.sensor_height, args.sample, out_dir)
-    render_panel_b(segments_dir, base, out_dir)
+    render_panel_a(segment_path, params, args.sensor_width, args.sensor_height, args.sample, out_dir)
+    render_panel_b(
+        segments_dir,
+        base,
+        out_dir,
+        mode=args.variance_mode,
+        var_bin_us=args.var_bin_us,
+        segment_npz=segment_path,
+        params=params,
+        sensor_w=args.sensor_width,
+        sensor_h=args.sensor_height,
+    )
     render_panel_c(segments_dir, base, out_dir)
 
 
