@@ -1,6 +1,6 @@
 \documentclass[9pt,twocolumn]{opticajnl}
+% Use generic Optica journal style; OL-specific style not installed in this env
 \journal{opticajournal}
-\renewcommand*{\journalname}{Optics Letters}
 \setboolean{shortarticle}{true}
 
 % \title{Self-synchronized event-driven transmission hyperspectral imaging with multi-window time-warp compensation}
@@ -33,6 +33,11 @@ We demonstrate a visible-band transmission hyperspectral system that drives a di
 \begin{document}
 
 \maketitle
+
+% Optics Letters run-in section headings (unnumbered, bold at paragraph start)
+\makeatletter
+\renewcommand\section[1]{\par\noindent\textbf{#1.} }
+\makeatother
 
 \section{Introduction}
 Scanning hyperspectral imagers deliver high spectral resolution at the expense of mechanical complexity and strict synchronization between motion and detection elements~\cite{hagen2013review}. Conventional systems integrate encoder signals, tachometers, or trigger lines to maintain spatial--spectral registration, which complicates low-cost deployments and long-term stability~\cite{yeh2011selfcal,alhourani2023linescan}. Event cameras provide an alternative sensing modality: they asynchronously report logarithmic intensity changes with microsecond latency and high dynamic range, recording only the temporal variations induced by a spectral scan~\cite{gallego2020event}. Prior event-driven hyperspectral work has typically relied on actively modulated illumination or precisely calibrated scanning optics to ensure temporal alignment~\cite{reinbacher2016manifold,bardow2016simultaneous}. Here we pursue a self-synchronized architecture that accepts inexpensive, non-uniform motor motion and restores spectral structure algorithmically.
