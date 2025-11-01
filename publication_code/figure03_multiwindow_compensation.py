@@ -152,7 +152,6 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    fig.text(0.012, 0.985, "(a)", fontweight="bold", ha="left", va="top")
     fig.tight_layout()
     out_path = out_dir / "figure03_a_events.pdf"
     fig.savefig(out_path, dpi=400)
@@ -192,7 +191,6 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path) -> None:
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.legend(loc="upper right", fontsize=8)
-    fig.text(0.012, 0.985, "(b)", fontweight="bold", ha="left", va="top")
     fig.tight_layout()
     out_path = out_dir / "figure03_b_variance.pdf"
     fig.savefig(out_path, dpi=400)
@@ -250,7 +248,6 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     cbar = fig.colorbar(im2, cax=cax)
     cbar.ax.set_ylabel("Value", rotation=90)
 
-    fig.text(0.012, 0.985, "(c)", fontweight="bold", ha="left", va="top")
     out_path = out_dir / "figure03_c_bin50ms.pdf"
     fig.savefig(out_path, dpi=400)
     fig.savefig(out_dir / "figure03_c_bin50ms.png", dpi=300)
