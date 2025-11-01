@@ -5,13 +5,12 @@ Figure 4 (rescaled): Exponential, polarity-weighted accumulations with backgroun
 For each 50 ms bin (default) the script renders a two-column comparison:
     - Left: raw event counts (no weighting or background adjustment).
     - Right: FAST-compensated timestamps (if learned params exist) with
-      polarity weighting, exponential accumulation, and per-frame mean
+      polarity weighting, linear accumulation, and per-frame mean
       subtraction (background removal).
 
-The weighting mirrors `visualize_cumulative_weighted.py --exp --auto_scale`:
-the positive polarity weight is fixed to 1, while the negative weight is
-auto-tuned so that the exponential series has matching plateaus at the start
-and end of the scan.
+The weighting mirrors `visualize_cumulative_weighted.py --exp --auto_scale` to
+determine the polarity balance; only the compensated result uses the
+background-subtracted, weighted accumulation.
 
 Outputs default to timestamped folders to avoid overwriting previous runs,
 e.g. `figures/figure04_rescaled_YYYYMMDD_HHMMSS/figure04_rescaled_bin_XX.*`.
@@ -342,10 +341,10 @@ def main() -> None:
         orig_frame = accumulate_bin(x, y, mask_orig, raw_weights, sensor_shape)
         comp_frame = accumulate_bin(x, y, mask_comp, comp_weights, sensor_shape)
 
-        comp_exp = subtract_background(np.exp(comp_frame))
+        comp_centered = subtract_background(comp_frame)
 
         originals.append(orig_frame)
-        compensations.append(comp_exp)
+        compensations.append(comp_centered)
 
     combined = np.concatenate([arr.ravel() for arr in originals + compensations])
     vmin = float(np.percentile(combined, args.percentiles[0]))
