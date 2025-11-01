@@ -377,7 +377,6 @@ def render_panel(
     cbar1 = fig.colorbar(im1, ax=axes[1], shrink=0.85, pad=0.02)
     comp_label = "Compensated Δ (a.u.)" if comp_norm is not None else "Compensated (a.u.)"
     cbar1.ax.set_ylabel(comp_label, rotation=90)
-    fig.text(0.012, 0.97, "(a)", fontweight="bold", ha="left", va="top")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     stem = output_dir / f"figure04_rescaled_bin_{bin_idx:02d}"
