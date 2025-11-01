@@ -128,7 +128,7 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     x_lines = compute_boundary_lines(params["a_params"], params["b_params"], duration_us, sensor_w, sensor_h, xs, "x")
     y_lines = compute_boundary_lines(params["a_params"], params["b_params"], duration_us, sensor_w, sensor_h, ys, "y")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True)
 
     # X–T
     if np.any(pos):
@@ -151,12 +151,15 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     for ln in y_lines:
         ax2.plot(ys, ln / 1000.0, color="#4d4d4d", linewidth=1.0, alpha=0.9)
     ax2.set_xlabel("Y (pixels)")
-    ax2.set_ylabel("Time (ms)")
+    # Share y-axis with left panel; hide label and tick labels on the right
+    ax2.set_ylabel("")
+    ax2.set_yticklabels([])
+    ax2.set_yticks([])
     ax2.set_ylim(0.0, duration_us / 1000.0)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    fig.tight_layout()
+    fig.subplots_adjust(wspace=0.06, left=0.08, right=0.99, top=0.92, bottom=0.14)
     out_path = out_dir / "figure03_a_events.pdf"
     fig.savefig(out_path, dpi=400)
     fig.savefig(out_dir / "figure03_a_events.png", dpi=300)
@@ -294,7 +297,7 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     vmin = float(min(orig.min(), comp.min()))
     vmax = float(max(orig.max(), comp.max()))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True)
     im1 = ax1.imshow(orig, cmap="magma", vmin=vmin, vmax=vmax, aspect="auto")
     ax1.set_title(f"Original – Bin {idx}")
     ax1.set_xlabel("X (px)")
@@ -305,12 +308,15 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     im2 = ax2.imshow(comp, cmap="magma", vmin=vmin, vmax=vmax, aspect="auto")
     ax2.set_title(f"Compensated – Bin {idx}")
     ax2.set_xlabel("X (px)")
-    ax2.set_ylabel("Y (px)")
+    # Hide right panel's y-label and tick labels (shared y-axis)
+    ax2.set_ylabel("")
+    ax2.set_yticklabels([])
+    ax2.set_yticks([])
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
     # Shared colorbar at the right side (outside of image area)
-    fig.subplots_adjust(right=0.86, left=0.08, top=0.94, bottom=0.12, wspace=0.12)
+    fig.subplots_adjust(right=0.86, left=0.08, top=0.94, bottom=0.12, wspace=0.06)
     cax = fig.add_axes([0.88, 0.14, 0.02, 0.72])
     cbar = fig.colorbar(im2, cax=cax)
     cbar.ax.set_ylabel("Value", rotation=90)
