@@ -252,7 +252,6 @@ def render_activity_figure(
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
-    fig.text(0.012, 0.985, "(a)", fontweight="bold", ha="left", va="top")
     fig.tight_layout()
 
     pdf_path = output_dir / "figure02_activity.pdf"
@@ -330,7 +329,6 @@ def render_correlation_figure(
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
-    fig.text(0.012, 0.985, "(b)", fontweight="bold", ha="left", va="top")
     fig.tight_layout()
 
     pdf_path = output_dir / "figure02_correlation.pdf"
