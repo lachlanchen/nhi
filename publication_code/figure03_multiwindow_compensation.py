@@ -128,7 +128,8 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     x_lines = compute_boundary_lines(params["a_params"], params["b_params"], duration_us, sensor_w, sensor_h, xs, "x")
     y_lines = compute_boundary_lines(params["a_params"], params["b_params"], duration_us, sensor_w, sensor_h, ys, "y")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True)
+    # Use constrained_layout so labels (e.g., 'Time (ms)') are fully visible
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True, constrained_layout=True)
 
     # X–T
     if np.any(pos):
@@ -161,10 +162,10 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    fig.subplots_adjust(wspace=0.06, left=0.08, right=0.99, top=0.92, bottom=0.14)
+    # No manual subplots_adjust to avoid clipping labels; constrained_layout handles spacing
     out_path = out_dir / "figure03_a_events.pdf"
-    fig.savefig(out_path, dpi=400)
-    fig.savefig(out_dir / "figure03_a_events.png", dpi=300)
+    fig.savefig(out_path, dpi=400, bbox_inches="tight")
+    fig.savefig(out_dir / "figure03_a_events.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out_path}")
 
