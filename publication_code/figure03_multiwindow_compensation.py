@@ -252,7 +252,7 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
-    ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Multi-Window Compensated (Chunked)")
+    ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
     ax.set_xlabel("Time Bin")
     ax.set_ylabel("Variance")
     ax.spines["top"].set_visible(False)

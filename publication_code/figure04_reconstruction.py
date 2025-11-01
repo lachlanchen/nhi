@@ -201,8 +201,7 @@ def render_figure(
         metadata,
         transform=axes[0].transAxes,
         fontsize=8,
-        color="white",
-        bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.4, edgecolor="none"),
+        color="black",
     )
 
     im1 = axes[1].imshow(compensated, cmap=colormap, vmin=vmin, vmax=vmax, origin="lower")

@@ -403,8 +403,7 @@ def render_grid(
             ha="center",
             fontsize=10,
             fontweight="bold",
-            color="white",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="black", alpha=0.4, edgecolor="none"),
+            color="black",
         )
         for col in range(num_cols):
             axes[row, col] = fig.add_subplot(gs[row, col + 1])
@@ -449,8 +448,7 @@ def render_grid(
                 ha="center",
                 va="top",
                 fontsize=8,
-                color="white",
-                bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.45, edgecolor="none"),
+                color="black",
             )
 
         if show_colorbar:
