@@ -58,6 +58,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-bin", type=int, default=3, help="Inclusive start bin index for the grid (default 3).")
     parser.add_argument("--end-bin", type=int, default=15, help="Inclusive end bin index for the grid (default 15).")
     parser.add_argument("--show-colorbar", action="store_true", help="Display colourbars beneath each column.")
+    parser.add_argument(
+        "--show-wavelength",
+        action="store_true",
+        help="Annotate compensated row with wavelength labels when alignment JSON is available.",
+    )
     return parser.parse_args()
 
 
@@ -122,10 +127,11 @@ def render_grid(
     end_bin: int,
     raw_cmap: Colormap,
     comp_cmap: Colormap,
+    bin_width_ms: float,
+    wavelength_lookup: Dict[int, float] | None,
     show_colorbar: bool,
     output_dir: Path,
     save_png: bool,
-    bin_width_ms: float,
 ) -> None:
     setup_style()
 
@@ -138,7 +144,7 @@ def render_grid(
         raise ValueError(f"No bins found in the range [{start_bin}, {end_bin}].")
 
     num_cols = len(selected)
-    fig = plt.figure(figsize=(1.2 * num_cols + 0.4, 1.6))
+    fig = plt.figure(figsize=(1.2 * num_cols + 0.4, 1.8))
     width_ratios = [0.22] + [1.0] * num_cols
     gs = fig.add_gridspec(2, num_cols + 1, wspace=0.045, hspace=0.015, width_ratios=width_ratios)
     axes = np.empty((2, num_cols), dtype=object)
@@ -159,7 +165,7 @@ def render_grid(
         )
         for col in range(num_cols):
             axes[row, col] = fig.add_subplot(gs[row, col + 1])
-    fig.subplots_adjust(left=0.02, right=0.995, top=0.995, bottom=0.04)
+    fig.subplots_adjust(left=0.02, right=0.995, top=0.995, bottom=0.14)
 
     for col, (orig_frame, comp_frame, meta) in enumerate(selected):
         raw_vmin = min(0.0, float(orig_frame.min()))
@@ -200,6 +206,20 @@ def render_grid(
             interpolation="nearest",
         )
         ax_comp.axis("off")
+        if wavelength_lookup:
+            wl_value = wavelength_lookup.get(meta["index"])
+            if wl_value is not None:
+                ax_comp.text(
+                    0.5,
+                    -0.12,
+                    f"{wl_value:.0f} nm",
+                    transform=ax_comp.transAxes,
+                    ha="center",
+                    va="top",
+                    fontsize=8,
+                    color="white",
+                    bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.45, edgecolor="none"),
+                )
 
         if show_colorbar:
             cbar_raw = fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
@@ -337,6 +357,22 @@ def main() -> None:
         args.smooth,
     )
 
+    wavelength_lookup: Dict[int, float] | None = None
+    if args.show_wavelength:
+        alignment_path = out_dir / "figure04_rescaled_bg_alignment.json"
+        if alignment_path.exists():
+            try:
+                with alignment_path.open("r", encoding="utf-8") as fp:
+                    alignment_data = json.load(fp)
+                mapping = alignment_data.get("bin_mapping", [])
+                wavelength_lookup = {
+                    int(item["index"]): float(item["wavelength_nm"])
+                    for item in mapping
+                    if "index" in item and "wavelength_nm" in item
+                }
+            except Exception as exc:
+                print(f"Warning: failed to read alignment JSON {alignment_path}: {exc}")
+
     render_grid(
         originals,
         compensated,
@@ -345,10 +381,11 @@ def main() -> None:
         args.end_bin,
         raw_cmap,
         comp_cmap,
+        args.bin_width_us / 1000.0,
+        wavelength_lookup,
         args.show_colorbar,
         out_dir,
         args.save_png,
-        args.bin_width_us / 1000.0,
     )
 
     save_rescale_series(rescale_series, out_dir)
