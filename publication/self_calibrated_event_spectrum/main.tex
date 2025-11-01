@@ -135,7 +135,7 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img3a) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_a_events.pdf}};
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=black!60, text=white, inner sep=2pt, rounded corners=1pt] at (0.012, 0.988) {(a)};
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(a)};
     \end{scope}
   \end{tikzpicture}\\[4pt]
   % Figure 3(b): Variance vs time (50 ms bins)
@@ -143,7 +143,7 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img3b) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_b_variance.pdf}};
     \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=black!60, text=white, inner sep=2pt, rounded corners=1pt] at (0.012, 0.988) {(b)};
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(b)};
     \end{scope}
   \end{tikzpicture}\\[4pt]
   % Figure 3(c): Single 50 ms bin comparison (original vs compensated)
@@ -151,7 +151,7 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img3c) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
     \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=black!60, text=white, inner sep=2pt, rounded corners=1pt] at (0.012, 0.988) {(c)};
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(c)};
     \end{scope}
   \end{tikzpicture}
   \caption{Multi-window compensation diagnostics. (a) X--T and Y--T event projections with the learned boundary surfaces overlaid (downsampled events; time normalized over the full scan for alignment). (b) Variance per 50~ms bin before and after compensation, showing reductions across most of the scan. (c) Example 50~ms bin illustrating visual improvement from original to compensated.}
@@ -164,8 +164,8 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
     \node[anchor=south west, inner sep=0] (img) at (0,0)
       {\includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_135702/figure04_rescaled_grid_bins_03_15.pdf}};
     \begin{scope}[x={(img.south east)}, y={(img.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=black!60, text=white, inner sep=2pt, rounded corners=1pt] at (0.012, 0.988) {(a)};
-      \node[font=\bfseries, anchor=north west, fill=black!60, text=white, inner sep=2pt, rounded corners=1pt] at (0.012, 0.49) {(b)};
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(a)};
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.49) {(b)};
     \end{scope}
   \end{tikzpicture}
   \caption{Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin (a: original; b: compensated with 3$\times$3$\times$3 smoothing and background subtraction). The compensated row is annotated with the wavelength inferred from a flat-to-flat alignment of the 5~ms rescaled background spectrum to the spectrometer ground truth.}
