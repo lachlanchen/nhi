@@ -146,10 +146,12 @@ def align_with_groundtruth(
     wl_bg = wl_series[mask_bg]
     bg_norm = series_norm[mask_bg]
     fig, ax = plt.subplots(figsize=(5.2, 3.2))
-    ax.plot(wl_bg, bg_norm, label="Rescaled background", color="#1f77b4", linewidth=1.6)
-    for name, wl, val in gt_curves:
+    # Distinct colours for BG vs GT curves
+    ax.plot(wl_bg, bg_norm, label="Rescaled background", color="#1f77b4", linewidth=2.0)
+    gt_palette = ["#ff7f0e", "#2ca02c", "#d62728"]
+    for i, (name, wl, val) in enumerate(gt_curves):
         sel = (wl >= x_min) & (wl <= x_max)
-        ax.plot(wl[sel], val[sel], label=name, linewidth=1.4)
+        ax.plot(wl[sel], val[sel], label=name, linewidth=2.2, color=gt_palette[i % len(gt_palette)])
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Normalised intensity (a.u.)")
     ax.set_title("Background vs. ground-truth")
@@ -180,6 +182,61 @@ def align_with_groundtruth(
     with (out_dir / "figure04_rescaled_bg_alignment.json").open("w", encoding="utf-8") as fp:
         json.dump(payload, fp, indent=2)
     return payload
+
+
+def plot_background_spectrum(
+    series: Dict[str, np.ndarray],
+    bg_values: np.ndarray,
+    metadata: List[Dict[str, float]],
+    start_bin: int,
+    end_bin: int,
+    output_dir: Path,
+    save_png: bool,
+) -> None:
+    time_ms = series.get("time_ms")
+    if time_ms is None or np.size(time_ms) == 0:
+        return
+    exp_unscaled = series.get("exp_unscaled")
+    exp_rescaled = series.get("exp_rescaled")
+    indices = [m["index"] for m in metadata]
+    if not indices:
+        return
+    base_start = metadata[0]["start_us"]
+    centres_ms = [((m["start_us"] - base_start) / 1000.0) + (m["duration_ms"] / 2.0) for m in metadata]
+    mask = [start_bin <= idx <= end_bin for idx in indices]
+    selected = [m for m in metadata if start_bin <= m["index"] <= end_bin]
+    hl_start = hl_end = None
+    if selected:
+        hl_start = (selected[0]["start_us"] - base_start) / 1000.0
+        hl_end = (selected[-1]["end_us"] - base_start) / 1000.0
+
+    fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(4.6, 3.6), constrained_layout=True)
+    ax0.plot(time_ms, exp_unscaled, color="#7f7f7f", linewidth=1.0, alpha=0.7, label="Original exp")
+    ax0.plot(time_ms, exp_rescaled, color="#1f77b4", linewidth=1.6, label="Rescaled exp")
+    if hl_start is not None and hl_end is not None:
+        ax0.axvspan(hl_start, hl_end, color="#d62728", alpha=0.08, lw=0)
+    ax0.set_ylabel("exp(cumulative)")
+    ax0.set_title("Rescaled background spectrum")
+    ax0.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    ax0.legend(loc="best", fontsize=8)
+
+    ax1.plot(centres_ms, bg_values, color="#1f77b4", linewidth=1.4, marker="o", label="50 ms mean")
+    if any(mask):
+        hl_x = [x for x, m in zip(centres_ms, mask) if m]
+        hl_y = [y for y, m in zip(bg_values, mask) if m]
+        ax1.scatter(hl_x, hl_y, color="#d62728", s=30, zorder=3, label="Selected bins")
+    if hl_start is not None and hl_end is not None:
+        ax1.axvspan(hl_start, hl_end, color="#d62728", alpha=0.08, lw=0)
+    ax1.set_xlabel("Relative time (ms)")
+    ax1.set_ylabel("Background mean (a.u.)")
+    ax1.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    ax1.legend(loc="best", fontsize=8)
+
+    out_path = output_dir / "figure04_rescaled_bg_spectrum.pdf"
+    fig.savefig(out_path, dpi=400, bbox_inches="tight")
+    if save_png:
+        fig.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
 
 def render_grid(
@@ -366,11 +423,14 @@ def main() -> None:
     bg_values = comp_array.mean(axis=(1, 2))
     compensated = [subtract_background(f) for f in comp_array]
 
-    # 2) Align with GT and save mapping
+    # 2) Save time-domain background spectrum plot (matching prior outputs)
+    plot_background_spectrum(series, bg_values, metadata_bins, args.start_bin, args.end_bin, out_dir, args.save_png)
+
+    # 3) Align with GT and save mapping
     alignment = align_with_groundtruth(series, args.gt_dir.resolve(), metadata_bins, out_dir, neg_scale, args.fine_step_us, args.save_png)
     wavelength_lookup = {int(item["index"]): float(item["wavelength_nm"]) for item in alignment["bin_mapping"]}
 
-    # 3) Render grid with wavelength labels
+    # 4) Render grid with wavelength labels
     render_grid(
         originals,
         compensated,
