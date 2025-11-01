@@ -262,7 +262,7 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     ax.set_xlabel("Time Bin")
     # Set fixed headroom up to 1.3 and show ticks every 0.2, but omit the
     # top-most 1.3 tick label to avoid overlap with panel letter (b).
-    top = 1.3 + 1e-6
+    top = 1.35 + 1e-6
     ax.set_ylim(0.0, top)
     ax.set_yticks(np.arange(0.0, 1.3, 0.2))
     ax.set_ylabel("Variance")
