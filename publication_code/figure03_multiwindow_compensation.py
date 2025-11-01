@@ -260,6 +260,8 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
     ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
     ax.set_xlabel("Time Bin")
+    # Keep headroom so the panel letter (b) doesn't overlap the top tick label
+    ax.set_ylim(0.0, 1.2)
     ax.set_ylabel("Variance")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
