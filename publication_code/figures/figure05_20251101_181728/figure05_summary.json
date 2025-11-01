@@ -1,0 +1,1568 @@
+{
+  "segment": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz",
+  "alignment_json": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_bg_alignment.json",
+  "alignment": {
+    "slope_nm_per_ms": 0.4475147286821705,
+    "intercept_nm": 310.47175968992246
+  },
+  "bin_sets": [
+    {
+      "bin_width_us": 5000.0,
+      "bin_width_ms": 5.0,
+      "modes": {
+        "compensated": [
+          {
+            "index": 0,
+            "time_center_ms": 2.5,
+            "wavelength_nm": 311.5905465116279,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_000_312nm.png"
+          },
+          {
+            "index": 1,
+            "time_center_ms": 7.5,
+            "wavelength_nm": 313.82812015503873,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_001_314nm.png"
+          },
+          {
+            "index": 2,
+            "time_center_ms": 12.5,
+            "wavelength_nm": 316.0656937984496,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_002_316nm.png"
+          },
+          {
+            "index": 3,
+            "time_center_ms": 17.5,
+            "wavelength_nm": 318.30326744186044,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_003_318nm.png"
+          },
+          {
+            "index": 4,
+            "time_center_ms": 22.5,
+            "wavelength_nm": 320.5408410852713,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_004_321nm.png"
+          },
+          {
+            "index": 5,
+            "time_center_ms": 27.5,
+            "wavelength_nm": 322.77841472868215,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_005_323nm.png"
+          },
+          {
+            "index": 6,
+            "time_center_ms": 32.5,
+            "wavelength_nm": 325.01598837209303,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_006_325nm.png"
+          },
+          {
+            "index": 7,
+            "time_center_ms": 37.5,
+            "wavelength_nm": 327.25356201550386,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_007_327nm.png"
+          },
+          {
+            "index": 8,
+            "time_center_ms": 42.5,
+            "wavelength_nm": 329.4911356589147,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_008_329nm.png"
+          },
+          {
+            "index": 9,
+            "time_center_ms": 47.5,
+            "wavelength_nm": 331.72870930232557,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_009_332nm.png"
+          },
+          {
+            "index": 10,
+            "time_center_ms": 52.5,
+            "wavelength_nm": 333.9662829457364,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_010_334nm.png"
+          },
+          {
+            "index": 11,
+            "time_center_ms": 57.5,
+            "wavelength_nm": 336.2038565891473,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_011_336nm.png"
+          },
+          {
+            "index": 12,
+            "time_center_ms": 62.5,
+            "wavelength_nm": 338.4414302325581,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_012_338nm.png"
+          },
+          {
+            "index": 13,
+            "time_center_ms": 67.5,
+            "wavelength_nm": 340.679003875969,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_013_341nm.png"
+          },
+          {
+            "index": 14,
+            "time_center_ms": 72.5,
+            "wavelength_nm": 342.9165775193798,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_014_343nm.png"
+          },
+          {
+            "index": 15,
+            "time_center_ms": 77.5,
+            "wavelength_nm": 345.1541511627907,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_015_345nm.png"
+          },
+          {
+            "index": 16,
+            "time_center_ms": 82.5,
+            "wavelength_nm": 347.3917248062015,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_016_347nm.png"
+          },
+          {
+            "index": 17,
+            "time_center_ms": 87.5,
+            "wavelength_nm": 349.6292984496124,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_017_350nm.png"
+          },
+          {
+            "index": 18,
+            "time_center_ms": 92.5,
+            "wavelength_nm": 351.86687209302323,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_018_352nm.png"
+          },
+          {
+            "index": 19,
+            "time_center_ms": 97.5,
+            "wavelength_nm": 354.10444573643406,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_019_354nm.png"
+          },
+          {
+            "index": 20,
+            "time_center_ms": 102.5,
+            "wavelength_nm": 356.34201937984494,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_020_356nm.png"
+          },
+          {
+            "index": 21,
+            "time_center_ms": 107.5,
+            "wavelength_nm": 358.5795930232558,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_021_359nm.png"
+          },
+          {
+            "index": 22,
+            "time_center_ms": 112.5,
+            "wavelength_nm": 360.81716666666665,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_022_361nm.png"
+          },
+          {
+            "index": 23,
+            "time_center_ms": 117.5,
+            "wavelength_nm": 363.0547403100775,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_023_363nm.png"
+          },
+          {
+            "index": 24,
+            "time_center_ms": 122.5,
+            "wavelength_nm": 365.29231395348836,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_024_365nm.png"
+          },
+          {
+            "index": 25,
+            "time_center_ms": 127.5,
+            "wavelength_nm": 367.5298875968992,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_025_368nm.png"
+          },
+          {
+            "index": 26,
+            "time_center_ms": 132.5,
+            "wavelength_nm": 369.76746124031007,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_026_370nm.png"
+          },
+          {
+            "index": 27,
+            "time_center_ms": 137.5,
+            "wavelength_nm": 372.0050348837209,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_027_372nm.png"
+          },
+          {
+            "index": 28,
+            "time_center_ms": 142.5,
+            "wavelength_nm": 374.2426085271318,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_028_374nm.png"
+          },
+          {
+            "index": 29,
+            "time_center_ms": 147.5,
+            "wavelength_nm": 376.4801821705426,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_029_376nm.png"
+          },
+          {
+            "index": 30,
+            "time_center_ms": 152.5,
+            "wavelength_nm": 378.7177558139535,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_030_379nm.png"
+          },
+          {
+            "index": 31,
+            "time_center_ms": 157.5,
+            "wavelength_nm": 380.9553294573643,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_031_381nm.png"
+          },
+          {
+            "index": 32,
+            "time_center_ms": 162.5,
+            "wavelength_nm": 383.1929031007752,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_032_383nm.png"
+          },
+          {
+            "index": 33,
+            "time_center_ms": 167.5,
+            "wavelength_nm": 385.430476744186,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_033_385nm.png"
+          },
+          {
+            "index": 34,
+            "time_center_ms": 172.5,
+            "wavelength_nm": 387.66805038759685,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_034_388nm.png"
+          },
+          {
+            "index": 35,
+            "time_center_ms": 177.5,
+            "wavelength_nm": 389.90562403100773,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_035_390nm.png"
+          },
+          {
+            "index": 36,
+            "time_center_ms": 182.5,
+            "wavelength_nm": 392.1431976744186,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_036_392nm.png"
+          },
+          {
+            "index": 37,
+            "time_center_ms": 187.5,
+            "wavelength_nm": 394.38077131782944,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_037_394nm.png"
+          },
+          {
+            "index": 38,
+            "time_center_ms": 192.5,
+            "wavelength_nm": 396.61834496124027,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_038_397nm.png"
+          },
+          {
+            "index": 39,
+            "time_center_ms": 197.5,
+            "wavelength_nm": 398.85591860465115,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_039_399nm.png"
+          },
+          {
+            "index": 40,
+            "time_center_ms": 202.5,
+            "wavelength_nm": 401.093492248062,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_040_401nm.png"
+          },
+          {
+            "index": 41,
+            "time_center_ms": 207.5,
+            "wavelength_nm": 403.33106589147286,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_041_403nm.png"
+          },
+          {
+            "index": 42,
+            "time_center_ms": 212.5,
+            "wavelength_nm": 405.5686395348837,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_042_406nm.png"
+          },
+          {
+            "index": 43,
+            "time_center_ms": 217.5,
+            "wavelength_nm": 407.80621317829457,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_043_408nm.png"
+          },
+          {
+            "index": 44,
+            "time_center_ms": 222.5,
+            "wavelength_nm": 410.0437868217054,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_044_410nm.png"
+          },
+          {
+            "index": 45,
+            "time_center_ms": 227.5,
+            "wavelength_nm": 412.2813604651162,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_045_412nm.png"
+          },
+          {
+            "index": 46,
+            "time_center_ms": 232.5,
+            "wavelength_nm": 414.5189341085271,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_046_415nm.png"
+          },
+          {
+            "index": 47,
+            "time_center_ms": 237.5,
+            "wavelength_nm": 416.756507751938,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_047_417nm.png"
+          },
+          {
+            "index": 48,
+            "time_center_ms": 242.5,
+            "wavelength_nm": 418.9940813953488,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_048_419nm.png"
+          },
+          {
+            "index": 49,
+            "time_center_ms": 247.5,
+            "wavelength_nm": 421.23165503875964,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_049_421nm.png"
+          },
+          {
+            "index": 50,
+            "time_center_ms": 252.5,
+            "wavelength_nm": 423.4692286821705,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_050_423nm.png"
+          },
+          {
+            "index": 51,
+            "time_center_ms": 257.5,
+            "wavelength_nm": 425.7068023255814,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_051_426nm.png"
+          },
+          {
+            "index": 52,
+            "time_center_ms": 262.5,
+            "wavelength_nm": 427.94437596899223,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_052_428nm.png"
+          },
+          {
+            "index": 53,
+            "time_center_ms": 267.5,
+            "wavelength_nm": 430.18194961240306,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_053_430nm.png"
+          },
+          {
+            "index": 54,
+            "time_center_ms": 272.5,
+            "wavelength_nm": 432.41952325581394,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_054_432nm.png"
+          },
+          {
+            "index": 55,
+            "time_center_ms": 277.5,
+            "wavelength_nm": 434.65709689922477,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_055_435nm.png"
+          },
+          {
+            "index": 56,
+            "time_center_ms": 282.5,
+            "wavelength_nm": 436.89467054263565,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_056_437nm.png"
+          },
+          {
+            "index": 57,
+            "time_center_ms": 287.5,
+            "wavelength_nm": 439.1322441860465,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_057_439nm.png"
+          },
+          {
+            "index": 58,
+            "time_center_ms": 292.5,
+            "wavelength_nm": 441.36981782945736,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_058_441nm.png"
+          },
+          {
+            "index": 59,
+            "time_center_ms": 297.5,
+            "wavelength_nm": 443.6073914728682,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_059_444nm.png"
+          },
+          {
+            "index": 60,
+            "time_center_ms": 302.5,
+            "wavelength_nm": 445.844965116279,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_060_446nm.png"
+          },
+          {
+            "index": 61,
+            "time_center_ms": 307.5,
+            "wavelength_nm": 448.0825387596899,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_061_448nm.png"
+          },
+          {
+            "index": 62,
+            "time_center_ms": 312.5,
+            "wavelength_nm": 450.3201124031008,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_062_450nm.png"
+          },
+          {
+            "index": 63,
+            "time_center_ms": 317.5,
+            "wavelength_nm": 452.5576860465116,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_063_453nm.png"
+          },
+          {
+            "index": 64,
+            "time_center_ms": 322.5,
+            "wavelength_nm": 454.79525968992243,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_064_455nm.png"
+          },
+          {
+            "index": 65,
+            "time_center_ms": 327.5,
+            "wavelength_nm": 457.0328333333333,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_065_457nm.png"
+          },
+          {
+            "index": 66,
+            "time_center_ms": 332.5,
+            "wavelength_nm": 459.2704069767442,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_066_459nm.png"
+          },
+          {
+            "index": 67,
+            "time_center_ms": 337.5,
+            "wavelength_nm": 461.507980620155,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_067_462nm.png"
+          },
+          {
+            "index": 68,
+            "time_center_ms": 342.5,
+            "wavelength_nm": 463.74555426356585,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_068_464nm.png"
+          },
+          {
+            "index": 69,
+            "time_center_ms": 347.5,
+            "wavelength_nm": 465.98312790697673,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_069_466nm.png"
+          },
+          {
+            "index": 70,
+            "time_center_ms": 352.5,
+            "wavelength_nm": 468.22070155038756,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_070_468nm.png"
+          },
+          {
+            "index": 71,
+            "time_center_ms": 357.5,
+            "wavelength_nm": 470.4582751937984,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_071_470nm.png"
+          },
+          {
+            "index": 72,
+            "time_center_ms": 362.5,
+            "wavelength_nm": 472.69584883720927,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_072_473nm.png"
+          },
+          {
+            "index": 73,
+            "time_center_ms": 367.5,
+            "wavelength_nm": 474.93342248062015,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_073_475nm.png"
+          },
+          {
+            "index": 74,
+            "time_center_ms": 372.5,
+            "wavelength_nm": 477.170996124031,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_074_477nm.png"
+          },
+          {
+            "index": 75,
+            "time_center_ms": 377.5,
+            "wavelength_nm": 479.4085697674418,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_075_479nm.png"
+          },
+          {
+            "index": 76,
+            "time_center_ms": 382.5,
+            "wavelength_nm": 481.6461434108527,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_076_482nm.png"
+          },
+          {
+            "index": 77,
+            "time_center_ms": 387.5,
+            "wavelength_nm": 483.88371705426357,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_077_484nm.png"
+          },
+          {
+            "index": 78,
+            "time_center_ms": 392.5,
+            "wavelength_nm": 486.1212906976744,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_078_486nm.png"
+          },
+          {
+            "index": 79,
+            "time_center_ms": 397.5,
+            "wavelength_nm": 488.3588643410852,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_079_488nm.png"
+          },
+          {
+            "index": 80,
+            "time_center_ms": 402.5,
+            "wavelength_nm": 490.5964379844961,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_080_491nm.png"
+          },
+          {
+            "index": 81,
+            "time_center_ms": 407.5,
+            "wavelength_nm": 492.834011627907,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_081_493nm.png"
+          },
+          {
+            "index": 82,
+            "time_center_ms": 412.5,
+            "wavelength_nm": 495.0715852713178,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_082_495nm.png"
+          },
+          {
+            "index": 83,
+            "time_center_ms": 417.5,
+            "wavelength_nm": 497.30915891472864,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_083_497nm.png"
+          },
+          {
+            "index": 84,
+            "time_center_ms": 422.5,
+            "wavelength_nm": 499.5467325581395,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_084_500nm.png"
+          },
+          {
+            "index": 85,
+            "time_center_ms": 427.5,
+            "wavelength_nm": 501.78430620155035,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_085_502nm.png"
+          },
+          {
+            "index": 86,
+            "time_center_ms": 432.5,
+            "wavelength_nm": 504.0218798449612,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_086_504nm.png"
+          },
+          {
+            "index": 87,
+            "time_center_ms": 437.5,
+            "wavelength_nm": 506.25945348837206,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_087_506nm.png"
+          },
+          {
+            "index": 88,
+            "time_center_ms": 442.5,
+            "wavelength_nm": 508.49702713178294,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_088_508nm.png"
+          },
+          {
+            "index": 89,
+            "time_center_ms": 447.5,
+            "wavelength_nm": 510.73460077519377,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_089_511nm.png"
+          },
+          {
+            "index": 90,
+            "time_center_ms": 452.5,
+            "wavelength_nm": 512.9721744186046,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_090_513nm.png"
+          },
+          {
+            "index": 91,
+            "time_center_ms": 457.5,
+            "wavelength_nm": 515.2097480620155,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_091_515nm.png"
+          },
+          {
+            "index": 92,
+            "time_center_ms": 462.5,
+            "wavelength_nm": 517.4473217054264,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_092_517nm.png"
+          },
+          {
+            "index": 93,
+            "time_center_ms": 467.5,
+            "wavelength_nm": 519.6848953488372,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_093_520nm.png"
+          },
+          {
+            "index": 94,
+            "time_center_ms": 472.5,
+            "wavelength_nm": 521.922468992248,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_094_522nm.png"
+          },
+          {
+            "index": 95,
+            "time_center_ms": 477.5,
+            "wavelength_nm": 524.1600426356589,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_095_524nm.png"
+          },
+          {
+            "index": 96,
+            "time_center_ms": 482.5,
+            "wavelength_nm": 526.3976162790698,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_096_526nm.png"
+          },
+          {
+            "index": 97,
+            "time_center_ms": 487.5,
+            "wavelength_nm": 528.6351899224805,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_097_529nm.png"
+          },
+          {
+            "index": 98,
+            "time_center_ms": 492.5,
+            "wavelength_nm": 530.8727635658914,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_098_531nm.png"
+          },
+          {
+            "index": 99,
+            "time_center_ms": 497.5,
+            "wavelength_nm": 533.1103372093023,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_099_533nm.png"
+          },
+          {
+            "index": 100,
+            "time_center_ms": 502.5,
+            "wavelength_nm": 535.3479108527131,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_100_535nm.png"
+          },
+          {
+            "index": 101,
+            "time_center_ms": 507.5,
+            "wavelength_nm": 537.585484496124,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_101_538nm.png"
+          },
+          {
+            "index": 102,
+            "time_center_ms": 512.5,
+            "wavelength_nm": 539.8230581395349,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_102_540nm.png"
+          },
+          {
+            "index": 103,
+            "time_center_ms": 517.5,
+            "wavelength_nm": 542.0606317829457,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_103_542nm.png"
+          },
+          {
+            "index": 104,
+            "time_center_ms": 522.5,
+            "wavelength_nm": 544.2982054263566,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_104_544nm.png"
+          },
+          {
+            "index": 105,
+            "time_center_ms": 527.5,
+            "wavelength_nm": 546.5357790697674,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_105_547nm.png"
+          },
+          {
+            "index": 106,
+            "time_center_ms": 532.5,
+            "wavelength_nm": 548.7733527131783,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_106_549nm.png"
+          },
+          {
+            "index": 107,
+            "time_center_ms": 537.5,
+            "wavelength_nm": 551.0109263565892,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_107_551nm.png"
+          },
+          {
+            "index": 108,
+            "time_center_ms": 542.5,
+            "wavelength_nm": 553.2484999999999,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_108_553nm.png"
+          },
+          {
+            "index": 109,
+            "time_center_ms": 547.5,
+            "wavelength_nm": 555.4860736434108,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_109_555nm.png"
+          },
+          {
+            "index": 110,
+            "time_center_ms": 552.5,
+            "wavelength_nm": 557.7236472868217,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_110_558nm.png"
+          },
+          {
+            "index": 111,
+            "time_center_ms": 557.5,
+            "wavelength_nm": 559.9612209302325,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_111_560nm.png"
+          },
+          {
+            "index": 112,
+            "time_center_ms": 562.5,
+            "wavelength_nm": 562.1987945736433,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_112_562nm.png"
+          },
+          {
+            "index": 113,
+            "time_center_ms": 567.5,
+            "wavelength_nm": 564.4363682170542,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_113_564nm.png"
+          },
+          {
+            "index": 114,
+            "time_center_ms": 572.5,
+            "wavelength_nm": 566.6739418604651,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_114_567nm.png"
+          },
+          {
+            "index": 115,
+            "time_center_ms": 577.5,
+            "wavelength_nm": 568.911515503876,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_115_569nm.png"
+          },
+          {
+            "index": 116,
+            "time_center_ms": 582.5,
+            "wavelength_nm": 571.1490891472868,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_116_571nm.png"
+          },
+          {
+            "index": 117,
+            "time_center_ms": 587.5,
+            "wavelength_nm": 573.3866627906976,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_117_573nm.png"
+          },
+          {
+            "index": 118,
+            "time_center_ms": 592.5,
+            "wavelength_nm": 575.6242364341085,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_118_576nm.png"
+          },
+          {
+            "index": 119,
+            "time_center_ms": 597.5,
+            "wavelength_nm": 577.8618100775193,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_119_578nm.png"
+          },
+          {
+            "index": 120,
+            "time_center_ms": 602.5,
+            "wavelength_nm": 580.0993837209302,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_120_580nm.png"
+          },
+          {
+            "index": 121,
+            "time_center_ms": 607.5,
+            "wavelength_nm": 582.3369573643411,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_121_582nm.png"
+          },
+          {
+            "index": 122,
+            "time_center_ms": 612.5,
+            "wavelength_nm": 584.5745310077518,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_122_585nm.png"
+          },
+          {
+            "index": 123,
+            "time_center_ms": 617.5,
+            "wavelength_nm": 586.8121046511628,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_123_587nm.png"
+          },
+          {
+            "index": 124,
+            "time_center_ms": 622.5,
+            "wavelength_nm": 589.0496782945736,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_124_589nm.png"
+          },
+          {
+            "index": 125,
+            "time_center_ms": 627.5,
+            "wavelength_nm": 591.2872519379845,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_125_591nm.png"
+          },
+          {
+            "index": 126,
+            "time_center_ms": 632.5,
+            "wavelength_nm": 593.5248255813954,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_126_594nm.png"
+          },
+          {
+            "index": 127,
+            "time_center_ms": 637.5,
+            "wavelength_nm": 595.7623992248061,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_127_596nm.png"
+          },
+          {
+            "index": 128,
+            "time_center_ms": 642.5,
+            "wavelength_nm": 597.999972868217,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_128_598nm.png"
+          },
+          {
+            "index": 129,
+            "time_center_ms": 647.5,
+            "wavelength_nm": 600.2375465116279,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_129_600nm.png"
+          },
+          {
+            "index": 130,
+            "time_center_ms": 652.5,
+            "wavelength_nm": 602.4751201550387,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_130_602nm.png"
+          },
+          {
+            "index": 131,
+            "time_center_ms": 657.5,
+            "wavelength_nm": 604.7126937984495,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_131_605nm.png"
+          },
+          {
+            "index": 132,
+            "time_center_ms": 662.5,
+            "wavelength_nm": 606.9502674418604,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_132_607nm.png"
+          },
+          {
+            "index": 133,
+            "time_center_ms": 667.5,
+            "wavelength_nm": 609.1878410852712,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_133_609nm.png"
+          },
+          {
+            "index": 134,
+            "time_center_ms": 672.5,
+            "wavelength_nm": 611.4254147286822,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_134_611nm.png"
+          },
+          {
+            "index": 135,
+            "time_center_ms": 677.5,
+            "wavelength_nm": 613.662988372093,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_135_614nm.png"
+          },
+          {
+            "index": 136,
+            "time_center_ms": 682.5,
+            "wavelength_nm": 615.9005620155039,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_136_616nm.png"
+          },
+          {
+            "index": 137,
+            "time_center_ms": 687.5,
+            "wavelength_nm": 618.1381356589147,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_137_618nm.png"
+          },
+          {
+            "index": 138,
+            "time_center_ms": 692.5,
+            "wavelength_nm": 620.3757093023255,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_138_620nm.png"
+          },
+          {
+            "index": 139,
+            "time_center_ms": 697.5,
+            "wavelength_nm": 622.6132829457364,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_139_623nm.png"
+          },
+          {
+            "index": 140,
+            "time_center_ms": 702.5,
+            "wavelength_nm": 624.8508565891473,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_140_625nm.png"
+          },
+          {
+            "index": 141,
+            "time_center_ms": 707.5,
+            "wavelength_nm": 627.088430232558,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_141_627nm.png"
+          },
+          {
+            "index": 142,
+            "time_center_ms": 712.5,
+            "wavelength_nm": 629.326003875969,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_142_629nm.png"
+          },
+          {
+            "index": 143,
+            "time_center_ms": 717.5,
+            "wavelength_nm": 631.5635775193798,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_143_632nm.png"
+          },
+          {
+            "index": 144,
+            "time_center_ms": 722.5,
+            "wavelength_nm": 633.8011511627907,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_144_634nm.png"
+          },
+          {
+            "index": 145,
+            "time_center_ms": 727.5,
+            "wavelength_nm": 636.0387248062016,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_145_636nm.png"
+          },
+          {
+            "index": 146,
+            "time_center_ms": 732.5,
+            "wavelength_nm": 638.2762984496123,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_146_638nm.png"
+          },
+          {
+            "index": 147,
+            "time_center_ms": 737.5,
+            "wavelength_nm": 640.5138720930232,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_147_641nm.png"
+          },
+          {
+            "index": 148,
+            "time_center_ms": 742.5,
+            "wavelength_nm": 642.7514457364341,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_148_643nm.png"
+          },
+          {
+            "index": 149,
+            "time_center_ms": 747.5,
+            "wavelength_nm": 644.9890193798449,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_149_645nm.png"
+          },
+          {
+            "index": 150,
+            "time_center_ms": 752.5,
+            "wavelength_nm": 647.2265930232558,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_150_647nm.png"
+          },
+          {
+            "index": 151,
+            "time_center_ms": 757.5,
+            "wavelength_nm": 649.4641666666666,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_151_649nm.png"
+          },
+          {
+            "index": 152,
+            "time_center_ms": 762.5,
+            "wavelength_nm": 651.7017403100774,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_152_652nm.png"
+          },
+          {
+            "index": 153,
+            "time_center_ms": 767.5,
+            "wavelength_nm": 653.9393139534884,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_153_654nm.png"
+          },
+          {
+            "index": 154,
+            "time_center_ms": 772.5,
+            "wavelength_nm": 656.1768875968992,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_154_656nm.png"
+          },
+          {
+            "index": 155,
+            "time_center_ms": 777.5,
+            "wavelength_nm": 658.4144612403101,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_155_658nm.png"
+          },
+          {
+            "index": 156,
+            "time_center_ms": 782.5,
+            "wavelength_nm": 660.652034883721,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_156_661nm.png"
+          },
+          {
+            "index": 157,
+            "time_center_ms": 787.5,
+            "wavelength_nm": 662.8896085271317,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_157_663nm.png"
+          },
+          {
+            "index": 158,
+            "time_center_ms": 792.5,
+            "wavelength_nm": 665.1271821705426,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_158_665nm.png"
+          },
+          {
+            "index": 159,
+            "time_center_ms": 797.5,
+            "wavelength_nm": 667.3647558139535,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_159_667nm.png"
+          },
+          {
+            "index": 160,
+            "time_center_ms": 802.5,
+            "wavelength_nm": 669.6023294573642,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_160_670nm.png"
+          },
+          {
+            "index": 161,
+            "time_center_ms": 807.5,
+            "wavelength_nm": 671.8399031007751,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_161_672nm.png"
+          },
+          {
+            "index": 162,
+            "time_center_ms": 812.5,
+            "wavelength_nm": 674.077476744186,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_162_674nm.png"
+          },
+          {
+            "index": 163,
+            "time_center_ms": 817.5,
+            "wavelength_nm": 676.3150503875968,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_163_676nm.png"
+          },
+          {
+            "index": 164,
+            "time_center_ms": 822.5,
+            "wavelength_nm": 678.5526240310078,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_164_679nm.png"
+          },
+          {
+            "index": 165,
+            "time_center_ms": 827.5,
+            "wavelength_nm": 680.7901976744186,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_165_681nm.png"
+          },
+          {
+            "index": 166,
+            "time_center_ms": 832.5,
+            "wavelength_nm": 683.0277713178294,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_166_683nm.png"
+          },
+          {
+            "index": 167,
+            "time_center_ms": 837.5,
+            "wavelength_nm": 685.2653449612403,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_167_685nm.png"
+          },
+          {
+            "index": 168,
+            "time_center_ms": 842.5,
+            "wavelength_nm": 687.5029186046511,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_168_688nm.png"
+          },
+          {
+            "index": 169,
+            "time_center_ms": 847.5,
+            "wavelength_nm": 689.740492248062,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_169_690nm.png"
+          },
+          {
+            "index": 170,
+            "time_center_ms": 852.5,
+            "wavelength_nm": 691.9780658914729,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_170_692nm.png"
+          },
+          {
+            "index": 171,
+            "time_center_ms": 857.5,
+            "wavelength_nm": 694.2156395348836,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_171_694nm.png"
+          },
+          {
+            "index": 172,
+            "time_center_ms": 862.5,
+            "wavelength_nm": 696.4532131782946,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_172_696nm.png"
+          },
+          {
+            "index": 173,
+            "time_center_ms": 867.5,
+            "wavelength_nm": 698.6907868217054,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_173_699nm.png"
+          },
+          {
+            "index": 174,
+            "time_center_ms": 872.5,
+            "wavelength_nm": 700.9283604651162,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_174_701nm.png"
+          },
+          {
+            "index": 175,
+            "time_center_ms": 877.5,
+            "wavelength_nm": 703.1659341085272,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_175_703nm.png"
+          },
+          {
+            "index": 176,
+            "time_center_ms": 882.5,
+            "wavelength_nm": 705.4035077519379,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_176_705nm.png"
+          },
+          {
+            "index": 177,
+            "time_center_ms": 887.5,
+            "wavelength_nm": 707.6410813953488,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_177_708nm.png"
+          },
+          {
+            "index": 178,
+            "time_center_ms": 892.5,
+            "wavelength_nm": 709.8786550387597,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_178_710nm.png"
+          },
+          {
+            "index": 179,
+            "time_center_ms": 897.5,
+            "wavelength_nm": 712.1162286821705,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_179_712nm.png"
+          },
+          {
+            "index": 180,
+            "time_center_ms": 902.5,
+            "wavelength_nm": 714.3538023255813,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_180_714nm.png"
+          },
+          {
+            "index": 181,
+            "time_center_ms": 907.5,
+            "wavelength_nm": 716.5913759689922,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_181_717nm.png"
+          },
+          {
+            "index": 182,
+            "time_center_ms": 912.5,
+            "wavelength_nm": 718.828949612403,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_182_719nm.png"
+          },
+          {
+            "index": 183,
+            "time_center_ms": 917.5,
+            "wavelength_nm": 721.066523255814,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_183_721nm.png"
+          },
+          {
+            "index": 184,
+            "time_center_ms": 922.5,
+            "wavelength_nm": 723.3040968992248,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_184_723nm.png"
+          },
+          {
+            "index": 185,
+            "time_center_ms": 927.5,
+            "wavelength_nm": 725.5416705426356,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_185_726nm.png"
+          },
+          {
+            "index": 186,
+            "time_center_ms": 932.5,
+            "wavelength_nm": 727.7792441860465,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_186_728nm.png"
+          },
+          {
+            "index": 187,
+            "time_center_ms": 937.5,
+            "wavelength_nm": 730.0168178294573,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_187_730nm.png"
+          },
+          {
+            "index": 188,
+            "time_center_ms": 942.5,
+            "wavelength_nm": 732.2543914728682,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_188_732nm.png"
+          },
+          {
+            "index": 189,
+            "time_center_ms": 947.5,
+            "wavelength_nm": 734.4919651162791,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_189_734nm.png"
+          },
+          {
+            "index": 190,
+            "time_center_ms": 952.5,
+            "wavelength_nm": 736.7295387596898,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_190_737nm.png"
+          },
+          {
+            "index": 191,
+            "time_center_ms": 957.5,
+            "wavelength_nm": 738.9671124031007,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_191_739nm.png"
+          },
+          {
+            "index": 192,
+            "time_center_ms": 962.5,
+            "wavelength_nm": 741.2046860465116,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_192_741nm.png"
+          },
+          {
+            "index": 193,
+            "time_center_ms": 967.5,
+            "wavelength_nm": 743.4422596899224,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_193_743nm.png"
+          },
+          {
+            "index": 194,
+            "time_center_ms": 972.5,
+            "wavelength_nm": 745.6798333333334,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_194_746nm.png"
+          },
+          {
+            "index": 195,
+            "time_center_ms": 977.5,
+            "wavelength_nm": 747.9174069767441,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_195_748nm.png"
+          },
+          {
+            "index": 196,
+            "time_center_ms": 982.5,
+            "wavelength_nm": 750.154980620155,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_196_750nm.png"
+          },
+          {
+            "index": 197,
+            "time_center_ms": 987.5,
+            "wavelength_nm": 752.3925542635659,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_197_752nm.png"
+          },
+          {
+            "index": 198,
+            "time_center_ms": 992.5,
+            "wavelength_nm": 754.6301279069767,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_198_755nm.png"
+          },
+          {
+            "index": 199,
+            "time_center_ms": 997.5,
+            "wavelength_nm": 756.8677015503876,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_199_757nm.png"
+          },
+          {
+            "index": 200,
+            "time_center_ms": 1002.5,
+            "wavelength_nm": 759.1052751937984,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_200_759nm.png"
+          },
+          {
+            "index": 201,
+            "time_center_ms": 1007.5,
+            "wavelength_nm": 761.3428488372092,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_201_761nm.png"
+          },
+          {
+            "index": 202,
+            "time_center_ms": 1012.5,
+            "wavelength_nm": 763.5804224806201,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_202_764nm.png"
+          },
+          {
+            "index": 203,
+            "time_center_ms": 1017.5,
+            "wavelength_nm": 765.817996124031,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_203_766nm.png"
+          },
+          {
+            "index": 204,
+            "time_center_ms": 1022.5,
+            "wavelength_nm": 768.0555697674417,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_204_768nm.png"
+          },
+          {
+            "index": 205,
+            "time_center_ms": 1027.5,
+            "wavelength_nm": 770.2931434108527,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_205_770nm.png"
+          },
+          {
+            "index": 206,
+            "time_center_ms": 1032.5,
+            "wavelength_nm": 772.5307170542635,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_206_773nm.png"
+          },
+          {
+            "index": 207,
+            "time_center_ms": 1037.5,
+            "wavelength_nm": 774.7682906976744,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_207_775nm.png"
+          },
+          {
+            "index": 208,
+            "time_center_ms": 1042.5,
+            "wavelength_nm": 777.0058643410853,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_208_777nm.png"
+          },
+          {
+            "index": 209,
+            "time_center_ms": 1047.5,
+            "wavelength_nm": 779.243437984496,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_209_779nm.png"
+          },
+          {
+            "index": 210,
+            "time_center_ms": 1052.5,
+            "wavelength_nm": 781.4810116279069,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_210_781nm.png"
+          },
+          {
+            "index": 211,
+            "time_center_ms": 1057.5,
+            "wavelength_nm": 783.7185852713178,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_211_784nm.png"
+          },
+          {
+            "index": 212,
+            "time_center_ms": 1062.5,
+            "wavelength_nm": 785.9561589147286,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_212_786nm.png"
+          },
+          {
+            "index": 213,
+            "time_center_ms": 1067.5,
+            "wavelength_nm": 788.1937325581396,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_213_788nm.png"
+          },
+          {
+            "index": 214,
+            "time_center_ms": 1072.5,
+            "wavelength_nm": 790.4313062015503,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_214_790nm.png"
+          },
+          {
+            "index": 215,
+            "time_center_ms": 1077.5,
+            "wavelength_nm": 792.6688798449611,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_215_793nm.png"
+          },
+          {
+            "index": 216,
+            "time_center_ms": 1082.5,
+            "wavelength_nm": 794.9064534883721,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_216_795nm.png"
+          },
+          {
+            "index": 217,
+            "time_center_ms": 1087.5,
+            "wavelength_nm": 797.1440271317829,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_217_797nm.png"
+          },
+          {
+            "index": 218,
+            "time_center_ms": 1092.5,
+            "wavelength_nm": 799.3816007751938,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_218_799nm.png"
+          },
+          {
+            "index": 219,
+            "time_center_ms": 1097.5,
+            "wavelength_nm": 801.6191744186046,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_219_802nm.png"
+          },
+          {
+            "index": 220,
+            "time_center_ms": 1102.5,
+            "wavelength_nm": 803.8567480620154,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_220_804nm.png"
+          },
+          {
+            "index": 221,
+            "time_center_ms": 1107.5,
+            "wavelength_nm": 806.0943217054263,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_221_806nm.png"
+          },
+          {
+            "index": 222,
+            "time_center_ms": 1112.5,
+            "wavelength_nm": 808.3318953488372,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_222_808nm.png"
+          },
+          {
+            "index": 223,
+            "time_center_ms": 1117.5,
+            "wavelength_nm": 810.569468992248,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_223_811nm.png"
+          },
+          {
+            "index": 224,
+            "time_center_ms": 1122.5,
+            "wavelength_nm": 812.807042635659,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_224_813nm.png"
+          },
+          {
+            "index": 225,
+            "time_center_ms": 1127.5,
+            "wavelength_nm": 815.0446162790697,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_225_815nm.png"
+          },
+          {
+            "index": 226,
+            "time_center_ms": 1132.5,
+            "wavelength_nm": 817.2821899224806,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_226_817nm.png"
+          },
+          {
+            "index": 227,
+            "time_center_ms": 1137.5,
+            "wavelength_nm": 819.5197635658915,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_227_820nm.png"
+          },
+          {
+            "index": 228,
+            "time_center_ms": 1142.5,
+            "wavelength_nm": 821.7573372093022,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_228_822nm.png"
+          },
+          {
+            "index": 229,
+            "time_center_ms": 1147.5,
+            "wavelength_nm": 823.9949108527131,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_229_824nm.png"
+          },
+          {
+            "index": 230,
+            "time_center_ms": 1152.5,
+            "wavelength_nm": 826.232484496124,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_230_826nm.png"
+          },
+          {
+            "index": 231,
+            "time_center_ms": 1157.5,
+            "wavelength_nm": 828.4700581395348,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_231_828nm.png"
+          },
+          {
+            "index": 232,
+            "time_center_ms": 1160.3135,
+            "wavelength_nm": 829.7291408286821,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/5ms/compensated/comp_bin_232_830nm.png"
+          }
+        ]
+      }
+    },
+    {
+      "bin_width_us": 50000.0,
+      "bin_width_ms": 50.0,
+      "modes": {
+        "compensated": [
+          {
+            "index": 0,
+            "time_center_ms": 25.0,
+            "wavelength_nm": 321.6596279069767,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_000_322nm.png"
+          },
+          {
+            "index": 1,
+            "time_center_ms": 75.0,
+            "wavelength_nm": 344.03536434108526,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_001_344nm.png"
+          },
+          {
+            "index": 2,
+            "time_center_ms": 125.0,
+            "wavelength_nm": 366.4111007751938,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_002_366nm.png"
+          },
+          {
+            "index": 3,
+            "time_center_ms": 175.0,
+            "wavelength_nm": 388.7868372093023,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_003_389nm.png"
+          },
+          {
+            "index": 4,
+            "time_center_ms": 225.0,
+            "wavelength_nm": 411.16257364341084,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_004_411nm.png"
+          },
+          {
+            "index": 5,
+            "time_center_ms": 275.0,
+            "wavelength_nm": 433.5383100775193,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_005_434nm.png"
+          },
+          {
+            "index": 6,
+            "time_center_ms": 325.0,
+            "wavelength_nm": 455.9140465116279,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_006_456nm.png"
+          },
+          {
+            "index": 7,
+            "time_center_ms": 375.0,
+            "wavelength_nm": 478.2897829457364,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_007_478nm.png"
+          },
+          {
+            "index": 8,
+            "time_center_ms": 425.0,
+            "wavelength_nm": 500.6655193798449,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_008_501nm.png"
+          },
+          {
+            "index": 9,
+            "time_center_ms": 475.0,
+            "wavelength_nm": 523.0412558139535,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_009_523nm.png"
+          },
+          {
+            "index": 10,
+            "time_center_ms": 525.0,
+            "wavelength_nm": 545.416992248062,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_010_545nm.png"
+          },
+          {
+            "index": 11,
+            "time_center_ms": 575.0,
+            "wavelength_nm": 567.7927286821705,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_011_568nm.png"
+          },
+          {
+            "index": 12,
+            "time_center_ms": 625.0,
+            "wavelength_nm": 590.1684651162791,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_012_590nm.png"
+          },
+          {
+            "index": 13,
+            "time_center_ms": 675.0,
+            "wavelength_nm": 612.5442015503876,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_013_613nm.png"
+          },
+          {
+            "index": 14,
+            "time_center_ms": 725.0,
+            "wavelength_nm": 634.9199379844961,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_014_635nm.png"
+          },
+          {
+            "index": 15,
+            "time_center_ms": 775.0,
+            "wavelength_nm": 657.2956744186047,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_015_657nm.png"
+          },
+          {
+            "index": 16,
+            "time_center_ms": 825.0,
+            "wavelength_nm": 679.6714108527132,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_016_680nm.png"
+          },
+          {
+            "index": 17,
+            "time_center_ms": 875.0,
+            "wavelength_nm": 702.0471472868217,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_017_702nm.png"
+          },
+          {
+            "index": 18,
+            "time_center_ms": 925.0,
+            "wavelength_nm": 724.4228837209303,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_018_724nm.png"
+          },
+          {
+            "index": 19,
+            "time_center_ms": 975.0,
+            "wavelength_nm": 746.7986201550386,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_019_747nm.png"
+          },
+          {
+            "index": 20,
+            "time_center_ms": 1025.0,
+            "wavelength_nm": 769.1743565891472,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_020_769nm.png"
+          },
+          {
+            "index": 21,
+            "time_center_ms": 1075.0,
+            "wavelength_nm": 791.5500930232558,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_021_792nm.png"
+          },
+          {
+            "index": 22,
+            "time_center_ms": 1125.0,
+            "wavelength_nm": 813.9258294573642,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_022_814nm.png"
+          },
+          {
+            "index": 23,
+            "time_center_ms": 1155.3135,
+            "wavelength_nm": 827.4915671852713,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_181728/50ms/compensated/comp_bin_023_827nm.png"
+          }
+        ]
+      }
+    }
+  ]
+}

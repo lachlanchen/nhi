@@ -69,6 +69,8 @@ def parse_args() -> argparse.Namespace:
     )
     ap.add_argument("--sensor-width", type=int, default=1280)
     ap.add_argument("--sensor-height", type=int, default=720)
+    ap.add_argument("--pos-scale", type=float, default=1.0, help="Positive event weight for compensated accumulation (default 1.0)")
+    ap.add_argument("--neg-scale", type=float, default=1.5, help="Initial negative event weight before auto-scaling")
     ap.add_argument(
         "--bin-widths-us",
         type=float,
@@ -85,6 +87,10 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--start-bin", type=int, default=None, help="Optional inclusive start bin index to export")
     ap.add_argument("--end-bin", type=int, default=None, help="Optional inclusive end bin index to export")
     ap.add_argument("--output-dir", type=Path, default=None, help="Output directory root (default: figures/figure05_<timestamp>)")
+    ap.add_argument("--smooth", action="store_true", help="Apply 3x3x3 spatio-temporal mean filter before background removal")
+    # Accept both the intended spelling and the earlier typo for convenience
+    ap.add_argument("--remove-bg-spectral", dest="remove_bg", action="store_true", help="Subtract per-frame mean (background) after optional smoothing")
+    ap.add_argument("--remove-bg-spetral", dest="remove_bg", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--save-png", action="store_true", help="Save PNGs alongside PDFs where applicable")
     return ap.parse_args()
 
@@ -142,9 +148,10 @@ def accumulate_bins_from_events(
     y: np.ndarray,
     t: np.ndarray,
     t_comp: np.ndarray | None,
+    weights: np.ndarray,
     bin_width_us: float,
     sensor_shape: Tuple[int, int],
-) -> Tuple[np.ndarray, np.ndarray, List[Dict[str, float]]]:
+) -> Tuple[np.ndarray, List[Dict[str, float]]]:
     """Accumulate original (raw time) and compensated (t_comp) counts into bins.
 
     We use uniform weights (=1) and do not perform background subtraction here,
@@ -154,9 +161,7 @@ def accumulate_bins_from_events(
     t_max = float(np.max(t))
     num_bins = int(np.ceil((t_max - t_min) / bin_width_us))
     H, W = sensor_shape
-    originals = np.zeros((num_bins, H, W), dtype=np.float32)
     compensated = np.zeros((num_bins, H, W), dtype=np.float32)
-    ones = np.ones_like(t, dtype=np.float32)
     if t_comp is None:
         t_comp = t
 
@@ -171,8 +176,7 @@ def accumulate_bins_from_events(
             mask_o |= t == t_max
             mask_c |= t_comp == float(np.max(t_comp))
 
-        originals[idx] = accumulate_bin(x, y, mask_o, ones, sensor_shape)
-        compensated[idx] = accumulate_bin(x, y, mask_c, ones, sensor_shape)
+        compensated[idx] = accumulate_bin(x, y, mask_c, weights, sensor_shape)
         metadata.append(
             {
                 "index": idx,
@@ -181,7 +185,7 @@ def accumulate_bins_from_events(
                 "duration_ms": float((min(end, t_max) - start) / 1000.0),
             }
         )
-    return originals, compensated, metadata
+    return compensated, metadata
 
 
 def scalar_frame_to_rgb(frame: np.ndarray, wl_nm: float, cmf: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> np.ndarray:
@@ -274,6 +278,20 @@ def main() -> None:
         t_comp = t
 
     sensor_shape = (args.sensor_height, args.sensor_width)
+    sensor_area = float(args.sensor_width * args.sensor_height)
+
+    # Learn neg weight on a fine series (like Figure 4) using original times
+    from publication_code.figure04_rescaled import auto_scale_neg_weight, RESCALE_FINE_STEP_US, smooth_volume_3d, subtract_background  # type: ignore
+    neg_scale, _series = auto_scale_neg_weight(
+        t,
+        p,
+        sensor_area=sensor_area,
+        step_us=RESCALE_FINE_STEP_US,
+        pos_scale=args.pos_scale,
+        neg_scale_init=args.neg_scale,
+        return_series=True,
+    )
+    comp_weights = np.where(p >= 0, args.pos_scale, -float(neg_scale)).astype(np.float32)
 
     exported: Dict[str, object] = {
         "segment": str(segment_path),
@@ -285,32 +303,17 @@ def main() -> None:
         "bin_sets": [],
     }
 
-    # Try to reuse 50ms NPZ if matching bin width
-    orig50_npz, comp50_npz, binwidth_npz = load_timebinned_npz_if_available(segment_path)
+    # We recompute from events to ensure weighting + background removal match Fig. 4
+    orig50_npz = comp50_npz = binwidth_npz = None
 
     for bw_us in args.bin_widths_us:
         bw_ms = bw_us / 1000.0
         set_entry: Dict[str, object] = {"bin_width_us": float(bw_us), "bin_width_ms": float(bw_ms), "modes": {}}
 
-        # Determine frames
-        if binwidth_npz is not None and abs(binwidth_npz - bw_us) < 1e-3 and orig50_npz is not None and comp50_npz is not None:
-            originals = orig50_npz
-            compensated = comp50_npz
-            # Build metadata compatible with NPZ (indices 0..N-1, relative centres)
-            num_bins = originals.shape[0]
-            metadata = [
-                {
-                    "index": i,
-                    "start_us": float(i * bw_us),
-                    "end_us": float((i + 1) * bw_us),
-                    "duration_ms": float(bw_ms),
-                }
-                for i in range(num_bins)
-            ]
-        else:
-            originals, compensated, metadata = accumulate_bins_from_events(
-                x, y, t, t_comp, bw_us, sensor_shape
-            )
+        # Build compensated, polarity-weighted frames per bin
+        compensated, metadata = accumulate_bins_from_events(
+            x, y, t, t_comp, comp_weights, bw_us, sensor_shape
+        )
 
         # Subset bins if requested
         start_bin = args.start_bin
@@ -318,14 +321,15 @@ def main() -> None:
 
         # Prepare out dirs
         bw_dir = ensure_outdir(out_root / ("%dms" % int(round(bw_ms))))
-        if args.modes in ("orig", "both"):
-            out_dir = ensure_outdir(bw_dir / "original")
-            meta_o = save_rgb_frames(originals, metadata, alignment, cmf, out_dir, "orig", start_bin, end_bin)
-            set_entry["modes"]["original"] = meta_o
-        if args.modes in ("comp", "both"):
-            out_dir = ensure_outdir(bw_dir / "compensated")
-            meta_c = save_rgb_frames(compensated, metadata, alignment, cmf, out_dir, "comp", start_bin, end_bin)
-            set_entry["modes"]["compensated"] = meta_c
+        # Only output compensated RGB as requested, with optional smoothing + bg removal
+        comp_vol = compensated
+        if args.smooth and comp_vol.size:
+            comp_vol = smooth_volume_3d(comp_vol)
+        if args.remove_bg and comp_vol.size:
+            comp_vol = np.stack([subtract_background(f) for f in comp_vol], axis=0)
+        out_dir = ensure_outdir(bw_dir / "compensated")
+        meta_c = save_rgb_frames(comp_vol, metadata, alignment, cmf, out_dir, "comp", start_bin, end_bin)
+        set_entry["modes"]["compensated"] = meta_c
 
         exported["bin_sets"].append(set_entry)
 
@@ -338,4 +342,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
