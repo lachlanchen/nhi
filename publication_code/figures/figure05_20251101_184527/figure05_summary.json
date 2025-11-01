@@ -1,0 +1,1056 @@
+{
+  "segment": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz",
+  "alignment_json": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_bg_alignment.json",
+  "alignment": {
+    "slope_nm_per_ms": 0.4475147286821705,
+    "intercept_nm": 310.47175968992246
+  },
+  "bin_sets": [
+    {
+      "bin_width_us": 5000.0,
+      "bin_width_ms": 5.0,
+      "modes": {
+        "compensated": [
+          {
+            "index": 0,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_000.png"
+          },
+          {
+            "index": 1,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_001.png"
+          },
+          {
+            "index": 2,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_002.png"
+          },
+          {
+            "index": 3,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_003.png"
+          },
+          {
+            "index": 4,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_004.png"
+          },
+          {
+            "index": 5,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_005.png"
+          },
+          {
+            "index": 6,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_006.png"
+          },
+          {
+            "index": 7,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_007.png"
+          },
+          {
+            "index": 8,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_008.png"
+          },
+          {
+            "index": 9,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_009.png"
+          },
+          {
+            "index": 10,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_010.png"
+          },
+          {
+            "index": 11,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_011.png"
+          },
+          {
+            "index": 12,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_012.png"
+          },
+          {
+            "index": 13,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_013.png"
+          },
+          {
+            "index": 14,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_014.png"
+          },
+          {
+            "index": 15,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_015.png"
+          },
+          {
+            "index": 16,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_016.png"
+          },
+          {
+            "index": 17,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_017.png"
+          },
+          {
+            "index": 18,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_018.png"
+          },
+          {
+            "index": 19,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_019.png"
+          },
+          {
+            "index": 20,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_020.png"
+          },
+          {
+            "index": 21,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_021.png"
+          },
+          {
+            "index": 22,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_022.png"
+          },
+          {
+            "index": 23,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_023.png"
+          },
+          {
+            "index": 24,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_024.png"
+          },
+          {
+            "index": 25,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_025.png"
+          },
+          {
+            "index": 26,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_026.png"
+          },
+          {
+            "index": 27,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_027.png"
+          },
+          {
+            "index": 28,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_028.png"
+          },
+          {
+            "index": 29,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_029.png"
+          },
+          {
+            "index": 30,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_030.png"
+          },
+          {
+            "index": 31,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_031.png"
+          },
+          {
+            "index": 32,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_032.png"
+          },
+          {
+            "index": 33,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_033.png"
+          },
+          {
+            "index": 34,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_034.png"
+          },
+          {
+            "index": 35,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_035.png"
+          },
+          {
+            "index": 36,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_036.png"
+          },
+          {
+            "index": 37,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_037.png"
+          },
+          {
+            "index": 38,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_038.png"
+          },
+          {
+            "index": 39,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_039.png"
+          },
+          {
+            "index": 40,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_040.png"
+          },
+          {
+            "index": 41,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_041.png"
+          },
+          {
+            "index": 42,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_042.png"
+          },
+          {
+            "index": 43,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_043.png"
+          },
+          {
+            "index": 44,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_044.png"
+          },
+          {
+            "index": 45,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_045.png"
+          },
+          {
+            "index": 46,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_046.png"
+          },
+          {
+            "index": 47,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_047.png"
+          },
+          {
+            "index": 48,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_048.png"
+          },
+          {
+            "index": 49,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_049.png"
+          },
+          {
+            "index": 50,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_050.png"
+          },
+          {
+            "index": 51,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_051.png"
+          },
+          {
+            "index": 52,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_052.png"
+          },
+          {
+            "index": 53,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_053.png"
+          },
+          {
+            "index": 54,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_054.png"
+          },
+          {
+            "index": 55,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_055.png"
+          },
+          {
+            "index": 56,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_056.png"
+          },
+          {
+            "index": 57,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_057.png"
+          },
+          {
+            "index": 58,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_058.png"
+          },
+          {
+            "index": 59,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_059.png"
+          },
+          {
+            "index": 60,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_060.png"
+          },
+          {
+            "index": 61,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_061.png"
+          },
+          {
+            "index": 62,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_062.png"
+          },
+          {
+            "index": 63,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_063.png"
+          },
+          {
+            "index": 64,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_064.png"
+          },
+          {
+            "index": 65,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_065.png"
+          },
+          {
+            "index": 66,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_066.png"
+          },
+          {
+            "index": 67,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_067.png"
+          },
+          {
+            "index": 68,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_068.png"
+          },
+          {
+            "index": 69,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_069.png"
+          },
+          {
+            "index": 70,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_070.png"
+          },
+          {
+            "index": 71,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_071.png"
+          },
+          {
+            "index": 72,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_072.png"
+          },
+          {
+            "index": 73,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_073.png"
+          },
+          {
+            "index": 74,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_074.png"
+          },
+          {
+            "index": 75,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_075.png"
+          },
+          {
+            "index": 76,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_076.png"
+          },
+          {
+            "index": 77,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_077.png"
+          },
+          {
+            "index": 78,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_078.png"
+          },
+          {
+            "index": 79,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_079.png"
+          },
+          {
+            "index": 80,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_080.png"
+          },
+          {
+            "index": 81,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_081.png"
+          },
+          {
+            "index": 82,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_082.png"
+          },
+          {
+            "index": 83,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_083.png"
+          },
+          {
+            "index": 84,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_084.png"
+          },
+          {
+            "index": 85,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_085.png"
+          },
+          {
+            "index": 86,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_086.png"
+          },
+          {
+            "index": 87,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_087.png"
+          },
+          {
+            "index": 88,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_088.png"
+          },
+          {
+            "index": 89,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_089.png"
+          },
+          {
+            "index": 90,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_090.png"
+          },
+          {
+            "index": 91,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_091.png"
+          },
+          {
+            "index": 92,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_092.png"
+          },
+          {
+            "index": 93,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_093.png"
+          },
+          {
+            "index": 94,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_094.png"
+          },
+          {
+            "index": 95,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_095.png"
+          },
+          {
+            "index": 96,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_096.png"
+          },
+          {
+            "index": 97,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_097.png"
+          },
+          {
+            "index": 98,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_098.png"
+          },
+          {
+            "index": 99,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_099.png"
+          },
+          {
+            "index": 100,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_100.png"
+          },
+          {
+            "index": 101,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_101.png"
+          },
+          {
+            "index": 102,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_102.png"
+          },
+          {
+            "index": 103,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_103.png"
+          },
+          {
+            "index": 104,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_104.png"
+          },
+          {
+            "index": 105,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_105.png"
+          },
+          {
+            "index": 106,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_106.png"
+          },
+          {
+            "index": 107,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_107.png"
+          },
+          {
+            "index": 108,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_108.png"
+          },
+          {
+            "index": 109,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_109.png"
+          },
+          {
+            "index": 110,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_110.png"
+          },
+          {
+            "index": 111,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_111.png"
+          },
+          {
+            "index": 112,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_112.png"
+          },
+          {
+            "index": 113,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_113.png"
+          },
+          {
+            "index": 114,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_114.png"
+          },
+          {
+            "index": 115,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_115.png"
+          },
+          {
+            "index": 116,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_116.png"
+          },
+          {
+            "index": 117,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_117.png"
+          },
+          {
+            "index": 118,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_118.png"
+          },
+          {
+            "index": 119,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_119.png"
+          },
+          {
+            "index": 120,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_120.png"
+          },
+          {
+            "index": 121,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_121.png"
+          },
+          {
+            "index": 122,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_122.png"
+          },
+          {
+            "index": 123,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_123.png"
+          },
+          {
+            "index": 124,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_124.png"
+          },
+          {
+            "index": 125,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_125.png"
+          },
+          {
+            "index": 126,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_126.png"
+          },
+          {
+            "index": 127,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_127.png"
+          },
+          {
+            "index": 128,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_128.png"
+          },
+          {
+            "index": 129,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_129.png"
+          },
+          {
+            "index": 130,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_130.png"
+          },
+          {
+            "index": 131,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_131.png"
+          },
+          {
+            "index": 132,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_132.png"
+          },
+          {
+            "index": 133,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_133.png"
+          },
+          {
+            "index": 134,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_134.png"
+          },
+          {
+            "index": 135,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_135.png"
+          },
+          {
+            "index": 136,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_136.png"
+          },
+          {
+            "index": 137,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_137.png"
+          },
+          {
+            "index": 138,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_138.png"
+          },
+          {
+            "index": 139,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_139.png"
+          },
+          {
+            "index": 140,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_140.png"
+          },
+          {
+            "index": 141,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_141.png"
+          },
+          {
+            "index": 142,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_142.png"
+          },
+          {
+            "index": 143,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_143.png"
+          },
+          {
+            "index": 144,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_144.png"
+          },
+          {
+            "index": 145,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_145.png"
+          },
+          {
+            "index": 146,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_146.png"
+          },
+          {
+            "index": 147,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_147.png"
+          },
+          {
+            "index": 148,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_148.png"
+          },
+          {
+            "index": 149,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_149.png"
+          },
+          {
+            "index": 150,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_150.png"
+          },
+          {
+            "index": 151,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_151.png"
+          },
+          {
+            "index": 152,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_152.png"
+          },
+          {
+            "index": 153,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_153.png"
+          },
+          {
+            "index": 154,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_154.png"
+          },
+          {
+            "index": 155,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_155.png"
+          },
+          {
+            "index": 156,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_156.png"
+          },
+          {
+            "index": 157,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_157.png"
+          },
+          {
+            "index": 158,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_158.png"
+          },
+          {
+            "index": 159,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_159.png"
+          },
+          {
+            "index": 160,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_160.png"
+          },
+          {
+            "index": 161,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_161.png"
+          },
+          {
+            "index": 162,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_162.png"
+          },
+          {
+            "index": 163,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_163.png"
+          },
+          {
+            "index": 164,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_164.png"
+          },
+          {
+            "index": 165,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_165.png"
+          },
+          {
+            "index": 166,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_166.png"
+          },
+          {
+            "index": 167,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_167.png"
+          },
+          {
+            "index": 168,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_168.png"
+          },
+          {
+            "index": 169,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_169.png"
+          },
+          {
+            "index": 170,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_170.png"
+          },
+          {
+            "index": 171,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_171.png"
+          },
+          {
+            "index": 172,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_172.png"
+          },
+          {
+            "index": 173,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_173.png"
+          },
+          {
+            "index": 174,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_174.png"
+          },
+          {
+            "index": 175,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_175.png"
+          },
+          {
+            "index": 176,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_176.png"
+          },
+          {
+            "index": 177,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_177.png"
+          },
+          {
+            "index": 178,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_178.png"
+          },
+          {
+            "index": 179,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_179.png"
+          },
+          {
+            "index": 180,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_180.png"
+          },
+          {
+            "index": 181,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_181.png"
+          },
+          {
+            "index": 182,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_182.png"
+          },
+          {
+            "index": 183,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_183.png"
+          },
+          {
+            "index": 184,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_184.png"
+          },
+          {
+            "index": 185,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_185.png"
+          },
+          {
+            "index": 186,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_186.png"
+          },
+          {
+            "index": 187,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_187.png"
+          },
+          {
+            "index": 188,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_188.png"
+          },
+          {
+            "index": 189,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_189.png"
+          },
+          {
+            "index": 190,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_190.png"
+          },
+          {
+            "index": 191,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_191.png"
+          },
+          {
+            "index": 192,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_192.png"
+          },
+          {
+            "index": 193,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_193.png"
+          },
+          {
+            "index": 194,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_194.png"
+          },
+          {
+            "index": 195,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_195.png"
+          },
+          {
+            "index": 196,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_196.png"
+          },
+          {
+            "index": 197,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_197.png"
+          },
+          {
+            "index": 198,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_198.png"
+          },
+          {
+            "index": 199,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_199.png"
+          },
+          {
+            "index": 200,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_200.png"
+          },
+          {
+            "index": 201,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_201.png"
+          },
+          {
+            "index": 202,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_202.png"
+          },
+          {
+            "index": 203,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_203.png"
+          },
+          {
+            "index": 204,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_204.png"
+          },
+          {
+            "index": 205,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_205.png"
+          },
+          {
+            "index": 206,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_206.png"
+          },
+          {
+            "index": 207,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_207.png"
+          },
+          {
+            "index": 208,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_208.png"
+          },
+          {
+            "index": 209,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_209.png"
+          },
+          {
+            "index": 210,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_210.png"
+          },
+          {
+            "index": 211,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_211.png"
+          },
+          {
+            "index": 212,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_212.png"
+          },
+          {
+            "index": 213,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_213.png"
+          },
+          {
+            "index": 214,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_214.png"
+          },
+          {
+            "index": 215,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_215.png"
+          },
+          {
+            "index": 216,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_216.png"
+          },
+          {
+            "index": 217,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_217.png"
+          },
+          {
+            "index": 218,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_218.png"
+          },
+          {
+            "index": 219,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_219.png"
+          },
+          {
+            "index": 220,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_220.png"
+          },
+          {
+            "index": 221,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_221.png"
+          },
+          {
+            "index": 222,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_222.png"
+          },
+          {
+            "index": 223,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_223.png"
+          },
+          {
+            "index": 224,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_224.png"
+          },
+          {
+            "index": 225,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_225.png"
+          },
+          {
+            "index": 226,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_226.png"
+          },
+          {
+            "index": 227,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_227.png"
+          },
+          {
+            "index": 228,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_228.png"
+          },
+          {
+            "index": 229,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_229.png"
+          },
+          {
+            "index": 230,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_230.png"
+          },
+          {
+            "index": 231,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_231.png"
+          },
+          {
+            "index": 232,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/compensated/comp_bin_232.png"
+          }
+        ]
+      },
+      "overall_rgb_path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/5ms/overall_rgb_5ms_compensated.png"
+    },
+    {
+      "bin_width_us": 50000.0,
+      "bin_width_ms": 50.0,
+      "modes": {
+        "compensated": [
+          {
+            "index": 0,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_000.png"
+          },
+          {
+            "index": 1,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_001.png"
+          },
+          {
+            "index": 2,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_002.png"
+          },
+          {
+            "index": 3,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_003.png"
+          },
+          {
+            "index": 4,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_004.png"
+          },
+          {
+            "index": 5,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_005.png"
+          },
+          {
+            "index": 6,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_006.png"
+          },
+          {
+            "index": 7,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_007.png"
+          },
+          {
+            "index": 8,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_008.png"
+          },
+          {
+            "index": 9,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_009.png"
+          },
+          {
+            "index": 10,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_010.png"
+          },
+          {
+            "index": 11,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_011.png"
+          },
+          {
+            "index": 12,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_012.png"
+          },
+          {
+            "index": 13,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_013.png"
+          },
+          {
+            "index": 14,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_014.png"
+          },
+          {
+            "index": 15,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_015.png"
+          },
+          {
+            "index": 16,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_016.png"
+          },
+          {
+            "index": 17,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_017.png"
+          },
+          {
+            "index": 18,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_018.png"
+          },
+          {
+            "index": 19,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_019.png"
+          },
+          {
+            "index": 20,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_020.png"
+          },
+          {
+            "index": 21,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_021.png"
+          },
+          {
+            "index": 22,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_022.png"
+          },
+          {
+            "index": 23,
+            "path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/compensated/comp_bin_023.png"
+          }
+        ]
+      },
+      "overall_rgb_path": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure05_20251101_184527/50ms/overall_rgb_50ms_compensated.png"
+    }
+  ]
+}

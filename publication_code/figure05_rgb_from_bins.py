@@ -79,6 +79,12 @@ def parse_args() -> argparse.Namespace:
         help="Bin widths to render in microseconds (default: 5ms and 50ms)",
     )
     ap.add_argument(
+        "--per-bin-mode",
+        choices=("gray", "rgb"),
+        default="gray",
+        help="How to save per-bin frames: grayscale (default) or colorized via wavelength.",
+    )
+    ap.add_argument(
         "--modes",
         choices=("orig", "comp", "both"),
         default="both",
@@ -306,6 +312,37 @@ def save_rgb_frames(
     return out_meta
 
 
+def save_gray_frames(
+    frames: np.ndarray,
+    metadata: List[Dict[str, float]],
+    out_dir: Path,
+    prefix: str,
+    start_bin: int | None,
+    end_bin: int | None,
+) -> List[Dict[str, float]]:
+    out_meta: List[Dict[str, float]] = []
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for m in metadata:
+        idx = int(m["index"])
+        if start_bin is not None and idx < start_bin:
+            continue
+        if end_bin is not None and idx > end_bin:
+            continue
+        frame = frames[idx].astype(np.float32)
+        vmin = float(np.min(frame))
+        vmax = float(np.max(frame))
+        vabs = max(abs(vmin), abs(vmax))
+        if not np.isfinite(vabs) or vabs <= 1e-12:
+            img = np.full_like(frame, 0.5, dtype=np.float32)
+        else:
+            img = (frame + vabs) / (2.0 * vabs)
+            img = np.clip(img, 0.0, 1.0)
+        out_path = out_dir / f"{prefix}_bin_{idx:03d}.png"
+        plt.imsave(str(out_path), img, cmap="gray")
+        out_meta.append({"index": idx, "path": str(out_path)})
+    return out_meta
+
+
 def main() -> None:
     args = parse_args()
     segment_path = args.segment.resolve()
@@ -379,14 +416,17 @@ def main() -> None:
 
         # Prepare out dirs
         bw_dir = ensure_outdir(out_root / ("%dms" % int(round(bw_ms))))
-        # Only output compensated RGB as requested, with optional smoothing + bg removal
+        # Build compensated volume with optional smoothing + background removal
         comp_vol = compensated
         if args.smooth and comp_vol.size:
             comp_vol = smooth_volume_3d(comp_vol)
         if args.remove_bg and comp_vol.size:
             comp_vol = np.stack([subtract_background(f) for f in comp_vol], axis=0)
         out_dir = ensure_outdir(bw_dir / "compensated")
-        meta_c = save_rgb_frames(comp_vol, metadata, alignment, cmf, out_dir, "comp", start_bin, end_bin)
+        if args.per_bin_mode == "rgb":
+            meta_c = save_rgb_frames(comp_vol, metadata, alignment, cmf, out_dir, "comp", start_bin, end_bin)
+        else:
+            meta_c = save_gray_frames(comp_vol, metadata, out_dir, "comp", start_bin, end_bin)
         set_entry["modes"]["compensated"] = meta_c
 
         # Composite overall RGB across all bins for this bin width
