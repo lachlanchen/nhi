@@ -188,6 +188,14 @@ def accumulate_bins_from_events(
     return compensated, metadata
 
 
+VISIBLE_MIN_NM = 380.0
+VISIBLE_MAX_NM = 680.0
+
+
+def _clamp_wavelength(wl_nm: float) -> float:
+    return float(min(max(wl_nm, VISIBLE_MIN_NM), VISIBLE_MAX_NM))
+
+
 def scalar_frame_to_rgb(frame: np.ndarray, wl_nm: float, cmf: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> np.ndarray:
     """Map a single-band frame at wavelength wl_nm to sRGB via CIE 1931 CMFs.
 
@@ -197,9 +205,10 @@ def scalar_frame_to_rgb(frame: np.ndarray, wl_nm: float, cmf: Tuple[np.ndarray, 
     """
     wl_cmf, xbar, ybar, zbar = cmf
     # Interpolate CMFs at wl_nm
-    xk = float(np.interp(wl_nm, wl_cmf, xbar))
-    yk = float(np.interp(wl_nm, wl_cmf, ybar))
-    zk = float(np.interp(wl_nm, wl_cmf, zbar))
+    wl_used = _clamp_wavelength(wl_nm)
+    xk = float(np.interp(wl_used, wl_cmf, xbar))
+    yk = float(np.interp(wl_used, wl_cmf, ybar))
+    zk = float(np.interp(wl_used, wl_cmf, zbar))
     f = np.clip(frame.astype(np.float32), 0.0, None)
     X = f * xk
     Y = f * yk
@@ -236,6 +245,7 @@ def composite_rgb_from_series(
     ], dtype=np.float32)
     durations_ms = np.array([m["duration_ms"] for m in metadata], dtype=np.float32)
     wavelengths = alignment.slope_nm_per_ms * centres_ms + alignment.intercept_nm
+    wavelengths = np.clip(wavelengths, VISIBLE_MIN_NM, VISIBLE_MAX_NM)
     delta_lambda = alignment.slope_nm_per_ms * durations_ms
 
     xk = np.interp(wavelengths, wl_cmf, xbar).astype(np.float32)
