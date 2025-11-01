@@ -139,8 +139,9 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
         ax1.plot(xs, ln / 1000.0, color="#4d4d4d", linewidth=1.0, alpha=0.9)
     ax1.set_xlabel("X (pixels)")
     ax1.set_ylabel("Time (ms)")
-    # Ensure left y tick labels remain visible when sharing y-axis
-    ax1.tick_params(axis='y', labelleft=True)
+    # Ensure left y ticks/labels explicitly visible
+    ax1.tick_params(axis='y', which='both', left=True, labelleft=True)
+    ax1.spines["left"].set_visible(True)
     ax1.set_ylim(0.0, duration_us / 1000.0)
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
@@ -155,8 +156,7 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     ax2.set_xlabel("Y (pixels)")
     # Share y-axis with left panel; hide label and tick labels on the right
     ax2.set_ylabel("")
-    ax2.set_yticklabels([])
-    ax2.set_yticks([])
+    ax2.tick_params(axis='y', which='both', left=False, labelleft=False)
     ax2.set_ylim(0.0, duration_us / 1000.0)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
@@ -305,8 +305,9 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     ax1.set_title(f"Original – Bin {idx}")
     ax1.set_xlabel("X (px)")
     ax1.set_ylabel("Y (px)")
-    # Ensure left y tick labels remain visible when sharing y-axis
-    ax1.tick_params(axis='y', labelleft=True)
+    # Ensure left y ticks/labels explicitly visible
+    ax1.tick_params(axis='y', which='both', left=True, labelleft=True)
+    ax1.spines["left"].set_visible(True)
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
@@ -315,8 +316,7 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     ax2.set_xlabel("X (px)")
     # Hide right panel's y-label and tick labels (shared y-axis)
     ax2.set_ylabel("")
-    ax2.set_yticklabels([])
-    ax2.set_yticks([])
+    ax2.tick_params(axis='y', which='both', left=False, labelleft=False)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
