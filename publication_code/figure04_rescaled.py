@@ -13,6 +13,9 @@ The polarity weighting still mirrors `visualize_cumulative_weighted.py
 
 Outputs default to timestamped folders to avoid overwriting previous runs,
 e.g. `figures/figure04_rescaled_[smooth_]YYYYMMDD_HHMMSS/figure04_rescaled_bin_XX.*`.
+The per-run polarity weights are saved alongside the figures as
+`figure04_rescaled_weights.json`. Panels share the same colour theme and
+fade to white near zero so that low-magnitude structure remains legible.
 
 Usage example:
     python publication_code/figure04_rescaled.py \
@@ -24,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import json
 import os
 from datetime import datetime
 from pathlib import Path
@@ -31,7 +35,12 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import Colormap, ListedColormap, TwoSlopeNorm
+
+
+DEFAULT_SHARED_COLORMAP = "coolwarm"
+RAW_LIGHTEN_FRACTION = 0.25
+COMP_LIGHTEN_FRACTION = 0.30
 
 
 def setup_style() -> None:
@@ -206,6 +215,57 @@ def smooth_volume_3d(volume: np.ndarray, kernel_size: int = 3) -> np.ndarray:
     return smoothed
 
 
+def prepare_colormap(name: str, zero_mode: str, lighten_fraction: float = 0.2) -> Colormap:
+    base = plt.get_cmap(name)
+    colors = base(np.linspace(0.0, 1.0, 512)).copy()
+    zero_mode = zero_mode.lower()
+    if lighten_fraction <= 0.0:
+        return ListedColormap(colors)
+    n_colors = colors.shape[0]
+
+    def blend_indices(indices: np.ndarray, strengths: np.ndarray) -> None:
+        strengths = np.clip(strengths, 0.0, 1.0)
+        colors[indices, :3] = strengths[:, None] * 1.0 + (1.0 - strengths[:, None]) * colors[indices, :3]
+
+    if zero_mode == "min":
+        span = max(2, int(lighten_fraction * n_colors))
+        indices = np.arange(span)
+        strengths = np.linspace(1.0, 0.0, span, dtype=np.float32)
+        blend_indices(indices, strengths)
+    elif zero_mode == "center":
+        span = max(3, int(lighten_fraction * n_colors))
+        mid = n_colors // 2
+        half = span // 2
+        start = max(0, mid - half)
+        end = min(n_colors, start + span)
+        indices = np.arange(start, end)
+        center = 0.5 * (indices[0] + indices[-1])
+        dist = np.abs(indices - center)
+        max_dist = dist.max() if np.any(dist) else 1.0
+        strengths = 1.0 - (dist / max_dist)
+        blend_indices(indices, strengths.astype(np.float32))
+    elif zero_mode == "both":
+        span = max(2, int(lighten_fraction * n_colors))
+        min_indices = np.arange(span)
+        min_strengths = np.linspace(1.0, 0.0, span, dtype=np.float32)
+        blend_indices(min_indices, min_strengths)
+
+        center_span = max(3, int(lighten_fraction * n_colors))
+        mid = n_colors // 2
+        half = center_span // 2
+        start = max(0, mid - half)
+        end = min(n_colors, start + center_span)
+        indices = np.arange(start, end)
+        center = 0.5 * (indices[0] + indices[-1])
+        dist = np.abs(indices - center)
+        max_dist = dist.max() if np.any(dist) else 1.0
+        strengths = 1.0 - (dist / max_dist)
+        blend_indices(indices, strengths.astype(np.float32))
+    elif zero_mode != "none":
+        raise ValueError(f"Unsupported zero_mode '{zero_mode}'")
+    return ListedColormap(colors)
+
+
 def render_panel(
     original: np.ndarray,
     compensated: np.ndarray,
@@ -215,26 +275,26 @@ def render_panel(
     comp_vmax: float,
     bin_idx: int,
     bin_width_ms: float,
-    colormap: str,
+    raw_cmap: Colormap,
+    comp_cmap: Colormap,
     output_dir: Path,
     save_png: bool,
-    diverging: bool,
 ) -> None:
     setup_style()
     fig, axes = plt.subplots(1, 2, figsize=(6.0, 3.2), constrained_layout=True)
     meta = f"Bin {bin_idx} ({bin_width_ms:.0f} ms)"
 
-    comp_abs = max(abs(comp_vmin), abs(comp_vmax))
-    if diverging:
-        raw_norm = None
-        comp_norm = TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs if comp_abs > 0 else 1.0)
-    else:
-        raw_norm = None
-        comp_norm = None
+    raw_norm = None
+    comp_norm: TwoSlopeNorm | None = None
+    if comp_vmin < 0.0 and comp_vmax > 0.0:
+        comp_abs = max(abs(comp_vmin), abs(comp_vmax))
+        if comp_abs <= 0.0:
+            comp_abs = 1.0
+        comp_norm = TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
 
     im0 = axes[0].imshow(
         original,
-        cmap=colormap,
+        cmap=raw_cmap,
         norm=raw_norm,
         vmin=None if raw_norm else raw_vmin,
         vmax=None if raw_norm else raw_vmax,
@@ -255,7 +315,7 @@ def render_panel(
 
     im1 = axes[1].imshow(
         compensated,
-        cmap=colormap,
+        cmap=comp_cmap,
         norm=comp_norm,
         vmin=None if comp_norm else comp_vmin,
         vmax=None if comp_norm else comp_vmax,
@@ -268,7 +328,8 @@ def render_panel(
     cbar0 = fig.colorbar(im0, ax=axes[0], shrink=0.85, pad=0.02)
     cbar0.ax.set_ylabel("Raw counts", rotation=90)
     cbar1 = fig.colorbar(im1, ax=axes[1], shrink=0.85, pad=0.02)
-    cbar1.ax.set_ylabel("Compensated (a.u.)", rotation=90)
+    comp_label = "Compensated Δ (a.u.)" if comp_norm is not None else "Compensated (a.u.)"
+    cbar1.ax.set_ylabel(comp_label, rotation=90)
     fig.text(0.012, 0.97, "(a)", fontweight="bold", ha="left", va="top")
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -285,7 +346,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--segment", type=Path, required=True, help="Path to Scan_*_events.npz file.")
     parser.add_argument("--bin-width-us", type=float, default=50000.0, help="Temporal bin width in microseconds (default 50 ms).")
     parser.add_argument("--percentiles", type=float, nargs=2, default=(1.0, 99.0), metavar=("LOW", "HIGH"), help="Global percentile limits for colour scaling.")
-    parser.add_argument("--colormap", default="magma", help="Matplotlib colormap name.")
+    parser.add_argument(
+        "--colormap",
+        default=None,
+        help="Shared base colormap applied to both panels (overridden by --raw-colormap / --comp-colormap).",
+    )
+    parser.add_argument(
+        "--raw-colormap",
+        default=None,
+        help="Colormap for the raw accumulation panel (defaults to the shared base when unspecified).",
+    )
+    parser.add_argument(
+        "--comp-colormap",
+        default=None,
+        help="Colormap for the compensated panel (defaults to the shared base when unspecified).",
+    )
     parser.add_argument("--save-png", action="store_true", help="Emit PNG alongside PDF.")
     parser.add_argument("--sensor-width", type=int, default=1280)
     parser.add_argument("--sensor-height", type=int, default=720)
@@ -325,8 +400,10 @@ def main() -> None:
         if args.diverging:
             base += "_diverging"
         args.output_dir = figures_root / f"{base}_{suffix}"
-    else:
-        args.output_dir = args.output_dir.resolve()
+
+    out_dir = args.output_dir.resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    args.output_dir = out_dir
 
     x, y, t, p = load_segment_events(segment_path)
     sensor_shape = (args.sensor_height, args.sensor_width)
@@ -341,8 +418,14 @@ def main() -> None:
         neg_scale_init=args.neg_scale,
     )
     print(f"Rescaled weights: pos_scale={args.pos_scale:.3f}, neg_scale={neg_scale:.3f}")
+
     comp_weights = np.where(p >= 0, args.pos_scale, -neg_scale).astype(np.float32)
     raw_weights = np.ones_like(p, dtype=np.float32)
+    shared_base = args.colormap or DEFAULT_SHARED_COLORMAP
+    raw_base = args.raw_colormap or shared_base
+    comp_base = args.comp_colormap or shared_base
+    raw_cmap = prepare_colormap(raw_base, "min", RAW_LIGHTEN_FRACTION)
+    comp_cmap = prepare_colormap(comp_base, "center", COMP_LIGHTEN_FRACTION)
 
     params_file = find_param_file(segment_path)
     t_comp = None
@@ -355,22 +438,35 @@ def main() -> None:
 
     t_min = float(np.min(t))
     t_max = float(np.max(t))
+    t_comp_max = float(np.max(t_comp)) if t_comp.size else t_max
     num_bins = int(np.ceil((t_max - t_min) / args.bin_width_us))
 
     originals: List[np.ndarray] = []
     comp_raw_frames: List[np.ndarray] = []
+
+    metadata_bins: List[Dict[str, float]] = []
 
     for idx in range(num_bins):
         start = t_min + idx * args.bin_width_us
         end = start + args.bin_width_us
         mask_orig = (t >= start) & (t < end)
         mask_comp = (t_comp >= start) & (t_comp < end)
+        if idx == num_bins - 1:
+            mask_orig |= t == t_max
+            mask_comp |= t_comp == t_comp_max
 
         orig_frame = accumulate_bin(x, y, mask_orig, raw_weights, sensor_shape)
         comp_frame = accumulate_bin(x, y, mask_comp, comp_weights, sensor_shape)
 
         originals.append(orig_frame)
         comp_raw_frames.append(comp_frame.astype(np.float32))
+        metadata_bins.append(
+            {
+                "index": int(idx),
+                "start_us": float(start),
+                "end_us": float(min(end, t_max)),
+            }
+        )
 
     comp_array = np.stack(comp_raw_frames, axis=0)
     if args.smooth:
@@ -378,12 +474,11 @@ def main() -> None:
 
     compensations = [subtract_background(frame) for frame in comp_array]
 
-    out_dir = args.output_dir.resolve()
     for idx, (orig_frame, comp_frame) in enumerate(zip(originals, compensations)):
-        raw_vmin = float(orig_frame.min())
-        raw_vmax = float(orig_frame.max())
-        comp_vmin = float(comp_frame.min())
-        comp_vmax = float(comp_frame.max())
+        raw_vmin = min(0.0, float(orig_frame.min()))
+        raw_vmax = max(0.0, float(orig_frame.max()))
+        comp_vmin = min(float(comp_frame.min()), 0.0)
+        comp_vmax = max(float(comp_frame.max()), 0.0)
         if np.isclose(raw_vmax, raw_vmin):
             raw_vmax = raw_vmin + 1e-3
         if np.isclose(comp_vmax, comp_vmin):
@@ -398,11 +493,25 @@ def main() -> None:
             comp_vmax,
             idx,
             args.bin_width_us / 1000.0,
-            args.colormap,
+            raw_cmap,
+            comp_cmap,
             out_dir,
             args.save_png,
-            args.diverging,
         )
+
+    weights_path = out_dir / "figure04_rescaled_weights.json"
+    weights_payload = {
+        "segment": str(segment_path),
+        "pos_scale": args.pos_scale,
+        "neg_scale": neg_scale,
+        "bin_width_us": args.bin_width_us,
+        "bin_width_ms": args.bin_width_us / 1000.0,
+        "num_bins": num_bins,
+        "smooth": bool(args.smooth),
+        "bin_times_us": metadata_bins,
+    }
+    with weights_path.open("w", encoding="utf-8") as fp:
+        json.dump(weights_payload, fp, indent=2)
 
 
 if __name__ == "__main__":
