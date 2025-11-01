@@ -214,6 +214,54 @@ def scalar_frame_to_rgb(frame: np.ndarray, wl_nm: float, cmf: Tuple[np.ndarray, 
     return rgb
 
 
+def composite_rgb_from_series(
+    frames: np.ndarray,  # [N,H,W] float32
+    metadata: List[Dict[str, float]],
+    alignment: Alignment,
+    cmf: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+) -> np.ndarray:
+    """Integrate across wavelengths to form a single RGB image.
+
+    - For each bin i, map its centre time to wavelength λ_i and approximate
+      Δλ_i = slope_nm_per_ms * duration_ms.
+    - Accumulate X = Σ max(F_i,0) * x̄(λ_i) * Δλ_i (and similarly for Y,Z).
+    - Normalise by 99th percentile of Y before XYZ→sRGB.
+    """
+    if frames.size == 0 or not metadata:
+        raise ValueError("Empty frames/metadata for composite RGB rendering.")
+    wl_cmf, xbar, ybar, zbar = cmf
+    base_start = metadata[0]["start_us"]
+    centres_ms = np.array([
+        (((m["start_us"] + m["end_us"]) * 0.5) - base_start) / 1000.0 for m in metadata
+    ], dtype=np.float32)
+    durations_ms = np.array([m["duration_ms"] for m in metadata], dtype=np.float32)
+    wavelengths = alignment.slope_nm_per_ms * centres_ms + alignment.intercept_nm
+    delta_lambda = alignment.slope_nm_per_ms * durations_ms
+
+    xk = np.interp(wavelengths, wl_cmf, xbar).astype(np.float32)
+    yk = np.interp(wavelengths, wl_cmf, ybar).astype(np.float32)
+    zk = np.interp(wavelengths, wl_cmf, zbar).astype(np.float32)
+    # Multiply CMFs by Δλ to approximate integration
+    xw = xk * delta_lambda
+    yw = yk * delta_lambda
+    zw = zk * delta_lambda
+
+    # Clip negatives to zero prior to integration
+    F = np.clip(frames.astype(np.float32), 0.0, None)
+    # tensordot over bin dimension -> [H,W]
+    X = np.tensordot(F, xw, axes=(0, 0))
+    Y = np.tensordot(F, yw, axes=(0, 0))
+    Z = np.tensordot(F, zw, axes=(0, 0))
+    XYZ = np.stack([X, Y, Z], axis=-1)
+    # Normalise by 99th percentile of Y
+    y_scale = float(np.percentile(Y, 99.0))
+    if not np.isfinite(y_scale) or y_scale <= 0.0:
+        y_scale = 1.0
+    XYZ /= y_scale
+    rgb = xyz_to_srgb(XYZ)
+    return rgb
+
+
 def ensure_outdir(root: Path) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     return root
@@ -330,6 +378,15 @@ def main() -> None:
         out_dir = ensure_outdir(bw_dir / "compensated")
         meta_c = save_rgb_frames(comp_vol, metadata, alignment, cmf, out_dir, "comp", start_bin, end_bin)
         set_entry["modes"]["compensated"] = meta_c
+
+        # Composite overall RGB across all bins for this bin width
+        try:
+            overall_rgb = composite_rgb_from_series(comp_vol, metadata, alignment, cmf)
+            overall_path = bw_dir / f"overall_rgb_{int(round(bw_ms))}ms_compensated.png"
+            plt.imsave(str(overall_path), overall_rgb)
+            set_entry["overall_rgb_path"] = str(overall_path)
+        except Exception as exc:
+            set_entry["overall_rgb_error"] = str(exc)
 
         exported["bin_sets"].append(set_entry)
 
