@@ -3,14 +3,13 @@
 Figure 4 (rescaled): Exponential, polarity-weighted accumulations with background subtraction.
 
 For each 50 ms bin (default) the script renders a two-column comparison:
-    - Left: raw event counts (no weighting or background adjustment).
+    - Left: raw event counts (simply the number of events in the bin).
     - Right: FAST-compensated timestamps (if learned params exist) with
       polarity weighting, linear accumulation, optional spatio-temporal
       smoothing, and per-frame mean subtraction (background removal).
 
-The weighting mirrors `visualize_cumulative_weighted.py --exp --auto_scale` to
-determine the polarity balance; only the compensated result uses the
-background-subtracted, weighted accumulation.
+The polarity weighting still mirrors `visualize_cumulative_weighted.py
+--exp --auto_scale`, but it is applied only to the compensated branch.
 
 Outputs default to timestamped folders to avoid overwriting previous runs,
 e.g. `figures/figure04_rescaled_[smooth_]YYYYMMDD_HHMMSS/figure04_rescaled_bin_XX.*`.
@@ -210,9 +209,10 @@ def smooth_volume_3d(volume: np.ndarray, kernel_size: int = 3) -> np.ndarray:
 def render_panel(
     original: np.ndarray,
     compensated: np.ndarray,
-    vmin: float,
-    vmax: float,
-    absmax: float,
+    raw_vmin: float,
+    raw_vmax: float,
+    comp_vmin: float,
+    comp_vmax: float,
     bin_idx: int,
     bin_width_ms: float,
     colormap: str,
@@ -224,22 +224,23 @@ def render_panel(
     fig, axes = plt.subplots(1, 2, figsize=(6.0, 3.2), constrained_layout=True)
     meta = f"Bin {bin_idx} ({bin_width_ms:.0f} ms)"
 
+    comp_abs = max(abs(comp_vmin), abs(comp_vmax))
     if diverging:
-        norm = TwoSlopeNorm(vmin=-absmax, vcenter=0.0, vmax=absmax)
+        raw_norm = None
+        comp_norm = TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs if comp_abs > 0 else 1.0)
     else:
-        norm = None
+        raw_norm = None
+        comp_norm = None
 
     im0 = axes[0].imshow(
         original,
         cmap=colormap,
-        norm=norm,
-        vmin=None if norm else vmin,
-        vmax=None if norm else vmax,
+        norm=raw_norm,
+        vmin=None if raw_norm else raw_vmin,
+        vmax=None if raw_norm else raw_vmax,
         origin="lower",
         interpolation="nearest",
     )
-    if diverging and absmax > 0:
-        im0.set_alpha(np.clip(np.abs(original) / absmax, 0.0, 1.0))
     axes[0].set_title("Original")
     axes[0].axis("off")
     axes[0].text(
@@ -255,19 +256,19 @@ def render_panel(
     im1 = axes[1].imshow(
         compensated,
         cmap=colormap,
-        norm=norm,
-        vmin=None if norm else vmin,
-        vmax=None if norm else vmax,
+        norm=comp_norm,
+        vmin=None if comp_norm else comp_vmin,
+        vmax=None if comp_norm else comp_vmax,
         origin="lower",
         interpolation="nearest",
     )
-    if diverging and absmax > 0:
-        im1.set_alpha(np.clip(np.abs(compensated) / absmax, 0.0, 1.0))
     axes[1].set_title("Compensated")
     axes[1].axis("off")
 
-    cbar = fig.colorbar(im1, ax=axes.ravel().tolist(), shrink=0.85, pad=0.02)
-    cbar.ax.set_ylabel("Rescaled intensity (a.u.)", rotation=90)
+    cbar0 = fig.colorbar(im0, ax=axes[0], shrink=0.85, pad=0.02)
+    cbar0.ax.set_ylabel("Raw counts", rotation=90)
+    cbar1 = fig.colorbar(im1, ax=axes[1], shrink=0.85, pad=0.02)
+    cbar1.ax.set_ylabel("Compensated (a.u.)", rotation=90)
     fig.text(0.012, 0.97, "(a)", fontweight="bold", ha="left", va="top")
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -341,7 +342,7 @@ def main() -> None:
     )
     print(f"Rescaled weights: pos_scale={args.pos_scale:.3f}, neg_scale={neg_scale:.3f}")
     comp_weights = np.where(p >= 0, args.pos_scale, -neg_scale).astype(np.float32)
-    raw_weights = np.where(p >= 0, 1.0, -1.0).astype(np.float32)
+    raw_weights = np.ones_like(p, dtype=np.float32)
 
     params_file = find_param_file(segment_path)
     t_comp = None
@@ -377,27 +378,24 @@ def main() -> None:
 
     compensations = [subtract_background(frame) for frame in comp_array]
 
-    combined = np.concatenate([arr.ravel() for arr in originals + compensations])
-    vmin = float(np.percentile(combined, args.percentiles[0]))
-    vmax = float(np.percentile(combined, args.percentiles[1]))
-    if args.diverging:
-        absmax = max(abs(vmin), abs(vmax))
-        vmin, vmax = -absmax, absmax
-    else:
-        absmax = max(abs(vmin), abs(vmax))
-    if np.isclose(vmin, vmax):
-        vmax = vmin + 1e-3
-        absmax = vmax
-    print(f"Unified colour scale: [{vmin:.3f}, {vmax:.3f}] from percentiles {args.percentiles}")
-
     out_dir = args.output_dir.resolve()
     for idx, (orig_frame, comp_frame) in enumerate(zip(originals, compensations)):
+        raw_vmin = float(orig_frame.min())
+        raw_vmax = float(orig_frame.max())
+        comp_vmin = float(comp_frame.min())
+        comp_vmax = float(comp_frame.max())
+        if np.isclose(raw_vmax, raw_vmin):
+            raw_vmax = raw_vmin + 1e-3
+        if np.isclose(comp_vmax, comp_vmin):
+            comp_vmax = comp_vmin + 1e-3
+
         render_panel(
             orig_frame,
             comp_frame,
-            vmin,
-            vmax,
-            absmax,
+            raw_vmin,
+            raw_vmax,
+            comp_vmin,
+            comp_vmax,
             idx,
             args.bin_width_us / 1000.0,
             args.colormap,
