@@ -5,15 +5,15 @@ Figure 4 (rescaled): Exponential, polarity-weighted accumulations with backgroun
 For each 50 ms bin (default) the script renders a two-column comparison:
     - Left: raw event counts (no weighting or background adjustment).
     - Right: FAST-compensated timestamps (if learned params exist) with
-      polarity weighting, linear accumulation, and per-frame mean
-      subtraction (background removal).
+      polarity weighting, linear accumulation, optional spatio-temporal
+      smoothing, and per-frame mean subtraction (background removal).
 
 The weighting mirrors `visualize_cumulative_weighted.py --exp --auto_scale` to
 determine the polarity balance; only the compensated result uses the
 background-subtracted, weighted accumulation.
 
 Outputs default to timestamped folders to avoid overwriting previous runs,
-e.g. `figures/figure04_rescaled_YYYYMMDD_HHMMSS/figure04_rescaled_bin_XX.*`.
+e.g. `figures/figure04_rescaled_[smooth_]YYYYMMDD_HHMMSS/figure04_rescaled_bin_XX.*`.
 
 Usage example:
     python publication_code/figure04_rescaled.py \
@@ -189,6 +189,24 @@ def subtract_background(frame: np.ndarray) -> np.ndarray:
     return frame - float(np.mean(frame))
 
 
+def smooth_volume_3d(volume: np.ndarray, kernel_size: int = 3) -> np.ndarray:
+    """Apply a simple mean filter over a 3x3x3 neighbourhood with reflect padding."""
+    assert kernel_size == 3, "Only kernel size 3 is supported."
+    pad = kernel_size // 2
+    padded = np.pad(volume, ((pad, pad), (pad, pad), (pad, pad)), mode="reflect")
+    smoothed = np.zeros_like(volume, dtype=np.float32)
+    for dz in range(kernel_size):
+        for dy in range(kernel_size):
+            for dx in range(kernel_size):
+                smoothed += padded[
+                    dz : dz + volume.shape[0],
+                    dy : dy + volume.shape[1],
+                    dx : dx + volume.shape[2],
+                ]
+    smoothed /= float(kernel_size ** 3)
+    return smoothed
+
+
 def render_panel(
     original: np.ndarray,
     compensated: np.ndarray,
@@ -283,6 +301,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional output directory; defaults to figures/figure04_rescaled_<timestamp>/",
     )
+    parser.add_argument(
+        "--smooth",
+        action="store_true",
+        help="Apply a 3x3x3 spatio-temporal mean filter to the compensated accumulation before background subtraction.",
+    )
     return parser.parse_args()
 
 
@@ -295,7 +318,11 @@ def main() -> None:
     figures_root = Path(__file__).resolve().parent / "figures"
     if args.output_dir is None:
         suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base = "figure04_rescaled_diverging" if args.diverging else "figure04_rescaled"
+        base = "figure04_rescaled"
+        if args.smooth:
+            base += "_smooth"
+        if args.diverging:
+            base += "_diverging"
         args.output_dir = figures_root / f"{base}_{suffix}"
     else:
         args.output_dir = args.output_dir.resolve()
@@ -330,7 +357,7 @@ def main() -> None:
     num_bins = int(np.ceil((t_max - t_min) / args.bin_width_us))
 
     originals: List[np.ndarray] = []
-    compensations: List[np.ndarray] = []
+    comp_raw_frames: List[np.ndarray] = []
 
     for idx in range(num_bins):
         start = t_min + idx * args.bin_width_us
@@ -341,10 +368,14 @@ def main() -> None:
         orig_frame = accumulate_bin(x, y, mask_orig, raw_weights, sensor_shape)
         comp_frame = accumulate_bin(x, y, mask_comp, comp_weights, sensor_shape)
 
-        comp_centered = subtract_background(comp_frame)
-
         originals.append(orig_frame)
-        compensations.append(comp_centered)
+        comp_raw_frames.append(comp_frame.astype(np.float32))
+
+    comp_array = np.stack(comp_raw_frames, axis=0)
+    if args.smooth:
+        comp_array = smooth_volume_3d(comp_array)
+
+    compensations = [subtract_background(frame) for frame in comp_array]
 
     combined = np.concatenate([arr.ravel() for arr in originals + compensations])
     vmin = float(np.percentile(combined, args.percentiles[0]))
