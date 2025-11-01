@@ -255,7 +255,8 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
-    fig, ax = plt.subplots(figsize=(5.0, 3.0))
+    # Make panel (b) approximately half the height of (a) and (c)
+    fig, ax = plt.subplots(figsize=(5.0, 1.6))
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
     ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
     ax.set_xlabel("Time Bin")
