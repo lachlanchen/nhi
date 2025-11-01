@@ -1,0 +1,147 @@
+{
+  "figure_dir": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure04_allinone_20251101_131951",
+  "series_npz": "figure04_rescaled_bg_series.npz",
+  "weights_json": "figure04_rescaled_weights.json",
+  "groundtruth_directory": "/home/lachlan/ProjectsLFS/nhi_reconstruction/groundtruth_spectrum_2835",
+  "groundtruth_files": [
+    "USB2F042671_16-05-20-488",
+    "USB2F042671_16-05-22-288"
+  ],
+  "neg_scale": 1.3052505493164062,
+  "rescale_step_us": 5000.0,
+  "alignment": {
+    "time_range_ms": [
+      0.0,
+      1215.0
+    ],
+    "wavelength_range_nm": [
+      399.896,
+      720.819
+    ],
+    "slope_nm_per_ms": 0.2766577586206896,
+    "intercept_nm": 392.2879116379311
+  },
+  "bin_mapping": [
+    {
+      "index": 0,
+      "time_center_ms": 25.0,
+      "wavelength_nm": 399.20435560344833
+    },
+    {
+      "index": 1,
+      "time_center_ms": 75.0,
+      "wavelength_nm": 413.0372435344828
+    },
+    {
+      "index": 2,
+      "time_center_ms": 125.0,
+      "wavelength_nm": 426.87013146551726
+    },
+    {
+      "index": 3,
+      "time_center_ms": 175.0,
+      "wavelength_nm": 440.7030193965518
+    },
+    {
+      "index": 4,
+      "time_center_ms": 225.0,
+      "wavelength_nm": 454.53590732758624
+    },
+    {
+      "index": 5,
+      "time_center_ms": 275.0,
+      "wavelength_nm": 468.3687952586207
+    },
+    {
+      "index": 6,
+      "time_center_ms": 325.0,
+      "wavelength_nm": 482.20168318965517
+    },
+    {
+      "index": 7,
+      "time_center_ms": 375.0,
+      "wavelength_nm": 496.03457112068963
+    },
+    {
+      "index": 8,
+      "time_center_ms": 425.0,
+      "wavelength_nm": 509.86745905172415
+    },
+    {
+      "index": 9,
+      "time_center_ms": 475.0,
+      "wavelength_nm": 523.7003469827587
+    },
+    {
+      "index": 10,
+      "time_center_ms": 525.0,
+      "wavelength_nm": 537.5332349137931
+    },
+    {
+      "index": 11,
+      "time_center_ms": 575.0,
+      "wavelength_nm": 551.3661228448276
+    },
+    {
+      "index": 12,
+      "time_center_ms": 625.0,
+      "wavelength_nm": 565.199010775862
+    },
+    {
+      "index": 13,
+      "time_center_ms": 675.0,
+      "wavelength_nm": 579.0318987068965
+    },
+    {
+      "index": 14,
+      "time_center_ms": 725.0,
+      "wavelength_nm": 592.864786637931
+    },
+    {
+      "index": 15,
+      "time_center_ms": 775.0,
+      "wavelength_nm": 606.6976745689656
+    },
+    {
+      "index": 16,
+      "time_center_ms": 825.0,
+      "wavelength_nm": 620.5305625
+    },
+    {
+      "index": 17,
+      "time_center_ms": 875.0,
+      "wavelength_nm": 634.3634504310345
+    },
+    {
+      "index": 18,
+      "time_center_ms": 925.0,
+      "wavelength_nm": 648.1963383620689
+    },
+    {
+      "index": 19,
+      "time_center_ms": 975.0,
+      "wavelength_nm": 662.0292262931034
+    },
+    {
+      "index": 20,
+      "time_center_ms": 1025.0,
+      "wavelength_nm": 675.8621142241379
+    },
+    {
+      "index": 21,
+      "time_center_ms": 1075.0,
+      "wavelength_nm": 689.6950021551725
+    },
+    {
+      "index": 22,
+      "time_center_ms": 1125.0,
+      "wavelength_nm": 703.5278900862069
+    },
+    {
+      "index": 23,
+      "time_center_ms": 1155.3135,
+      "wavelength_nm": 711.9143550521551
+    }
+  ],
+  "bg_vs_gt_plot": "figure04_rescaled_bg_vs_groundtruth.pdf"
+}

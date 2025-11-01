@@ -104,8 +104,20 @@ This data-driven segmentation adapts to slow drifts or perturbations, ensuring t
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{../../publication_code/figures/figure02_activity.pdf}\\[4pt]
-  \includegraphics[width=\linewidth]{../../publication_code/figures/figure02_correlation.pdf}
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (f2a) at (0,0)
+      {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_activity.pdf}};
+    \begin{scope}[x={(f2a.south east)}, y={(f2a.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(a)};
+    \end{scope}
+  \end{tikzpicture}\\[4pt]
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (f2b) at (0,0)
+      {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_correlation.pdf}};
+    \begin{scope}[x={(f2b.south east)}, y={(f2b.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(b)};
+    \end{scope}
+  \end{tikzpicture}
   \caption{Self-synchronized scan segmentation. (a) Event activity over the full recording with pre-/post-scan shading and alternating forward/backward boundaries. (b) Auto- and reverse-correlation of the activity signal; the blue marker indicates the mirror-peak used to localize the turnaround.}
   \label{fig:segmentation}
 \end{figure}
@@ -160,15 +172,8 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
 
 \begin{figure*}[t]
   \centering
-  \begin{tikzpicture}
-    \node[anchor=south west, inner sep=0] (img) at (0,0)
-      {\includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_135702/figure04_rescaled_grid_bins_03_15.pdf}};
-    \begin{scope}[x={(img.south east)}, y={(img.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.988) {(a)};
-      \node[font=\bfseries, anchor=north west, fill=white, text=black, inner sep=2pt] at (0.012, 0.49) {(b)};
-    \end{scope}
-  \end{tikzpicture}
-  \caption{Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin (a: original; b: compensated with 3$\times$3$\times$3 smoothing and background subtraction). The compensated row is annotated with the wavelength inferred from a flat-to-flat alignment of the 5~ms rescaled background spectrum to the spectrometer ground truth.}
+  \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_135702/figure04_rescaled_grid_bins_03_15.pdf}
+  \caption{Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin (top: original; bottom: compensated with 3$\times$3$\times$3 smoothing and background subtraction). The compensated row is annotated with the wavelength inferred from a flat-to-flat alignment of the 5~ms rescaled background spectrum to the spectrometer ground truth.}
   \label{fig:spectrum}
 \end{figure*}
 

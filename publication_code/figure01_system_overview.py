@@ -90,7 +90,8 @@ def add_beamsplitter(ax, cx, cy, size=0.25, ec="#4d4d4d", fc="#e0e0e0"):
     # As a simple square (no rotation) plus diagonal line
     r = Rectangle((cx - s/2, cy - s/2), s, s, linewidth=1.0, edgecolor=ec, facecolor=fc)
     ax.add_patch(r)
-    ax.plot([cx - s/2, cx + s/2], [cy - s/2, cy + s/2], color=ec, linewidth=1.0)
+    # Reflective plane rotated by 90° (descending diagonal)
+    ax.plot([cx - s/2, cx + s/2], [cy + s/2, cy - s/2], color=ec, linewidth=1.0)
     return r
 
 

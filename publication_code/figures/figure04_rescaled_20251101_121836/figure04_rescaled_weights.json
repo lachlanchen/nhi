@@ -1,0 +1,131 @@
+{
+  "segment": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz",
+  "pos_scale": 1.0,
+  "neg_scale": 0.8564818456768989,
+  "bin_width_us": 50000.0,
+  "bin_width_ms": 50.0,
+  "num_bins": 24,
+  "smooth": false,
+  "bin_times_us": [
+    {
+      "index": 0,
+      "start_us": 2588099.0,
+      "end_us": 2638099.0
+    },
+    {
+      "index": 1,
+      "start_us": 2638099.0,
+      "end_us": 2688099.0
+    },
+    {
+      "index": 2,
+      "start_us": 2688099.0,
+      "end_us": 2738099.0
+    },
+    {
+      "index": 3,
+      "start_us": 2738099.0,
+      "end_us": 2788099.0
+    },
+    {
+      "index": 4,
+      "start_us": 2788099.0,
+      "end_us": 2838099.0
+    },
+    {
+      "index": 5,
+      "start_us": 2838099.0,
+      "end_us": 2888099.0
+    },
+    {
+      "index": 6,
+      "start_us": 2888099.0,
+      "end_us": 2938099.0
+    },
+    {
+      "index": 7,
+      "start_us": 2938099.0,
+      "end_us": 2988099.0
+    },
+    {
+      "index": 8,
+      "start_us": 2988099.0,
+      "end_us": 3038099.0
+    },
+    {
+      "index": 9,
+      "start_us": 3038099.0,
+      "end_us": 3088099.0
+    },
+    {
+      "index": 10,
+      "start_us": 3088099.0,
+      "end_us": 3138099.0
+    },
+    {
+      "index": 11,
+      "start_us": 3138099.0,
+      "end_us": 3188099.0
+    },
+    {
+      "index": 12,
+      "start_us": 3188099.0,
+      "end_us": 3238099.0
+    },
+    {
+      "index": 13,
+      "start_us": 3238099.0,
+      "end_us": 3288099.0
+    },
+    {
+      "index": 14,
+      "start_us": 3288099.0,
+      "end_us": 3338099.0
+    },
+    {
+      "index": 15,
+      "start_us": 3338099.0,
+      "end_us": 3388099.0
+    },
+    {
+      "index": 16,
+      "start_us": 3388099.0,
+      "end_us": 3438099.0
+    },
+    {
+      "index": 17,
+      "start_us": 3438099.0,
+      "end_us": 3488099.0
+    },
+    {
+      "index": 18,
+      "start_us": 3488099.0,
+      "end_us": 3538099.0
+    },
+    {
+      "index": 19,
+      "start_us": 3538099.0,
+      "end_us": 3588099.0
+    },
+    {
+      "index": 20,
+      "start_us": 3588099.0,
+      "end_us": 3638099.0
+    },
+    {
+      "index": 21,
+      "start_us": 3638099.0,
+      "end_us": 3688099.0
+    },
+    {
+      "index": 22,
+      "start_us": 3688099.0,
+      "end_us": 3738099.0
+    },
+    {
+      "index": 23,
+      "start_us": 3738099.0,
+      "end_us": 3748726.0
+    }
+  ]
+}

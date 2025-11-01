@@ -1,0 +1,71 @@
+{
+  "segment": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz",
+  "pos_scale": 1.0,
+  "neg_scale": 0.30142882764339446,
+  "bin_width_us": 100000.0,
+  "bin_width_ms": 100.0,
+  "num_bins": 12,
+  "smooth": true,
+  "bin_times_us": [
+    {
+      "index": 0,
+      "start_us": 2588099.0,
+      "end_us": 2688099.0
+    },
+    {
+      "index": 1,
+      "start_us": 2688099.0,
+      "end_us": 2788099.0
+    },
+    {
+      "index": 2,
+      "start_us": 2788099.0,
+      "end_us": 2888099.0
+    },
+    {
+      "index": 3,
+      "start_us": 2888099.0,
+      "end_us": 2988099.0
+    },
+    {
+      "index": 4,
+      "start_us": 2988099.0,
+      "end_us": 3088099.0
+    },
+    {
+      "index": 5,
+      "start_us": 3088099.0,
+      "end_us": 3188099.0
+    },
+    {
+      "index": 6,
+      "start_us": 3188099.0,
+      "end_us": 3288099.0
+    },
+    {
+      "index": 7,
+      "start_us": 3288099.0,
+      "end_us": 3388099.0
+    },
+    {
+      "index": 8,
+      "start_us": 3388099.0,
+      "end_us": 3488099.0
+    },
+    {
+      "index": 9,
+      "start_us": 3488099.0,
+      "end_us": 3588099.0
+    },
+    {
+      "index": 10,
+      "start_us": 3588099.0,
+      "end_us": 3688099.0
+    },
+    {
+      "index": 11,
+      "start_us": 3688099.0,
+      "end_us": 3748726.0
+    }
+  ]
+}
