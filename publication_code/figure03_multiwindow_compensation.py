@@ -131,13 +131,16 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # Use constrained_layout so labels (e.g., 'Time (ms)') are fully visible
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True, constrained_layout=True)
 
-    # X–T
+    # X–T (colorblind-friendly palette)
+    POS_COLOR = "#E69F00"  # orange
+    NEG_COLOR = "#0072B2"  # blue
+    BND_COLOR = "#4C4C4C"
     if np.any(pos):
-        ax1.scatter(x[pos], t_norm_ms[pos], s=0.25, c="#d62728", alpha=0.5, rasterized=True)
+        ax1.scatter(x[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.45, rasterized=True)
     if np.any(neg):
-        ax1.scatter(x[neg], t_norm_ms[neg], s=0.25, c="#1f77b4", alpha=0.5, rasterized=True)
+        ax1.scatter(x[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.45, rasterized=True)
     for ln in x_lines:
-        ax1.plot(xs, ln / 1000.0, color="#4d4d4d", linewidth=1.0, alpha=0.9)
+        ax1.plot(xs, ln / 1000.0, color=BND_COLOR, linewidth=1.0, alpha=0.9)
     ax1.set_xlabel("X (pixels)")
     ax1.set_ylabel("Time (ms)")
     # Ensure left y ticks/labels explicitly visible
@@ -149,11 +152,11 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
 
     # Y–T
     if np.any(pos):
-        ax2.scatter(y[pos], t_norm_ms[pos], s=0.25, c="#d62728", alpha=0.5, rasterized=True)
+        ax2.scatter(y[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.45, rasterized=True)
     if np.any(neg):
-        ax2.scatter(y[neg], t_norm_ms[neg], s=0.25, c="#1f77b4", alpha=0.5, rasterized=True)
+        ax2.scatter(y[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.45, rasterized=True)
     for ln in y_lines:
-        ax2.plot(ys, ln / 1000.0, color="#4d4d4d", linewidth=1.0, alpha=0.9)
+        ax2.plot(ys, ln / 1000.0, color=BND_COLOR, linewidth=1.0, alpha=0.9)
     ax2.set_xlabel("Y (pixels)")
     # Share y-axis with left panel; hide label and tick labels on the right
     ax2.set_ylabel("")
