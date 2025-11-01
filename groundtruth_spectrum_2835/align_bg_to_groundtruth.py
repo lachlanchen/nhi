@@ -32,7 +32,6 @@ if str(REPO_ROOT) not in sys.path:
 
 # Reuse publication helpers
 from groundtruth_spectrum_2835.compare_publication_cumulative import (  # noqa: E402
-    align_series_to_wavelength,
     detect_visible_edges,
     load_gt_curves,
 )
@@ -130,12 +129,15 @@ def align_background_to_gt(
         norm_val = normalise_curve(smooth, region)
         gt_norm_curves.append((name, wl_sel.astype(np.float32), norm_val.astype(np.float32)))
 
-    wl_series, series_norm, slope, intercept = align_series_to_wavelength(
-        time_ms,
-        exp_rescaled,
-        gt_start_nm,
-        gt_end_nm,
-    )
+    # Background edge-based time anchors (entering/leaving flats)
+    smooth_bg = moving_average(exp_rescaled, max(21, int(len(exp_rescaled) // 200) | 1))
+    region_bg = detect_active_region(smooth_bg)
+    t0 = float(time_ms[region_bg.start_idx])
+    t1 = float(time_ms[region_bg.end_idx])
+    slope = (gt_end_nm - gt_start_nm) / (t1 - t0)
+    intercept = gt_start_nm - slope * t0
+    wl_series = slope * time_ms + intercept
+    series_norm = normalise_curve(exp_rescaled, region_bg)
     gt_names = [name for name, _, _ in gt_curves]
     return wl_series, series_norm, slope, intercept, gt_names, (gt_start_nm, gt_end_nm), gt_norm_curves
 

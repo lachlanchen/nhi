@@ -44,9 +44,13 @@ from figure04_rescaled import (
     setup_style,
 )
 from groundtruth_spectrum_2835.compare_publication_cumulative import (
-    align_series_to_wavelength,
     detect_visible_edges,
     load_gt_curves,
+)
+from groundtruth_spectrum.compare_reconstruction_to_gt import (
+    moving_average,
+    normalise_curve,
+    detect_active_region,
 )
 
 
@@ -65,7 +69,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--colormap", default=None)
     ap.add_argument("--raw-colormap", default=None)
     ap.add_argument("--comp-colormap", default=None)
-    ap.add_argument("--smooth", action="store_true")
+    # Default to 3x3x3 smoothing enabled; user can turn off with --no-smooth if needed
+    ap.add_argument("--smooth", action="store_true", default=True)
     ap.add_argument("--show-wavelength", action="store_true")
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument("--output-dir", type=Path, default=None)
@@ -123,9 +128,43 @@ def align_with_groundtruth(
     exp_rescaled = np.asarray(series["exp_rescaled"], dtype=np.float32)
     gt_curves = load_gt_curves(gt_dir)
     gt_start_nm, gt_end_nm = detect_visible_edges(gt_curves)
-    wl_series, series_norm, slope, intercept = align_series_to_wavelength(
-        time_ms, exp_rescaled, gt_start_nm, gt_end_nm
-    )
+
+    # Edge-of-active-region anchors (entering/leaving flats) for background (time) and GT (wavelength)
+    smooth_bg = moving_average(exp_rescaled, max(21, int(len(exp_rescaled) // 200) | 1))
+    region_bg = detect_active_region(smooth_bg)
+    # Background edges in time: first rise from flat and return to flat
+    t0 = float(time_ms[region_bg.start_idx])
+    t1 = float(time_ms[region_bg.end_idx])
+
+    # GT edges in wavelength (average across curves)
+    wl0_list: list[float] = []
+    wl1_list: list[float] = []
+    x_min, x_max = float(gt_start_nm), float(gt_end_nm)
+    for _, wl, val in gt_curves:
+        mask = (wl >= x_min) & (wl <= x_max)
+        wl_sel = wl[mask]
+        val_sel = val[mask]
+        if wl_sel.size < 10:
+            continue
+        smooth_gt = moving_average(val_sel, max(21, len(val_sel) // 300))
+        region_gt = detect_active_region(smooth_gt)
+        # Use the edges of the active region on GT
+        wl0_list.append(float(wl_sel[region_gt.start_idx]))
+        wl1_list.append(float(wl_sel[region_gt.end_idx]))
+    if wl0_list and wl1_list:
+        wl0 = float(np.mean(wl0_list))
+        wl1 = float(np.mean(wl1_list))
+    else:
+        wl0, wl1 = float(gt_start_nm), float(gt_end_nm)
+
+    # Linear map from time→wavelength using plateau centroids
+    if t1 == t0:
+        slope, intercept = (wl1 - wl0) / 1.0, wl0 - ((wl1 - wl0) / 1.0) * t0
+    else:
+        slope = (wl1 - wl0) / (t1 - t0)
+        intercept = wl0 - slope * t0
+    wl_series = slope * time_ms + intercept
+    series_norm = normalise_curve(exp_rescaled, region_bg)
 
     # bin mapping based on 50 ms centers
     base_start = metadata_bins[0]["start_us"] if metadata_bins else 0.0
@@ -140,18 +179,33 @@ def align_with_groundtruth(
             }
         )
 
-    # Plot background vs GT in wavelength domain
-    x_min, x_max = float(gt_start_nm), float(gt_end_nm)
-    mask_bg = (wl_series >= x_min) & (wl_series <= x_max)
+    # Plot background vs GT in wavelength domain (all normalised for fair comparison)
+    # Determine overall GT wavelength span for plotting
+    wl_min_all = min(float(np.min(wl)) for _, wl, _ in gt_curves)
+    wl_max_all = max(float(np.max(wl)) for _, wl, _ in gt_curves)
+    mask_bg = (wl_series >= wl_min_all) & (wl_series <= wl_max_all)
     wl_bg = wl_series[mask_bg]
     bg_norm = series_norm[mask_bg]
+
+    # Build mean GT raw curve on a common grid for amplitude matching in plot
+    wl_grid_plot = np.linspace(wl_min_all, wl_max_all, 2000, dtype=np.float32)
+    gt_grid_stack: list[np.ndarray] = []
+    for _, wl, val in gt_curves:
+        gt_grid_stack.append(np.interp(wl_grid_plot, wl, val).astype(np.float32))
+    gt_mean_raw = np.mean(gt_grid_stack, axis=0)
+
+    # Interpolate BG shape onto the same grid and compute affine scale (a,c) that best fits GT mean
+    bg_grid = np.interp(wl_grid_plot, wl_bg, bg_norm) if wl_bg.size else np.zeros_like(wl_grid_plot)
+    A = np.stack([bg_grid, np.ones_like(bg_grid)], axis=1)
+    theta, *_ = np.linalg.lstsq(A, gt_mean_raw, rcond=None)
+    a_scale, c_offset = float(theta[0]), float(theta[1])
+    bg_scaled_grid = a_scale * bg_grid + c_offset
+
     fig, ax = plt.subplots(figsize=(5.2, 3.2))
-    # Distinct colours for BG vs GT curves
-    ax.plot(wl_bg, bg_norm, label="Rescaled background", color="#1f77b4", linewidth=2.0)
+    ax.plot(wl_grid_plot, bg_scaled_grid, label="Rescaled background (scaled)", color="#1f77b4", linewidth=2.0)
     gt_palette = ["#ff7f0e", "#2ca02c", "#d62728"]
     for i, (name, wl, val) in enumerate(gt_curves):
-        sel = (wl >= x_min) & (wl <= x_max)
-        ax.plot(wl[sel], val[sel], label=name, linewidth=2.2, color=gt_palette[i % len(gt_palette)])
+        ax.plot(wl, val, label=name, linewidth=2.2, color=gt_palette[i % len(gt_palette)])
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Normalised intensity (a.u.)")
     ax.set_title("Background vs. ground-truth")
@@ -182,6 +236,81 @@ def align_with_groundtruth(
     with (out_dir / "figure04_rescaled_bg_alignment.json").open("w", encoding="utf-8") as fp:
         json.dump(payload, fp, indent=2)
     return payload
+
+
+def plot_three_panel_normalised(
+    series: Dict[str, np.ndarray],
+    gt_curves: List[Tuple[str, np.ndarray, np.ndarray]],
+    wl_series: np.ndarray,
+    out_dir: Path,
+    save_png: bool,
+) -> None:
+    """Draw 3 subplots:
+    (1) Normalised GT (0..1) vs wavelength (each GT separately)
+    (2) Normalised BG (0..1) vs time (5 ms series)
+    (3) Aligned overlay: BG (0..1) mapped to wavelength vs normalised GT.
+    """
+    time_ms = series["time_ms"].astype(np.float32)
+    exp_rescaled = series["exp_rescaled"].astype(np.float32)
+
+    # Normalise BG by plateau baseline and peak
+    smooth_bg = moving_average(exp_rescaled, max(21, int(len(exp_rescaled) // 200) | 1))
+    region_bg = detect_active_region(smooth_bg)
+    bg_norm = np.clip(normalise_curve(exp_rescaled, region_bg), 0.0, None)
+
+    # Normalise each GT on its own
+    gt_norm_list: List[Tuple[str, np.ndarray, np.ndarray]] = []
+    wl_min = np.inf
+    wl_max = -np.inf
+    for name, wl, val in gt_curves:
+        wl_min = min(wl_min, float(np.min(wl)))
+        wl_max = max(wl_max, float(np.max(wl)))
+        smooth = moving_average(val, max(21, len(val) // 300))
+        region_gt = detect_active_region(smooth)
+        val_norm = np.clip(normalise_curve(smooth, region_gt), 0.0, None)
+        gt_norm_list.append((name, wl.astype(np.float32), val_norm.astype(np.float32)))
+
+    # Panel 3 prep: BG mapped to wavelength; clip within GT span
+    mask = (wl_series >= wl_min) & (wl_series <= wl_max)
+    wl_bg = wl_series[mask].astype(np.float32)
+    bg_norm_wl = bg_norm[mask]
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.5, 3.2), constrained_layout=True)
+
+    # (1) GT normalised
+    ax0 = axes[0]
+    for name, wl, valn in gt_norm_list:
+        ax0.plot(wl, valn, linewidth=1.6, label=name)
+    ax0.set_title("GT (normalised)")
+    ax0.set_xlabel("Wavelength (nm)")
+    ax0.set_ylabel("Norm. intensity")
+    ax0.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    ax0.legend(loc="best", fontsize=8)
+
+    # (2) BG normalised (vs time)
+    ax1 = axes[1]
+    ax1.plot(time_ms, bg_norm, color="#1f77b4", linewidth=1.6)
+    ax1.set_title("BG (normalised, 5 ms)")
+    ax1.set_xlabel("Relative time (ms)")
+    ax1.set_ylabel("Norm. intensity")
+    ax1.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+
+    # (3) Aligned overlay: BG mapped to wavelength vs GT normalised
+    ax2 = axes[2]
+    ax2.plot(wl_bg, bg_norm_wl, color="#1f77b4", linewidth=1.8, label="BG mapped")
+    for name, wl, valn in gt_norm_list:
+        ax2.plot(wl, valn, linewidth=1.4, label=name)
+    ax2.set_title("Aligned (normalised)")
+    ax2.set_xlabel("Wavelength (nm)")
+    ax2.set_ylabel("Norm. intensity")
+    ax2.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    ax2.legend(loc="best", fontsize=8)
+
+    out_path = out_dir / "figure04_rescaled_bg_gt_threepanel.pdf"
+    fig.savefig(out_path, dpi=400, bbox_inches="tight")
+    if save_png:
+        fig.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
 
 def plot_background_spectrum(
@@ -220,15 +349,12 @@ def plot_background_spectrum(
     ax0.grid(alpha=0.3, linestyle="--", linewidth=0.6)
     ax0.legend(loc="best", fontsize=8)
 
-    ax1.plot(centres_ms, bg_values, color="#1f77b4", linewidth=1.4, marker="o", label="50 ms mean")
-    if any(mask):
-        hl_x = [x for x, m in zip(centres_ms, mask) if m]
-        hl_y = [y for y, m in zip(bg_values, mask) if m]
-        ax1.scatter(hl_x, hl_y, color="#d62728", s=30, zorder=3, label="Selected bins")
+    # Use 5 ms series points for the lower panel as well
+    ax1.plot(time_ms, np.clip(exp_rescaled, 0, None), color="#1f77b4", linewidth=1.2, label="5 ms series")
     if hl_start is not None and hl_end is not None:
         ax1.axvspan(hl_start, hl_end, color="#d62728", alpha=0.08, lw=0)
     ax1.set_xlabel("Relative time (ms)")
-    ax1.set_ylabel("Background mean (a.u.)")
+    ax1.set_ylabel("Background (norm.)")
     ax1.grid(alpha=0.3, linestyle="--", linewidth=0.6)
     ax1.legend(loc="best", fontsize=8)
 
@@ -346,10 +472,9 @@ def main() -> None:
         raise FileNotFoundError(segment_path)
 
     figures_root = Path(__file__).resolve().parent / "figures"
-    if args.output_dir is None:
-        suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.output_dir = figures_root / f"figure04_allinone_{suffix}"
-    out_dir = args.output_dir.resolve()
+    # Always use a timestamped folder to avoid overwrites
+    suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = (figures_root / f"figure04_allinone_{suffix}").resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Load events
@@ -444,6 +569,11 @@ def main() -> None:
         out_dir,
         args.save_png,
     )
+
+    # 5) Three-panel normalised overview
+    gt_curves = load_gt_curves(args.gt_dir.resolve())
+    wl_series = (alignment["alignment"]["slope_nm_per_ms"] * series["time_ms"] + alignment["alignment"]["intercept_nm"]).astype(np.float32)
+    plot_three_panel_normalised(series, gt_curves, wl_series, out_dir, args.save_png)
 
     # Persist weights metadata
     weights_json = out_dir / "figure04_rescaled_weights.json"
