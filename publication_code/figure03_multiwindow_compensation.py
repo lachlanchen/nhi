@@ -255,8 +255,8 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
-    # Make panel (b) approximately half the height of (a) and (c)
-    fig, ax = plt.subplots(figsize=(5.0, 1.6))
+    # Make panel (b) ~1.5× taller than the previous compact height for readability
+    fig, ax = plt.subplots(figsize=(5.0, 2.4))
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
     ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
     ax.set_xlabel("Time Bin")
@@ -265,7 +265,8 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     ax.set_ylabel("Variance")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.legend(loc="upper right", fontsize=8)
+    # Place legend away from panel letter and top tick labels
+    ax.legend(loc="lower right", fontsize=8, framealpha=0.9)
     fig.tight_layout()
     out_path = out_dir / "figure03_b_variance.pdf"
     fig.savefig(out_path, dpi=400)
