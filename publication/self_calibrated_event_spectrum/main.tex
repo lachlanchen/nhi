@@ -34,17 +34,15 @@ We demonstrate a visible-band transmission hyperspectral system that drives a di
 
 \maketitle
 
-% Optics Letters run-in section headings (unnumbered, bold at paragraph start)
-\makeatletter
-\renewcommand\section[1]{\par\noindent\textbf{#1.} }
-\makeatother
+% Optics Letters run-in section headings helper (leave \section intact for refs)
+\newcommand{\olsection}[1]{\par\noindent\textbf{#1.} }
 
-\section{Introduction}
+\olsection{Introduction}
 Scanning hyperspectral imagers deliver high spectral resolution at the expense of mechanical complexity and strict synchronization between motion and detection elements~\cite{hagen2013review}. Conventional systems integrate encoder signals, tachometers, or trigger lines to maintain spatial--spectral registration, which complicates low-cost deployments and long-term stability~\cite{yeh2011selfcal,alhourani2023linescan}. Event cameras provide an alternative sensing modality: they asynchronously report logarithmic intensity changes with microsecond latency and high dynamic range, recording only the temporal variations induced by a spectral scan~\cite{gallego2020event}. Prior event-driven hyperspectral work has typically relied on actively modulated illumination or precisely calibrated scanning optics to ensure temporal alignment~\cite{reinbacher2016manifold,bardow2016simultaneous}. Here we pursue a self-synchronized architecture that accepts inexpensive, non-uniform motor motion and restores spectral structure algorithmically.
 
 The system operates in transmission across the visible band (420--700~nm), reducing surface-scatter artefacts and enabling a tractable model that links event timing to wavelength. The key technical contributions are: (i) an event-domain auto-/self-cross-correlation strategy that segments forward and backward scans without auxiliary sensors; (ii) a multi-window, soft-membership time-warp compensation that minimizes within-bin variance to undo acceleration-induced temporal shear, extending piecewise-affine warps from event-motion studies~\cite{mitrokhin2018mobility}; and (iii) a reconstruction pipeline that integrates polarity-balanced events into spectral estimates, benchmarking them against a frame-based hyperspectral reference in both nominal and low-light regimes. Subsequent experiments will quantify the benefits of single-pass versus multi-pass fusion and assess robustness under reduced illumination, complementing the figure plan outlined below.
 
-\section{System architecture and sensing model}
+\olsection{System architecture and sensing model}
 Figure~\ref{fig:overview}a sketches the optical layout. A broadband LED illuminates a specimen; a diffraction grating mounted in a 4$f$ relay is driven by a low-cost galvanometer or stepper stage to sweep the dispersed spectrum across a hybrid sensor plane that houses a dynamic vision sensor (DVS) and a co-aligned frame imager. The motor executes repeated forward/backward scans (currently three in each direction), but its speed is neither constant nor calibrated.
 
 Under small-angle assumptions the wavelength incident on pixel $(x,y)$ is
@@ -98,7 +96,7 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 
 This probabilistic link between event statistics and intensity gradients underpins our reconstruction strategy. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. The next sections leverage these statistics to segment scans and correct the residual temporal shear before building the spectral cube.
 
-\section{Self-synchronized scan segmentation}
+\olsection{Self-synchronized scan segmentation}
 We first convert the event timestamps into an activity signal $a[n]$ (events per 1~ms bin). A sliding window search identifies the densest subsequence containing at least 80\% of all events, yielding an initial round-trip estimate. The auto-correlation
 \begin{equation}
   R[k] = \sum_{n} a[n]\,a[n+k]
@@ -128,7 +126,7 @@ This data-driven segmentation adapts to slow drifts or perturbations, ensuring t
   \label{fig:segmentation}
 \end{figure}
 
-\section{Multi-window time-warp compensation}
+\olsection{Multi-window time-warp compensation}
 Even with accurate segmentation, \eqref{eq:lambda_mapping} introduces a spatially varying delay through the $x/z_2$ term; motor acceleration near turnarounds further shears the time axis. Our multi-window compensation routine addresses this by fitting boundary surfaces
 \begin{equation}
   T_i(x,y) = a_i x + b_i y + c_i,
@@ -186,18 +184,18 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
   \label{fig:spectrum}
 \end{figure*}
 
-\section{Spectral reconstruction and benchmarking}
+\olsection{Spectral reconstruction and benchmarking}
 After compensation we bin events along $t'$ to obtain quasi-static frames $\mathsf{E}_k(x,y)$ over 1--2~ms intervals, integrate polarity-weighted counts to recover relative spectra, and optionally incorporate the frame camera as a DC reference. Three forward/backward cycles are currently fused to suppress noise, but the segmentation framework enables rigorous evaluation of single-cycle reconstructions. Ground-truth comparison uses a frame-based hyperspectral camera capturing the same scene; spectral overlays and residual maps quantify accuracy. Low-light trials---achieved by dimming the LED source---highlight the event camera’s high dynamic range: the reference system exhibits elevated noise and requires longer exposures, whereas the event reconstruction remains stable.
 
 Figure~\ref{fig:spectrum} outlines the intended presentation: (a) reconstructed monochrome slices at representative wavelengths; (b) an RGB composite; (c) spectral curves comparing event reconstruction, reference camera, and residuals; and (d) a quantitative panel showing low-light error bars or forward-only versus multi-pass fusion performance. These visualisations will emphasise the system’s spectral fidelity and robustness in scenarios challenging for frame-based sensors.
 
 
-\section{Discussion and outlook}
+\olsection{Discussion and outlook}
 The self-synchronizing strategy removes the need for encoder calibration while tolerating speed fluctuations from cost-effective actuators, distinguishing this platform from prior systems that assumed precise timing hardware~\cite{hagen2013review,yeh2011selfcal}. The variance-minimizing, multi-window time warp extends piecewise-affine compensations used in event-based motion estimation~\cite{mitrokhin2018mobility}, adapting them to the spectral scanning context. Together these components enable transmission-mode spectral capture without illumination modulation or auxiliary sensors.
 
 Next steps follow the planned figures: (i) gather datasets spanning single and triple scan fusion to populate Fig.~\ref{fig:segmentation}(d); (ii) quantify variance reduction and residual blur for multi-window versus single-plane warps to complete Fig.~\ref{fig:warp}; and (iii) collect spectral overlays under nominal and low-light scenarios to fill Fig.~\ref{fig:spectrum}. These experiments will cement the claims of self-synchronization, temporal correction, and low-light robustness.
 
-\section{Conclusion}
+\olsection{Conclusion}
 We presented a self-synchronized, event-driven transmission hyperspectral system that derives scan timing from the event stream and compensates temporal shear using a multi-window time warp. Despite relying on inexpensive, non-uniform motor motion, the reconstructed spectra align with a reference hyperspectral camera and retain fidelity under reduced illumination. The mathematical framework and figure plan outlined here provide a clear roadmap toward a concise Optics Letters paper focused on the optical and computational innovation of event-based spectral acquisition.
 
 \begin{thebibliography}{99}
