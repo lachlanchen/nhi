@@ -54,12 +54,15 @@ where $d$ is the grating dispersion constant, $z_2$ and $z_1$ denote distances f
 \end{equation}
 which drives event emission when the logarithmic intensity crosses the sensor threshold. Because $\partial \lambda/\partial t$ is governed by the motor trajectory, reconstructing $I_0^{(x,y)}(\lambda)$ reduces to integrating polarity-weighted events along a synchronized wavelength axis.
 
-\begin{figure*}[t]
+\FloatBarrier
+\begingroup\setlength{\abovecaptionskip}{2pt}\setlength{\belowcaptionskip}{0pt}
+\begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.98\linewidth]{../../publication_code/figures/figure01_overview.pdf}
+  \includegraphics[width=0.7\linewidth]{../../publication_code/figures/figure01_overview.pdf}
   \caption{System overview and modular integration. A dispersed illumination path (left, blue dashed box) acts as a drop-in module before the sample, while a non-intrusive detection add-on (right, green dashed box) uses a 4$f$ relay to feed an event+frame sensor. An optional splitter or camera port preserves the original microscope camera.}
   \label{fig:overview}
 \end{figure*}
+\endgroup
 
 \section{Event-trigger probability model}
 Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
@@ -137,17 +140,18 @@ Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections befor
   \label{fig:warp}
 \end{figure}
 
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_135702/figure04_rescaled_grid_bins_03_15.pdf}
+  \caption{Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin (top: original event accumulation; bottom: compensated accumulation with 3$\times$3$\times$3 smoothing and background subtraction). The compensated row is annotated with the wavelength inferred from a flat-to-flat alignment of the 5~ms rescaled background spectrum to the spectrometer ground truth.}
+  \label{fig:spectrum}
+\end{figure*}
+
 \section{Spectral reconstruction and benchmarking}
 After compensation we bin events along $t'$ to obtain quasi-static frames $\mathsf{E}_k(x,y)$ over 1--2~ms intervals, integrate polarity-weighted counts to recover relative spectra, and optionally incorporate the frame camera as a DC reference. Three forward/backward cycles are currently fused to suppress noise, but the segmentation framework enables rigorous evaluation of single-cycle reconstructions. Ground-truth comparison uses a frame-based hyperspectral camera capturing the same scene; spectral overlays and residual maps quantify accuracy. Low-light trials---achieved by dimming the LED source---highlight the event camera’s high dynamic range: the reference system exhibits elevated noise and requires longer exposures, whereas the event reconstruction remains stable.
 
 Figure~\ref{fig:spectrum} outlines the intended presentation: (a) reconstructed monochrome slices at representative wavelengths; (b) an RGB composite; (c) spectral curves comparing event reconstruction, reference camera, and residuals; and (d) a quantitative panel showing low-light error bars or forward-only versus multi-pass fusion performance. These visualisations will emphasise the system’s spectral fidelity and robustness in scenarios challenging for frame-based sensors.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.98\linewidth]{../../publication_code/figures/figure04_allinone_20251101_135702/figure04_rescaled_grid_bins_03_15.pdf}
-  \caption{Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin (top: original event accumulation; bottom: compensated accumulation with 3$\times$3$\times$3 smoothing and background subtraction). The compensated row is annotated with the wavelength inferred from a flat-to-flat alignment of the 5~ms rescaled background spectrum to the spectrometer ground truth.}
-  \label{fig:spectrum}
-\end{figure}
 
 \section{Discussion and outlook}
 The self-synchronizing strategy removes the need for encoder calibration while tolerating speed fluctuations from cost-effective actuators, distinguishing this platform from prior systems that assumed precise timing hardware~\cite{hagen2013review,yeh2011selfcal}. The variance-minimizing, multi-window time warp extends piecewise-affine compensations used in event-based motion estimation~\cite{mitrokhin2018mobility}, adapting them to the spectral scanning context. Together these components enable transmission-mode spectral capture without illumination modulation or auxiliary sensors.
