@@ -230,12 +230,13 @@ def align_with_groundtruth(
 
     fig, ax = plt.subplots(figsize=(5.2, 3.2))
     ax.plot(wl_grid_plot, bg_scaled_grid, label="Rescaled background (scaled)", color="#1f77b4", linewidth=2.0)
-    gt_palette = ["#ff7f0e", "#2ca02c", "#d62728"]
-    for i, (name, wl, val) in enumerate(gt_curves):
-        ax.plot(wl, val, label=name, linewidth=2.2, color=gt_palette[i % len(gt_palette)])
+    # Plot a single spectrometer curve and label it as Light SPD
+    if gt_curves:
+        _, wl_single, val_single = gt_curves[0]
+        ax.plot(wl_single, val_single, label="Light SPD", linewidth=2.2, color="#ff7f0e")
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Normalised intensity (a.u.)")
-    ax.set_title("Background vs. ground-truth")
+    ax.set_title("Background vs. Light SPD")
     ax.set_xlim(x_min, x_max)
     ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
     ax.legend(loc="best", fontsize=8)
