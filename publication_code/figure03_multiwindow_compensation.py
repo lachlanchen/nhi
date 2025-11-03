@@ -214,6 +214,7 @@ def find_timebin_csv_and_npz(segments_dir: Path, base: str) -> Tuple[Path, Path]
 
 def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
                    mode: str = "npz", var_bin_us: int = 5000,
+                   var_ylim: float | None = None,
                    segment_npz: Path | None = None,
                    params: dict | None = None,
                    sensor_w: int = 1280, sensor_h: int = 720) -> None:
@@ -289,16 +290,26 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
-    # Make panel (b) ~1.5× taller than the previous compact height for readability
+    # Make panel (b) readable with compact size
     fig, ax = plt.subplots(figsize=(5.0, 2.4))
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
     ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
     ax.set_xlabel("Time Bin")
-    # Set fixed headroom up to 1.3 and show ticks every 0.2, but omit the
-    # top-most 1.3 tick label to avoid overlap with panel letter (b).
-    top = 1.35 + 1e-6
-    ax.set_ylim(0.0, top)
-    ax.set_yticks(np.arange(0.0, 1.3, 0.2))
+    if var_ylim is not None:
+        top = float(var_ylim)
+        ax.set_ylim(0.0, top)
+        # Show ticks every 0.2 if range allows
+        try:
+            step = 0.2
+            ticks = np.arange(0.0, top + 1e-9, step)
+            ax.set_yticks(ticks)
+        except Exception:
+            pass
+    else:
+        # Default headroom and ticks
+        top = 1.35 + 1e-6
+        ax.set_ylim(0.0, top)
+        ax.set_yticks(np.arange(0.0, 1.3, 0.2))
     ax.set_ylabel("Variance")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -386,6 +397,7 @@ def main() -> None:
                         help="Source for panel (b) variance: 'npz' uses saved time_binned_frames; 'recompute' rebuilds from full events")
     parser.add_argument("--var_bin_us", type=int, default=5000,
                         help="Bin width in microseconds for variance when variance_mode=recompute (default: 5000us = 5ms)")
+    parser.add_argument("--var_ylim", type=float, default=None, help="Upper y-limit for panel (b) variance (e.g., 1.0)")
     parser.add_argument("--sample", type=float, default=0.05, help="Event sampling fraction for panel (a)")
     parser.add_argument("--output_dir", type=Path, default=Path(__file__).resolve().parent / "figures")
     args = parser.parse_args()
@@ -434,6 +446,7 @@ def main() -> None:
         out_dir,
         mode=args.variance_mode,
         var_bin_us=args.var_bin_us,
+        var_ylim=args.var_ylim,
         segment_npz=segment_path,
         params=params,
         sensor_w=args.sensor_width,
