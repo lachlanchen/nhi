@@ -170,28 +170,6 @@ where the last term is included only when boundary offsets are trainable. The fu
 \end{equation}
 and is minimized by gradient descent with backpropagation through the differentiable memberships and splatting in \eqref{eq:binning}. In practice we stream events in chunks to form $\mathsf{E}_k$ but always accumulate a single unified tensor to evaluate \eqref{eq:variance_loss}, matching the implementation used for training.
 
-\subsection*{Time--wavelength self-alignment}
-Let $b(t)$ denote the 1D background series computed from polarity-weighted, fast-compensated events with a fixed step $\Delta t$ (5~ms in our experiments). We first normalise $b$ by the start/end plateaus to obtain
-\begin{equation}
-  \tilde b(t) \,=\, \frac{b(t)-\mu_{\mathrm{pre}}}{\mu_{\mathrm{post}}-\mu_{\mathrm{pre}}},\quad t\in[0,T],
-\end{equation}
-where $\mu_{\mathrm{pre}}$ and $\mu_{\mathrm{post}}$ are means over small windows at the beginning and end of the scan, respectively. After smoothing $\tilde b$ by a short moving average, we detect the active interval $[t_0,t_1]$ as the maximal open interval whose values exceed a fixed fraction of the dynamic range (equivalently, the two largest slope changes).
-
-Let $\{g_i(\lambda)\}_{i=1}^M$ be spectrometer ground-truth curves, normalised per-curve to $\tilde g_i$ by the same plateau procedure, and let $[\lambda_{0,i},\lambda_{1,i}]$ denote their active intervals. We estimate the time$\to$wavelength map as the unique affine transform
-\begin{equation}
-  \lambda(t) \,=\, \alpha t + \beta,\qquad
-  \alpha \,=\, \frac{\bar\lambda_1-\bar\lambda_0}{t_1-t_0},\;\;\beta \,=\, \bar\lambda_0 - \alpha t_0,
-  \label{eq:time_to_wavelength}
-\end{equation}
-with $\bar\lambda_0=\tfrac{1}{M}\sum_i \lambda_{0,i}$ and $\bar\lambda_1=\tfrac{1}{M}\sum_i \lambda_{1,i}$. Mapping $\tilde b$ through \eqref{eq:time_to_wavelength} yields $\tilde b_\lambda(\lambda){=}\tilde b\big((\lambda{-}\beta)/\alpha\big)$.
-
-For plotting or optional amplitude matching, we compute a least-squares affine fit of $\tilde b_\lambda$ to the mean ground-truth $\bar g(\lambda){=}\tfrac{1}{M}\sum_i \tilde g_i(\lambda)$ on a common grid $\{\lambda_j\}_{j=1}^N$ by
-\begin{equation}
-  (a^*,c^*) \,=\, \arg\min_{a,c} \sum_{j=1}^N\!\big(\bar g(\lambda_j)-a\,\tilde b_\lambda(\lambda_j)-c\big)^2,
-  \label{eq:amplitude_fit}
-\end{equation}
-whose closed-form solution is $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\!\mathbf{y}$ with $X=[\tilde b_\lambda\;\;\mathbf{1}]$ and $\mathbf{y}=\bar g$.
-
 \begin{figure}[t]
   \centering
   % Figure 3(a): Events with learned boundaries (X--T and Y--T)
@@ -231,14 +209,6 @@ whose closed-form solution is $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\!\mathbf{y}$
    }
   \label{fig:spectrum}
 \end{figure*}
-
-\begin{figure}[t]
-  \centering
-  % Single aligned overlay (Background vs Groundtruth)
-  \includegraphics[width=\columnwidth]{../../publication_code/figures/figure04_allinone_20251103_214813/figure04_rescaled_bg_gt_third_only.png}
-  \caption{Aligned background (\emph{Background}) mapped to wavelength using the self-alignment in \eqref{eq:time_to_wavelength} compared against a single spectrometer curve (\emph{Groundtruth}). Both traces are normalised by plateau levels; no truncation is applied.}
-  \label{fig:figure5}
-\end{figure}
 
 \section{Spectral reconstruction and benchmarking}
 After compensation we bin events along $t'$ to obtain quasi-static frames $\mathsf{E}_k(x,y)$ over 1--2~ms intervals, integrate polarity-weighted counts to recover relative spectra. Three forward/backward cycles are currently fused to suppress noise, but the segmentation framework enables rigorous evaluation of single-cycle reconstructions. Ground-truth comparison uses a frame-based hyperspectral camera capturing the same scene; spectral overlays and residual maps quantify accuracy. Low-light trials---achieved by dimming the LED source---highlight the event camera’s high dynamic range: the reference system exhibits elevated noise and requires longer exposures, whereas the event reconstruction remains stable.
