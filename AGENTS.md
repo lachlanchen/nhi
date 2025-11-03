@@ -12,6 +12,14 @@
 - Train compensation: `python compensate_multiwindow_train_saved_params.py <segment.npz> --bin_width 50000 --a_trainable --iterations 1000` (tune `--chunk_size` for memory).
 - Inspect results: `python visualize_boundaries_and_frames.py <segment.npz>` and `python visualize_cumulative_compare.py <segment.npz> --sensor_width 1280 --sensor_height 720`.
 
+### Environments
+- HAL-enabled Conda env for RAW workflows: `nhi_test`
+  - Python path: `/home/lachlan/miniconda3/envs/nhi_test/bin/python`
+  - Use this env for any command that reads `.raw` (e.g., `segment_robust_fixed.py`) or regenerates Figure 2 from RAW.
+  - Example:
+    - `conda activate nhi_test`
+    - `python segment_robust_fixed.py scan_angle_20/angle_20_blank_20250922_170433/angle_20_blank_event_20250922_170433.raw --segment_events --output_dir scan_angle_20/angle_20_blank_20250922_170433 --auto_calculate_period`
+
 ## Coding Style & Naming Conventions
 - Follow PEP 8: 4-space indentation, snake_case modules/functions, CapWords classes, ≤120 char soft wrap, and grouped imports (stdlib → third-party → local).
 - Prefer vectorized numpy/torch ops; add concise comments only where tensor math is non-obvious. Use docstrings for every CLI entry point.
