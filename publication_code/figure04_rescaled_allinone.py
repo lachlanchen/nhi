@@ -88,6 +88,18 @@ def parse_args() -> argparse.Namespace:
         help="ROI-cropped GT frames directory (band_XXX_<nm>nm.png) to build a gradient bar",
     )
     ap.add_argument("--save-png", action="store_true")
+    ap.add_argument(
+        "--bar-height-ratio",
+        type=float,
+        default=0.08,
+        help="Relative row height for the gradient bar (default: 0.08 of a content row)",
+    )
+    ap.add_argument(
+        "--bar-px",
+        type=int,
+        default=6,
+        help="Pixel height of the gradient bar image (default: 6)",
+    )
     ap.add_argument("--output-dir", type=Path, default=None)
     return ap.parse_args()
 
@@ -530,6 +542,7 @@ def render_grid(
     add_gt_row: bool = False,
     gt_wavelength_lookup: Dict[int, float] | None = None,
     gradient_bar: np.ndarray | None = None,
+    bar_height_ratio: float = 0.08,
     gt_frame_paths: List[Path] | None = None,
 ) -> None:
     setup_style()
@@ -544,10 +557,23 @@ def render_grid(
     has_gt_images = add_gt_row and gt_frame_paths is not None and len(gt_frame_paths) > 0
     # 2 content rows (Orig., Comp.) + optional GT images row + optional gradient bar row
     n_rows = 2 + (1 if has_gt_images else 0) + (1 if has_bar else 0)
-    fig_height = 1.8 if n_rows == 2 else (2.6 if n_rows == 3 else 3.0)
+    # Height ratios: content rows 1.0; GT row 1.0; bar row tiny
+    height_ratios: List[float] = [1.0, 1.0]
+    if has_gt_images:
+        height_ratios.append(1.0)
+    if has_bar:
+        height_ratios.append(max(0.02, float(bar_height_ratio)))
+    fig_height = 1.8 if n_rows == 2 else (2.4 if n_rows == 3 else 2.6)
     fig = plt.figure(figsize=(1.2 * num_cols + 0.4, fig_height))
     width_ratios = [0.22] + [1.0] * num_cols
-    gs = fig.add_gridspec(n_rows, num_cols + 1, wspace=0.045, hspace=0.05, width_ratios=width_ratios)
+    gs = fig.add_gridspec(
+        n_rows,
+        num_cols + 1,
+        wspace=0.045,
+        hspace=0.05,
+        width_ratios=width_ratios,
+        height_ratios=height_ratios,
+    )
     axes = np.empty((n_rows, num_cols), dtype=object)
     for row in range(n_rows):
         label_ax = fig.add_subplot(gs[row, 0])
@@ -733,7 +759,7 @@ def main() -> None:
 
     # 4) Render grid with wavelength labels + optional GT gradient bar
     gt_curves = load_gt_curves(args.gt_dir.resolve())
-    gradient_bar = build_gradient_bar_from_frames(args.gt_frames_dir.resolve()) if args.gt_frames_dir else None
+    gradient_bar = build_gradient_bar_from_frames(args.gt_frames_dir.resolve(), height=int(args.bar_px)) if args.gt_frames_dir else None
     # Build GT selection per displayed column and copy to output for provenance
     gt_frame_paths: List[Path] | None = None
     if args.gt_frames_dir and args.add_gt_row:
@@ -766,6 +792,7 @@ def main() -> None:
         add_gt_row=args.add_gt_row,
         gt_wavelength_lookup=nearest_wavelength_lookup(wavelength_lookup, gt_curves) if args.add_gt_row else None,
         gradient_bar=gradient_bar,
+        bar_height_ratio=float(args.bar_height_ratio),
         gt_frame_paths=gt_frame_paths,
     )
 
