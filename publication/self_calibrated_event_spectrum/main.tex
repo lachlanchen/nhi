@@ -142,6 +142,32 @@ where $\{\tilde{a}_i,\tilde{b}_i\}$ are optimized by minimizing the spatial vari
 
 Figure~\ref{fig:warp} will visualise diagnostics: (a) $x$--$t$ projections before compensation showing diagonal striations; (b) the same after applying \eqref{eq:timewarp}; (c) cumulative event frames before and after warping, highlighting blur reduction; and (d) the learned boundary curves $T_i(x)$ that reveal the motor’s velocity profile. The variance reductions and residual blur metrics contrasts the multi-window and single-plane models.
 
+\paragraph{Objective.} Let $\theta=\{\tilde a_i,\tilde b_i\}_{i=1}^{M-1}$ denote the trainable time-warp slopes (and, when enabled, boundary offsets $\{c_i\}$). For events $\{(x_n,y_n,t_n,p_n)\}_{n=1}^N$ and compensated times $t'_n$ from \eqref{eq:timewarp}, we accumulate polarity-weighted counts into short bins of width $\Delta t$ around $t'_n$ using linear time interpolation. Writing $\phi_k(\cdot)$ for the hat function that distributes mass to the two nearest bin centres,
+\begin{equation}
+  \mathsf{E}_k(x,y;\theta) \,=\, \sum_{n=1}^N p_n\,\phi_k\!\bigl(t'_n\bigr)\,\mathbf{1}[x_n{=}x,\,y_n{=}y],
+  \label{eq:binning}
+\end{equation}
+we minimize the sum of spatial variances across all bins,
+\begin{equation}
+  \mathcal{L}_{\mathrm{var}}(\theta)
+  \,= \sum_k \operatorname{Var}_{x,y}\bigl[\mathsf{E}_k(x,y;\theta)\bigr]
+  \,= \sum_k \frac{1}{HW}\sum_{x,y}\bigl(\mathsf{E}_k(x,y;\theta)-\mu_k\bigr)^2,
+  \label{eq:variance_loss}
+\end{equation}
+where $H\times W$ is the sensor size and $\mu_k = (HW)^{-1}\sum_{x,y}\mathsf{E}_k(x,y;\theta)$. A quadratic smoothness prior couples neighbouring windows to discourage abrupt parameter changes,
+\begin{equation}
+  \mathcal{L}_{\mathrm{sm}}(\theta) 
+  \,= \sum_{i=1}^{M-2} \Big[(\tilde a_{i+1}{-}\tilde a_i)^2 + (\tilde b_{i+1}{-}\tilde b_i)^2\Big]
+  \,+ \;\mathbf{1}_{\mathrm{boundaries}}\sum_{i}(c_{i+1}{-}c_i)^2,
+  \label{eq:smoothness}
+\end{equation}
+where the last term is included only when boundary offsets are trainable. The full objective is
+\begin{equation}
+  \mathcal{L}(\theta) \,= \mathcal{L}_{\mathrm{var}}(\theta) + \lambda_{\mathrm{sm}}\,\mathcal{L}_{\mathrm{sm}}(\theta),
+  \label{eq:total_loss}
+\end{equation}
+and is minimized by gradient descent with backpropagation through the differentiable memberships and splatting in \eqref{eq:binning}. In practice we stream events in chunks to form $\mathsf{E}_k$ but always accumulate a single unified tensor to evaluate \eqref{eq:variance_loss}, matching the implementation used for training.
+
 \begin{figure}[t]
   \centering
   % Figure 3(a): Events with learned boundaries (X--T and Y--T)
