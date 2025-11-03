@@ -384,14 +384,17 @@ def plot_aligned_overlay_only(
     fig, ax = plt.subplots(figsize=(5.6, 3.0))
     BG_COLOR = "#1f77b4"
     SPD_COLOR = "#ff7f0e"
-    ax.plot(wl_bg, bg_norm_wl, color=BG_COLOR, linewidth=1.8, label="Rescaled background (mapped)")
+    # Match Fig. 4 colors and use minimal text: legend inside, no other text
+    ax.plot(wl_bg, bg_norm_wl, color=BG_COLOR, linewidth=1.8, label="Background")
     ax.plot(wl0, gt0_norm, color=SPD_COLOR, linewidth=1.8, label="Light SPD")
-    ax.set_xlabel("Wavelength (nm)")
-    ax.set_ylabel("Normalised intensity")
-    ax.set_title("Aligned (normalised)")
-    ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
-    # Legend outside top-right
-    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0, framealpha=0.9)
+    # Remove all text except legend
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.set_title("")
+    ax.grid(False)
+    ax.tick_params(labelbottom=False, labelleft=False)
+    # Legend inside top-right
+    ax.legend(loc="upper right", framealpha=0.9)
 
     out_path = out_dir / "figure04_rescaled_bg_gt_third_only.pdf"
     fig.savefig(out_path, dpi=400, bbox_inches="tight")
