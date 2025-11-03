@@ -132,14 +132,15 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # Use constrained_layout so labels (e.g., 'Time (ms)') are fully visible
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True, constrained_layout=True)
 
-    # X–T (align colors with Fig. 4 theme: orange for pos, light blue for neg)
-    POS_COLOR = "#ff7f0e"  # orange
-    NEG_COLOR = "#1f77b4"  # blue
+    # X–T (align with Fig. 4 but use less-saturated tints)
+    # Light tints matching Tableau family: light blue / light orange
+    POS_COLOR = "#ffbb78"  # light orange
+    NEG_COLOR = "#aec7e8"  # light blue
     BND_COLOR = "#4C4C4C"
     if np.any(pos):
-        ax1.scatter(x[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.45, rasterized=True)
+        ax1.scatter(x[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.7, rasterized=True)
     if np.any(neg):
-        ax1.scatter(x[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.45, rasterized=True)
+        ax1.scatter(x[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.7, rasterized=True)
     for ln in x_lines:
         (line_x,) = ax1.plot(
             xs,
@@ -157,15 +158,17 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # Ensure left y ticks/labels explicitly visible
     ax1.tick_params(axis='y', which='both', left=True, labelleft=True)
     ax1.spines["left"].set_visible(True)
-    ax1.set_ylim(0.0, duration_us / 1000.0)
+    duration_ms_full = duration_us / 1000.0
+    # Add headroom for outside legend
+    ax1.set_ylim(0.0, duration_ms_full + 0.2)
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
     # Y–T
     if np.any(pos):
-        ax2.scatter(y[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.45, rasterized=True)
+        ax2.scatter(y[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.7, rasterized=True)
     if np.any(neg):
-        ax2.scatter(y[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.45, rasterized=True)
+        ax2.scatter(y[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.7, rasterized=True)
     for ln in y_lines:
         (line_y,) = ax2.plot(
             ys,
@@ -182,16 +185,17 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # Share y-axis with left panel; hide label and tick labels on the right
     ax2.set_ylabel("")
     ax2.tick_params(axis='y', which='both', left=False, labelleft=False)
-    ax2.set_ylim(0.0, duration_us / 1000.0)
+    ax2.set_ylim(0.0, duration_ms_full + 0.2)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # Small legend with color dots (Neg = blue, Pos = orange)
+    # Small legend with color dots (Neg = light blue, Pos = light orange), outside top-right
     import matplotlib.lines as mlines
     # Use short labels to match paper style
     neg_dot = mlines.Line2D([], [], color=NEG_COLOR, marker='o', linestyle='None', markersize=4, label='Neg')
     pos_dot = mlines.Line2D([], [], color=POS_COLOR, marker='o', linestyle='None', markersize=4, label='Pos')
-    ax1.legend(handles=[neg_dot, pos_dot], loc='upper right', fontsize=7, framealpha=0.9)
+    ax1.legend(handles=[neg_dot, pos_dot], loc='upper left', bbox_to_anchor=(1.02, 1.0),
+               borderaxespad=0.0, fontsize=7, framealpha=0.9)
 
     # No manual subplots_adjust to avoid clipping labels; constrained_layout handles spacing
     out_path = out_dir / "figure03_a_events.pdf"
