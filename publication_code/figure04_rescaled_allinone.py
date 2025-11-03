@@ -229,14 +229,19 @@ def align_with_groundtruth(
     bg_scaled_grid = a_scale * bg_grid + c_offset
 
     fig, ax = plt.subplots(figsize=(5.2, 3.2))
-    ax.plot(wl_grid_plot, bg_scaled_grid, label="Rescaled background (scaled)", color="#1f77b4", linewidth=2.0)
+    # Use the same color theme as the figure grid: blue for background, orange for SPD
+    BG_COLOR = "#1f77b4"
+    SPD_COLOR = "#ff7f0e"
+    ax.plot(wl_grid_plot, bg_scaled_grid, label="Rescaled background (scaled)", color=BG_COLOR, linewidth=2.0)
     # Plot a single spectrometer curve and label it as Light SPD
     if gt_curves:
         _, wl_single, val_single = gt_curves[0]
-        ax.plot(wl_single, val_single, label="Light SPD", linewidth=2.2, color="#ff7f0e")
+        ax.plot(wl_single, val_single, label="Light SPD", linewidth=2.2, color=SPD_COLOR)
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Normalised intensity (a.u.)")
     ax.set_title("Background vs. Light SPD")
+    # Place legend outside, top-right of the axes
+    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0, framealpha=0.9)
     ax.set_xlim(x_min, x_max)
     ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
     ax.legend(loc="best", fontsize=8)
