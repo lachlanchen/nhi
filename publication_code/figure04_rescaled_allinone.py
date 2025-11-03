@@ -88,11 +88,19 @@ def parse_args() -> argparse.Namespace:
         default="Groundtruth",
         help="Legend label for the selected GT curve in the third-only export.",
     )
+    # Preferred width selector for the third-only export
+    ap.add_argument(
+        "--third-width",
+        choices=["full", "half"],
+        default="full",
+        help="Width for third-only export: 'full' (12.5in) or 'half' (6.25in).",
+    )
+    # Back-compat flag (deprecated): if provided, forces full width
     ap.add_argument(
         "--third-full-width",
         action="store_true",
-        default=True,
-        help="Render the third-only export at the same width as the three-panel figure.",
+        default=None,
+        help="[Deprecated] Force full width for the third-only export.",
     )
     return ap.parse_args()
 
@@ -342,6 +350,7 @@ def plot_third_panel_only(
     gt_substr: str | None = None,
     gt_label: str = "Groundtruth",
     full_width: bool = True,
+    bg_label: str = "Background",
 ) -> None:
     """Export only the 3rd panel (aligned overlay): BG mapped to wavelength vs a single GT.
 
@@ -379,9 +388,10 @@ def plot_third_panel_only(
     bg_norm_wl = bg_norm[mask]
 
     # Figure sizing: match the width of the three-panel for consistency
-    figsize = (12.5, 3.2) if full_width else (5.2, 3.2)
+    # Use half of the full width when requested
+    figsize = (12.5, 3.2) if full_width else (6.25, 3.2)
     fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
-    ax.plot(wl_bg, bg_norm_wl, color="#1f77b4", linewidth=1.8, label="BG mapped")
+    ax.plot(wl_bg, bg_norm_wl, color="#1f77b4", linewidth=1.8, label=bg_label)
     ax.plot(wl_gt.astype(np.float32), gt_norm.astype(np.float32), linewidth=1.8, color="#ff7f0e", label=gt_label)
     ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Norm. intensity")
@@ -658,6 +668,10 @@ def main() -> None:
 
     # Optional: export only the 3rd panel with a single GT curve (e.g., 20488)
     if args.third_only:
+        # Determine width preference; deprecated flag takes precedence if present
+        full_width = True
+        if args.third_full_width is None:
+            full_width = (args.third_width != "half")
         plot_third_panel_only(
             series,
             gt_curves,
@@ -666,7 +680,8 @@ def main() -> None:
             args.save_png,
             gt_substr=args.third_gt_substr,
             gt_label=args.third_gt_label,
-            full_width=bool(args.third_full_width),
+            full_width=full_width,
+            bg_label="Background",
         )
 
     # Persist weights metadata
