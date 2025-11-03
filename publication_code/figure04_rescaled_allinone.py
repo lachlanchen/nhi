@@ -74,26 +74,6 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--show-wavelength", action="store_true")
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument("--output-dir", type=Path, default=None)
-    # Export helpers
-    ap.add_argument("--third-only", action="store_true", help="Also export only the 3rd panel (aligned overlay) as a separate figure")
-    ap.add_argument(
-        "--third-gt-substr",
-        type=str,
-        default="20488",
-        help="Substring to select a single GT file (e.g., '20488' matches USB*20-488.txt).",
-    )
-    ap.add_argument(
-        "--third-gt-label",
-        type=str,
-        default="Groundtruth",
-        help="Legend label for the selected GT curve in the third-only export.",
-    )
-    ap.add_argument(
-        "--third-full-width",
-        action="store_true",
-        default=True,
-        help="Render the third-only export at the same width as the three-panel figure.",
-    )
     return ap.parse_args()
 
 
@@ -327,69 +307,6 @@ def plot_three_panel_normalised(
     ax2.legend(loc="best", fontsize=8)
 
     out_path = out_dir / "figure04_rescaled_bg_gt_threepanel.pdf"
-    fig.savefig(out_path, dpi=400, bbox_inches="tight")
-    if save_png:
-        fig.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
-    plt.close(fig)
-
-
-def plot_third_panel_only(
-    series: Dict[str, np.ndarray],
-    gt_curves: List[Tuple[str, np.ndarray, np.ndarray]],
-    wl_series: np.ndarray,
-    out_dir: Path,
-    save_png: bool,
-    gt_substr: str | None = None,
-    gt_label: str = "Groundtruth",
-    full_width: bool = True,
-) -> None:
-    """Export only the 3rd panel (aligned overlay): BG mapped to wavelength vs a single GT.
-
-    - Selects exactly one GT curve by substring match (falls back to the first if none match).
-    - Normalises both BG and GT using their active regions.
-    - Uses the same overall width as the three-panel figure when full_width is True.
-    """
-    time_ms = series["time_ms"].astype(np.float32)
-    exp_rescaled = series["exp_rescaled"].astype(np.float32)
-
-    # BG normalisation over the active region
-    smooth_bg = moving_average(exp_rescaled, max(21, int(len(exp_rescaled) // 200) | 1))
-    region_bg = detect_active_region(smooth_bg)
-    bg_norm = np.clip(normalise_curve(exp_rescaled, region_bg), 0.0, None)
-
-    # Pick one GT curve
-    chosen: Tuple[str, np.ndarray, np.ndarray] | None = None
-    if gt_substr:
-        for name, wl, val in gt_curves:
-            if gt_substr in name:
-                chosen = (name, wl, val)
-                break
-    if chosen is None:
-        chosen = gt_curves[0]
-    _, wl_gt, val_gt = chosen
-
-    # Normalise selected GT
-    smooth_gt = moving_average(val_gt, max(21, len(val_gt) // 300))
-    region_gt = detect_active_region(smooth_gt)
-    gt_norm = np.clip(normalise_curve(smooth_gt, region_gt), 0.0, None)
-
-    # Clip BG to GT wavelength span and map time→wavelength
-    mask = (wl_series >= float(np.min(wl_gt))) & (wl_series <= float(np.max(wl_gt)))
-    wl_bg = wl_series[mask].astype(np.float32)
-    bg_norm_wl = bg_norm[mask]
-
-    # Figure sizing: match the width of the three-panel for consistency
-    figsize = (12.5, 3.2) if full_width else (5.2, 3.2)
-    fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
-    ax.plot(wl_bg, bg_norm_wl, color="#1f77b4", linewidth=1.8, label="BG mapped")
-    ax.plot(wl_gt.astype(np.float32), gt_norm.astype(np.float32), linewidth=1.8, color="#ff7f0e", label=gt_label)
-    ax.set_xlabel("Wavelength (nm)")
-    ax.set_ylabel("Norm. intensity")
-    ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
-    ax.set_xlim(float(np.min(wl_gt)), float(np.max(wl_gt)))
-    ax.legend(loc="best", fontsize=10)
-
-    out_path = out_dir / "figure04_rescaled_bg_gt_third_only.pdf"
     fig.savefig(out_path, dpi=400, bbox_inches="tight")
     if save_png:
         fig.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
@@ -655,19 +572,6 @@ def main() -> None:
     gt_curves = load_gt_curves(args.gt_dir.resolve())
     wl_series = (alignment["alignment"]["slope_nm_per_ms"] * series["time_ms"] + alignment["alignment"]["intercept_nm"]).astype(np.float32)
     plot_three_panel_normalised(series, gt_curves, wl_series, out_dir, args.save_png)
-
-    # Optional: export only the 3rd panel with a single GT curve (e.g., 20488)
-    if args.third_only:
-        plot_third_panel_only(
-            series,
-            gt_curves,
-            wl_series,
-            out_dir,
-            args.save_png,
-            gt_substr=args.third_gt_substr,
-            gt_label=args.third_gt_label,
-            full_width=bool(args.third_full_width),
-        )
 
     # Persist weights metadata
     weights_json = out_dir / "figure04_rescaled_weights.json"
