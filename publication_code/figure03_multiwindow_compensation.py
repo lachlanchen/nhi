@@ -142,16 +142,15 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     if np.any(neg):
         ax1.scatter(x[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.7, rasterized=True)
     for ln in x_lines:
-        (line_x,) = ax1.plot(
+        # Thinner, dashed boundary overlay
+        ax1.plot(
             xs,
             ln / 1000.0,
             color=BND_COLOR,
-            linewidth=2.0,
-            alpha=0.95,
+            linewidth=1.0,
+            alpha=0.9,
+            linestyle="--",
             solid_capstyle="round",
-        )
-        line_x.set_path_effects(
-            [pe.Stroke(linewidth=3.6, foreground="white", alpha=0.6), pe.Normal()]
         )
     ax1.set_xlabel("X (pixels)")
     ax1.set_ylabel("Time (ms)")
@@ -170,16 +169,15 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     if np.any(neg):
         ax2.scatter(y[neg], t_norm_ms[neg], s=0.25, c=NEG_COLOR, alpha=0.7, rasterized=True)
     for ln in y_lines:
-        (line_y,) = ax2.plot(
+        # Thinner, dashed boundary overlay
+        ax2.plot(
             ys,
             ln / 1000.0,
             color=BND_COLOR,
-            linewidth=2.0,
-            alpha=0.95,
+            linewidth=1.0,
+            alpha=0.9,
+            linestyle="--",
             solid_capstyle="round",
-        )
-        line_y.set_path_effects(
-            [pe.Stroke(linewidth=3.6, foreground="white", alpha=0.6), pe.Normal()]
         )
     ax2.set_xlabel("Y (pixels)")
     # Share y-axis with left panel; hide label and tick labels on the right
