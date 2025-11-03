@@ -132,9 +132,9 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # Use constrained_layout so labels (e.g., 'Time (ms)') are fully visible
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True, constrained_layout=True)
 
-    # X–T (colorblind-friendly palette)
-    POS_COLOR = "#E69F00"  # orange
-    NEG_COLOR = "#0072B2"  # blue
+    # X–T (align colors with Fig. 4 theme: orange for pos, light blue for neg)
+    POS_COLOR = "#ff7f0e"  # orange
+    NEG_COLOR = "#1f77b4"  # blue
     BND_COLOR = "#4C4C4C"
     if np.any(pos):
         ax1.scatter(x[pos], t_norm_ms[pos], s=0.25, c=POS_COLOR, alpha=0.45, rasterized=True)
@@ -185,6 +185,12 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     ax2.set_ylim(0.0, duration_us / 1000.0)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
+
+    # Small legend with color dots (Neg = blue, Pos = orange)
+    import matplotlib.lines as mlines
+    neg_dot = mlines.Line2D([], [], color=NEG_COLOR, marker='o', linestyle='None', markersize=4, label='Negative')
+    pos_dot = mlines.Line2D([], [], color=POS_COLOR, marker='o', linestyle='None', markersize=4, label='Positive')
+    ax1.legend(handles=[neg_dot, pos_dot], loc='upper right', fontsize=7, framealpha=0.9)
 
     # No manual subplots_adjust to avoid clipping labels; constrained_layout handles spacing
     out_path = out_dir / "figure03_a_events.pdf"
