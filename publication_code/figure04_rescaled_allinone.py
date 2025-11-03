@@ -43,6 +43,7 @@ from figure04_rescaled import (
     subtract_background,
     setup_style,
 )
+from scripts.hs_to_rgb import load_cie_cmf, xyz_to_srgb  # color for GT swatches
 from groundtruth_spectrum_2835.compare_publication_cumulative import (
     detect_visible_edges,
     load_gt_curves,
@@ -72,6 +73,11 @@ def parse_args() -> argparse.Namespace:
     # Default to 3x3x3 smoothing enabled; user can turn off with --no-smooth if needed
     ap.add_argument("--smooth", action="store_true", default=True)
     ap.add_argument("--show-wavelength", action="store_true")
+    ap.add_argument(
+        "--add-gt-row",
+        action="store_true",
+        help="Add a 3rd row with nearest-GT-wavelength colour swatches",
+    )
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument("--output-dir", type=Path, default=None)
     return ap.parse_args()
@@ -313,6 +319,41 @@ def plot_three_panel_normalised(
     plt.close(fig)
 
 
+def nearest_wavelength_lookup(
+    continuous_lookup: Dict[int, float],
+    gt_curves: List[Tuple[str, np.ndarray, np.ndarray]],
+) -> Dict[int, float]:
+    """Quantise mapped wavelengths to nearest sample in the first GT curve.
+
+    Falls back to continuous values if GT list is empty.
+    """
+    if not gt_curves:
+        return dict(continuous_lookup)
+    _, wl_gt, _ = gt_curves[0]
+    wl_gt = wl_gt.astype(np.float32)
+    out: Dict[int, float] = {}
+    for idx, nm in continuous_lookup.items():
+        j = int(np.argmin(np.abs(wl_gt - float(nm))))
+        out[int(idx)] = float(wl_gt[j])
+    return out
+
+
+def nm_to_rgb_color(nm: float, repo_root: Path) -> np.ndarray:
+    """Map a wavelength (nm) to an sRGB colour using CIE 1931 CMFs.
+
+    Returns a uint8 array [R,G,B]. Normalises Y to ~1 to keep brightness
+    reasonably consistent across wavelengths.
+    """
+    wl, xbar, ybar, zbar = load_cie_cmf(repo_root)
+    x = float(np.interp(nm, wl, xbar))
+    y = float(np.interp(nm, wl, ybar))
+    z = float(np.interp(nm, wl, zbar))
+    XYZ = np.array([x, y, z], dtype=np.float32)
+    scale = 1.0 / XYZ[1] if XYZ[1] > 0 else 1.0
+    rgb = xyz_to_srgb(XYZ[None, :] * scale)[0]
+    return rgb
+
+
 def plot_background_spectrum(
     series: Dict[str, np.ndarray],
     bg_values: np.ndarray,
@@ -378,6 +419,8 @@ def render_grid(
     output_dir: Path,
     save_png: bool,
     title_suffix: str = "",
+    add_gt_row: bool = False,
+    gt_wavelength_lookup: Dict[int, float] | None = None,
 ) -> None:
     setup_style()
 
@@ -387,17 +430,19 @@ def render_grid(
         if start_bin <= meta["index"] <= end_bin
     ]
     num_cols = len(selected)
-    fig = plt.figure(figsize=(1.2 * num_cols + 0.4, 1.8))
+    n_rows = 3 if add_gt_row else 2
+    fig_height = 1.8 if n_rows == 2 else 2.6
+    fig = plt.figure(figsize=(1.2 * num_cols + 0.4, fig_height))
     width_ratios = [0.22] + [1.0] * num_cols
-    gs = fig.add_gridspec(2, num_cols + 1, wspace=0.045, hspace=0.015, width_ratios=width_ratios)
-    axes = np.empty((2, num_cols), dtype=object)
-    for row in range(2):
+    gs = fig.add_gridspec(n_rows, num_cols + 1, wspace=0.045, hspace=0.015, width_ratios=width_ratios)
+    axes = np.empty((n_rows, num_cols), dtype=object)
+    for row in range(n_rows):
         label_ax = fig.add_subplot(gs[row, 0])
         label_ax.axis("off")
         label_ax.text(
             0.5,
             0.5,
-            "Orig." if row == 0 else "Comp.",
+            "Orig." if row == 0 else ("Comp." if row == 1 else "GT"),
             rotation=90,
             va="center",
             ha="center",
@@ -454,6 +499,24 @@ def render_grid(
         if show_colorbar:
             fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
             fig.colorbar(im1, ax=ax_comp, shrink=0.85, pad=0.01)
+
+        # Optional GT third row: show an sRGB colour swatch at the nearest GT wavelength
+        if n_rows == 3:
+            ax_gt = axes[2, col]
+            nm = None
+            if gt_wavelength_lookup is not None and meta["index"] in gt_wavelength_lookup:
+                nm = float(gt_wavelength_lookup[meta["index"]])
+            elif wavelength_lookup is not None and meta["index"] in wavelength_lookup:
+                nm = float(wavelength_lookup[meta["index"]])
+            if nm is None:
+                ax_gt.imshow(np.zeros_like(comp_frame), cmap="gray", origin="lower")
+            else:
+                rgb = nm_to_rgb_color(nm, REPO_ROOT)
+                H, W = comp_frame.shape[:2]
+                tile = np.zeros((H, W, 3), dtype=np.uint8)
+                tile[:, :] = rgb[None, None, :]
+                ax_gt.imshow(tile, origin="lower")
+            ax_gt.axis("off")
 
     stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}{title_suffix}"
     out_stem = output_dir / stem
@@ -554,6 +617,7 @@ def main() -> None:
     wavelength_lookup = {int(item["index"]): float(item["wavelength_nm"]) for item in alignment["bin_mapping"]}
 
     # 4) Render grid with wavelength labels
+    gt_curves = load_gt_curves(args.gt_dir.resolve())
     render_grid(
         originals,
         compensated,
@@ -566,10 +630,11 @@ def main() -> None:
         False,
         out_dir,
         args.save_png,
+        add_gt_row=args.add_gt_row,
+        gt_wavelength_lookup=nearest_wavelength_lookup(wavelength_lookup, gt_curves) if args.add_gt_row else None,
     )
 
     # 5) Three-panel normalised overview
-    gt_curves = load_gt_curves(args.gt_dir.resolve())
     wl_series = (alignment["alignment"]["slope_nm_per_ms"] * series["time_ms"] + alignment["alignment"]["intercept_nm"]).astype(np.float32)
     plot_three_panel_normalised(series, gt_curves, wl_series, out_dir, args.save_png)
 
