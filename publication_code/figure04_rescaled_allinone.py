@@ -43,7 +43,8 @@ from figure04_rescaled import (
     subtract_background,
     setup_style,
 )
-from scripts.hs_to_rgb import load_cie_cmf, xyz_to_srgb  # color for GT swatches
+from scripts.hs_to_rgb import load_cie_cmf, xyz_to_srgb  # color utilities
+import re
 from groundtruth_spectrum_2835.compare_publication_cumulative import (
     detect_visible_edges,
     load_gt_curves,
@@ -77,6 +78,12 @@ def parse_args() -> argparse.Namespace:
         "--add-gt-row",
         action="store_true",
         help="Add a 3rd row with nearest-GT-wavelength colour swatches",
+    )
+    ap.add_argument(
+        "--gt-frames-dir",
+        type=Path,
+        default=None,
+        help="ROI-cropped GT frames directory (band_XXX_<nm>nm.png) to build a gradient bar",
     )
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument("--output-dir", type=Path, default=None)
@@ -354,6 +361,36 @@ def nm_to_rgb_color(nm: float, repo_root: Path) -> np.ndarray:
     return rgb
 
 
+def build_gradient_bar_from_frames(frames_dir: Path, height: int = 10) -> np.ndarray:
+    """Create a thin RGB gradient bar from ROI GT frames directory.
+
+    Expects filenames like 'band_123_488nm.png'. Extracts nm, sorts ascending,
+    and maps each nm to an sRGB colour. Returns an array of shape (H, N, 3).
+    """
+    if frames_dir is None or (not frames_dir.exists()):
+        return np.zeros((0, 0, 3), dtype=np.uint8)
+    wl_vals: list[float] = []
+    pat = re.compile(r".*_(\d+(?:\.\d+)?)nm\.(?:png|jpg|jpeg)$", re.IGNORECASE)
+    for p in sorted(frames_dir.glob("*.png")):
+        m = pat.match(p.name)
+        if not m:
+            continue
+        try:
+            wl_vals.append(float(m.group(1)))
+        except Exception:
+            continue
+    if not wl_vals:
+        return np.zeros((0, 0, 3), dtype=np.uint8)
+    wl_sorted = sorted(wl_vals)
+    cols = []
+    for nm in wl_sorted:
+        rgb = nm_to_rgb_color(float(nm), REPO_ROOT)
+        col = np.tile(rgb[None, None, :], (height, 1, 1))  # (H,1,3)
+        cols.append(col)
+    bar = np.concatenate(cols, axis=1)  # (H, N, 3)
+    return bar
+
+
 def plot_background_spectrum(
     series: Dict[str, np.ndarray],
     bg_values: np.ndarray,
@@ -421,6 +458,7 @@ def render_grid(
     title_suffix: str = "",
     add_gt_row: bool = False,
     gt_wavelength_lookup: Dict[int, float] | None = None,
+    gradient_bar: np.ndarray | None = None,
 ) -> None:
     setup_style()
 
@@ -430,11 +468,12 @@ def render_grid(
         if start_bin <= meta["index"] <= end_bin
     ]
     num_cols = len(selected)
-    n_rows = 3 if add_gt_row else 2
-    fig_height = 1.8 if n_rows == 2 else 2.6
+    has_bar = gradient_bar is not None and getattr(gradient_bar, 'size', 0) > 0
+    n_rows = 3 if (add_gt_row or has_bar) else 2
+    fig_height = 1.8 if n_rows == 2 else 2.2
     fig = plt.figure(figsize=(1.2 * num_cols + 0.4, fig_height))
     width_ratios = [0.22] + [1.0] * num_cols
-    gs = fig.add_gridspec(n_rows, num_cols + 1, wspace=0.045, hspace=0.015, width_ratios=width_ratios)
+    gs = fig.add_gridspec(n_rows, num_cols + 1, wspace=0.045, hspace=0.05, width_ratios=width_ratios)
     axes = np.empty((n_rows, num_cols), dtype=object)
     for row in range(n_rows):
         label_ax = fig.add_subplot(gs[row, 0])
@@ -450,8 +489,10 @@ def render_grid(
             fontweight="bold",
             color="black",
         )
-        for col in range(num_cols):
-            axes[row, col] = fig.add_subplot(gs[row, col + 1])
+        # Only allocate per-column axes for the first 2 rows (orig/comp)
+        if row < 2:
+            for col in range(num_cols):
+                axes[row, col] = fig.add_subplot(gs[row, col + 1])
     fig.subplots_adjust(left=0.02, right=0.995, top=0.995, bottom=0.14)
 
     for col, (orig_frame, comp_frame, meta) in enumerate(selected):
@@ -500,8 +541,8 @@ def render_grid(
             fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
             fig.colorbar(im1, ax=ax_comp, shrink=0.85, pad=0.01)
 
-        # Optional GT third row: show an sRGB colour swatch at the nearest GT wavelength
-        if n_rows == 3:
+        # Optional GT third row (swatches) if no gradient bar is provided
+        if n_rows == 3 and add_gt_row and (not has_bar):
             ax_gt = axes[2, col]
             nm = None
             if gt_wavelength_lookup is not None and meta["index"] in gt_wavelength_lookup:
@@ -517,6 +558,12 @@ def render_grid(
                 tile[:, :] = rgb[None, None, :]
                 ax_gt.imshow(tile, origin="lower")
             ax_gt.axis("off")
+
+    # If a gradient bar is provided, draw it as a single axis spanning all columns in row 3
+    if has_bar:
+        ax_bar = fig.add_subplot(gs[2, 1:])
+        ax_bar.imshow(gradient_bar, origin="lower", aspect="auto")
+        ax_bar.axis("off")
 
     stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}{title_suffix}"
     out_stem = output_dir / stem
@@ -616,8 +663,9 @@ def main() -> None:
     alignment = align_with_groundtruth(series, args.gt_dir.resolve(), metadata_bins, out_dir, neg_scale, args.fine_step_us, args.save_png)
     wavelength_lookup = {int(item["index"]): float(item["wavelength_nm"]) for item in alignment["bin_mapping"]}
 
-    # 4) Render grid with wavelength labels
+    # 4) Render grid with wavelength labels + optional GT gradient bar
     gt_curves = load_gt_curves(args.gt_dir.resolve())
+    gradient_bar = build_gradient_bar_from_frames(args.gt_frames_dir.resolve()) if args.gt_frames_dir else None
     render_grid(
         originals,
         compensated,
@@ -632,6 +680,7 @@ def main() -> None:
         args.save_png,
         add_gt_row=args.add_gt_row,
         gt_wavelength_lookup=nearest_wavelength_lookup(wavelength_lookup, gt_curves) if args.add_gt_row else None,
+        gradient_bar=gradient_bar,
     )
 
     # 5) Three-panel normalised overview
