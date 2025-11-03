@@ -109,14 +109,16 @@ This data-driven segmentation adapts to slow drifts or perturbations, ensuring t
     \node[anchor=south west, inner sep=0] (f2a) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_activity.pdf}};
     \begin{scope}[x={(f2a.south east)}, y={(f2a.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.012, 0.988) {(a)};
+      % Mask any embedded panel letter and place TeX label
+      \node[font=\bfseries, anchor=north west, fill=white, draw=white, inner sep=2pt, rounded corners=0.5pt] at (0.012, 0.988) {(a)};
     \end{scope}
   \end{tikzpicture}\\[-2pt]
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (f2b) at (0,0)
       {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_correlation.pdf}};
     \begin{scope}[x={(f2b.south east)}, y={(f2b.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.012, 0.988) {(b)};
+      % Mask any embedded panel letter and place TeX label
+      \node[font=\bfseries, anchor=north west, fill=white, draw=white, inner sep=2pt, rounded corners=0.5pt] at (0.012, 0.988) {(b)};
     \end{scope}
   \end{tikzpicture}
   \vspace{-3pt}
