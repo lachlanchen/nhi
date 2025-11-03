@@ -188,8 +188,9 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
 
     # Small legend with color dots (Neg = blue, Pos = orange)
     import matplotlib.lines as mlines
-    neg_dot = mlines.Line2D([], [], color=NEG_COLOR, marker='o', linestyle='None', markersize=4, label='Negative')
-    pos_dot = mlines.Line2D([], [], color=POS_COLOR, marker='o', linestyle='None', markersize=4, label='Positive')
+    # Use short labels to match paper style
+    neg_dot = mlines.Line2D([], [], color=NEG_COLOR, marker='o', linestyle='None', markersize=4, label='Neg')
+    pos_dot = mlines.Line2D([], [], color=POS_COLOR, marker='o', linestyle='None', markersize=4, label='Pos')
     ax1.legend(handles=[neg_dot, pos_dot], loc='upper right', fontsize=7, framealpha=0.9)
 
     # No manual subplots_adjust to avoid clipping labels; constrained_layout handles spacing
