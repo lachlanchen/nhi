@@ -102,9 +102,6 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="[Deprecated] Force full width for the third-only export.",
     )
-    # Explicit size overrides (inches). If set, override the presets above.
-    ap.add_argument("--third-width-in", type=float, default=None, help="Explicit width in inches for third-only export")
-    ap.add_argument("--third-height-in", type=float, default=None, help="Explicit height in inches for third-only export")
     return ap.parse_args()
 
 
@@ -354,8 +351,6 @@ def plot_third_panel_only(
     gt_label: str = "Groundtruth",
     full_width: bool = True,
     bg_label: str = "Background",
-    width_in: float | None = None,
-    height_in: float | None = None,
 ) -> None:
     """Export only the 3rd panel (aligned overlay): BG mapped to wavelength vs a single GT.
 
@@ -393,13 +388,8 @@ def plot_third_panel_only(
     bg_norm_wl = bg_norm[mask]
 
     # Figure sizing: match the width of the three-panel for consistency
-    # Use provided inches if given; otherwise choose full or half width, fixed height
-    if width_in is not None or height_in is not None:
-        w = float(width_in if width_in is not None else (12.5 if full_width else 6.25))
-        h = float(height_in if height_in is not None else 3.2)
-        figsize = (w, h)
-    else:
-        figsize = (12.5, 3.2) if full_width else (6.25, 3.2)
+    # Use half of the full width when requested
+    figsize = (12.5, 3.2) if full_width else (6.25, 3.2)
     fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
     ax.plot(wl_bg, bg_norm_wl, color="#1f77b4", linewidth=1.8, label=bg_label)
     ax.plot(wl_gt.astype(np.float32), gt_norm.astype(np.float32), linewidth=1.8, color="#ff7f0e", label=gt_label)
@@ -692,8 +682,6 @@ def main() -> None:
             gt_label=args.third_gt_label,
             full_width=full_width,
             bg_label="Background",
-            width_in=args.third_width_in,
-            height_in=args.third_height_in,
         )
 
     # Persist weights metadata
