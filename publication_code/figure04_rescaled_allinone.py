@@ -346,6 +346,60 @@ def plot_three_panel_normalised(
     plt.close(fig)
 
 
+def plot_aligned_overlay_only(
+    series: Dict[str, np.ndarray],
+    gt_curves: List[Tuple[str, np.ndarray, np.ndarray]],
+    wl_series: np.ndarray,
+    out_dir: Path,
+    save_png: bool,
+) -> None:
+    """Save only the aligned overlay (BG mapped to wavelength vs a single GT curve).
+
+    Uses Fig. 4 theme colours: blue for background, orange for Light SPD.
+    Legend is placed outside at top-right.
+    """
+    time_ms = series["time_ms"].astype(np.float32)
+    exp_rescaled = series["exp_rescaled"].astype(np.float32)
+
+    # Normalise BG by plateau baseline and peak
+    smooth_bg = moving_average(exp_rescaled, max(21, int(len(exp_rescaled) // 200) | 1))
+    region_bg = detect_active_region(smooth_bg)
+    bg_norm = np.clip(normalise_curve(exp_rescaled, region_bg), 0.0, None)
+
+    # Single GT: take first curve, normalise
+    if not gt_curves:
+        return
+    name0, wl0, val0 = gt_curves[0]
+    smooth0 = moving_average(val0, max(21, len(val0) // 300))
+    region0 = detect_active_region(smooth0)
+    gt0_norm = np.clip(normalise_curve(smooth0, region0), 0.0, None)
+
+    # Clip BG mapping within GT span
+    wl_min = float(np.min(wl0))
+    wl_max = float(np.max(wl0))
+    mask = (wl_series >= wl_min) & (wl_series <= wl_max)
+    wl_bg = wl_series[mask].astype(np.float32)
+    bg_norm_wl = bg_norm[mask]
+
+    fig, ax = plt.subplots(figsize=(5.6, 3.0))
+    BG_COLOR = "#1f77b4"
+    SPD_COLOR = "#ff7f0e"
+    ax.plot(wl_bg, bg_norm_wl, color=BG_COLOR, linewidth=1.8, label="Rescaled background (mapped)")
+    ax.plot(wl0, gt0_norm, color=SPD_COLOR, linewidth=1.8, label="Light SPD")
+    ax.set_xlabel("Wavelength (nm)")
+    ax.set_ylabel("Normalised intensity")
+    ax.set_title("Aligned (normalised)")
+    ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    # Legend outside top-right
+    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0, framealpha=0.9)
+
+    out_path = out_dir / "figure04_rescaled_bg_gt_third_only.pdf"
+    fig.savefig(out_path, dpi=400, bbox_inches="tight")
+    if save_png:
+        fig.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
 def nearest_wavelength_lookup(
     continuous_lookup: Dict[int, float],
     gt_curves: List[Tuple[str, np.ndarray, np.ndarray]],
@@ -802,9 +856,10 @@ def main() -> None:
         gt_frame_paths=gt_frame_paths,
     )
 
-    # 5) Three-panel normalised overview
+    # 5) Three-panel normalised overview + third-only export
     wl_series = (alignment["alignment"]["slope_nm_per_ms"] * series["time_ms"] + alignment["alignment"]["intercept_nm"]).astype(np.float32)
     plot_three_panel_normalised(series, gt_curves, wl_series, out_dir, args.save_png)
+    plot_aligned_overlay_only(series, gt_curves, wl_series, out_dir, args.save_png)
 
     # Persist weights metadata
     weights_json = out_dir / "figure04_rescaled_weights.json"
