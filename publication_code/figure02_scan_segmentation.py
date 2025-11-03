@@ -38,7 +38,12 @@ DEFAULT_SEGMENTS = (
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "figures"
 
 from segment_robust_fixed import analyze_scanning_pattern, events_to_activity_signal
-from simple_raw_reader import read_raw_simple
+try:
+    # Import lazily/optionally: environments without Metavision HAL can still
+    # import this module and regenerate figures that do not require RAW access.
+    from simple_raw_reader import read_raw_simple  # type: ignore
+except Exception:  # pragma: no cover - optional at runtime
+    read_raw_simple = None
 
 
 @dataclass
@@ -171,12 +176,54 @@ def infer_raw_file(source: Path) -> Path:
 def load_activity_from_raw(raw_path: Path, time_bin_us: int) -> Tuple[np.ndarray, np.ndarray, int]:
     """Read the RAW file and convert timestamps into an activity trace."""
 
+    if read_raw_simple is None:
+        raise RuntimeError(
+            "simple_raw_reader is unavailable (Metavision HAL not installed). "
+            "Re-run on a host with HAL or provide precomputed activity."
+        )
     print(f"Loading RAW events from {raw_path} ...")
     _, _, t, _, width, height = read_raw_simple(str(raw_path))
     print(f"Sensor size: {width} x {height}")
     activity, t_min, _ = events_to_activity_signal(t, time_bin_us=time_bin_us)
     time_s = (np.arange(len(activity)) * time_bin_us + t_min) / 1_000_000.0
     return time_s, activity, t_min
+
+
+def load_activity_from_segments(segment_dir: Path, time_bin_us: int) -> Tuple[np.ndarray, np.ndarray, int]:
+    """Reconstruct the activity trace directly from segmented NPZ files.
+
+    This path avoids RAW/I/O dependencies (e.g., Metavision HAL). We compute
+    a global t_min/t_max across all segment files and accumulate counts into
+    1 ms (configurable) bins.
+    """
+    npz_files = sorted(segment_dir.glob("Scan_*_events.npz"))
+    if not npz_files:
+        raise FileNotFoundError(f"No Scan_*_events.npz under {segment_dir}")
+
+    # Pass 1: global time range
+    t_min = None
+    t_max = None
+    for f in npz_files:
+        with np.load(f) as data:
+            t = data["t"].astype(np.int64)
+            t0, t1 = int(t.min()), int(t.max())
+            t_min = t0 if t_min is None else min(t_min, t0)
+            t_max = t1 if t_max is None else max(t_max, t1)
+
+    assert t_min is not None and t_max is not None
+    n_bins = int((t_max - t_min) / time_bin_us) + 1
+    activity = np.zeros(n_bins, dtype=np.int64)
+
+    # Pass 2: accumulate counts
+    for f in npz_files:
+        with np.load(f) as data:
+            t = data["t"].astype(np.int64)
+        idx = ((t - t_min) // time_bin_us).astype(np.int64)
+        idx = idx[(idx >= 0) & (idx < n_bins)]
+        np.add.at(activity, idx, 1)
+
+    time_s = (np.arange(n_bins) * time_bin_us + t_min) / 1_000_000.0
+    return time_s, activity.astype(np.float64), t_min
 
 
 def setup_figure_style() -> None:
@@ -475,11 +522,18 @@ def main() -> None:
         for seg_dir in find_segment_dirs(root_for_segments):
             all_segments.extend(load_segment_infos(seg_dir))
 
-    raw_path = args.raw_file.expanduser().resolve() if args.raw_file else infer_raw_file(
-        segment_dirs[0] if segment_dirs else dataset_path
-    )
-
-    time_s, activity, _ = load_activity_from_raw(raw_path, args.time_bin_us)
+    # Prefer RAW if available; otherwise fall back to NPZ segments
+    time_s: np.ndarray
+    activity: np.ndarray
+    if read_raw_simple is not None:
+        raw_path = args.raw_file.expanduser().resolve() if args.raw_file else infer_raw_file(
+            segment_dirs[0] if segment_dirs else dataset_path
+        )
+        time_s, activity, _ = load_activity_from_raw(raw_path, args.time_bin_us)
+    else:
+        seg_base = segment_dirs[0] if segment_dirs else dataset_path
+        print(f"RAW reader unavailable; reconstructing activity from {seg_base}")
+        time_s, activity, _ = load_activity_from_segments(seg_base, args.time_bin_us)
     results = analyze_scanning_pattern(
         activity,
         activity_fraction=args.activity_fraction,
