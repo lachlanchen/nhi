@@ -1,0 +1,63 @@
+\documentclass[9pt,twocolumn]{opticajnl}
+\journal{opticajournal}
+\setboolean{shortarticle}{true}
+
+% Keep typography and packages consistent with the main Optica letter
+\usepackage{siunitx}
+\sisetup{range-phrase = --, range-units = single}
+\usepackage{xcolor}
+
+\title{Supplementary Material: Self-Calibrated Neuromorphic Hyperspectral Sensing}
+\author{Rongzhou Chen}
+\author{Chutian Wang}
+\author{Yuqing Cao}
+\author[*]{Edmund Y. Lam}
+\affil{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong SAR, China}
+\affil[*]{elam@eee.hku.hk}
+\dates{\today}
+
+\begin{abstract}
+This document provides supplementary methods, implementation notes, and additional figures supporting the main manuscript titled ``Self-Calibrated Neuromorphic Hyperspectral Sensing.'' It follows the Optica journal letter template and reuses the same notation and plotting conventions.
+\end{abstract}
+
+\begin{document}
+
+\maketitle
+
+% Simple section helper matching main style
+\newcommand{\olsection}[1]{\par\noindent\textbf{#1.} }
+
+\olsection{Additional Methods}
+We briefly summarize details that complement the main text:
+\begin{itemize}
+  \item Scan segmentation uses the activity auto-correlation and auto-convolution peaks to determine the one-way period and pre/post regions.
+  \item Multi-window compensation fits linear boundary surfaces per window and optimizes spatial variance within fixed temporal bins to undo temporal shear.
+  \item Spectral displays use 50~ms cumulative bins unless otherwise noted; background subtraction and light smoothing may be applied for visibility.
+\end{itemize}
+
+\olsection{Supplementary Figure S1}
+Figure~\ref{fig:s1} shows the aligned background (event-derived) against a spectrometer curve, formatted as in the main text.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/figure04_rescaled_bg_gt_third_only.pdf}
+  \caption{Supplementary Figure S1: Background mapped to wavelength (blue) overlaid with Light SPD (orange). Legend placed inside, consistent with Fig.~5 styling.}
+  \label{fig:s1}
+\end{figure}
+
+\olsection{Reproducibility Notes}
+The following commands (run in the \texttt{nhi\_test} environment) regenerate the figures referenced here:
+\begin{itemize}
+  \item Figure 4 grid and overlay:
+\texttt{python publication\_code/figure04\_rescaled\_allinone.py \\
+  --segment scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638/angle\_20\_sanqin\_2835\_event\_20250925\_184638\_segments/Scan\_1\_Forward\_events.npz \\
+  --gt-dir groundtruth\_spectrum\_2835 \\
+  --gt-frames-dir hyperspectral\_data\_sanqin\_gt/test300\_roi\_square\_frames\_matched \\
+  --bin-width-us 50000 --start-bin 3 --end-bin 15 --show-wavelength \\
+  --add-gt-row --bar-height-ratio 0.06 --bar-px 4 --save-png}
+\end{itemize}
+
+\bibliography{ref}
+
+\end{document}
+
