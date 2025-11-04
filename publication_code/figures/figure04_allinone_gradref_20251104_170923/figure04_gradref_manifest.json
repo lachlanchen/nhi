@@ -1,0 +1,24 @@
+{
+  "segment": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz",
+  "params_file": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events_chunked_processing_learned_params_n13.npz",
+  "bin_width_us": 50000.0,
+  "start_bin": 3,
+  "end_bin": 15,
+  "grad20_dir": "/home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched_gradient_20nm",
+  "output": "/home/lachlan/ProjectsLFS/nhi_reconstruction/publication_code/figures/figure04_allinone_gradref_20251104_170923/figure04_gradref_bins_03_15.pdf",
+  "bins": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ]
+}

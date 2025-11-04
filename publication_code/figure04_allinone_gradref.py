@@ -62,6 +62,8 @@ def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Figure 4 all-in-one pipeline")
     ap.add_argument("--segment", type=Path, required=True, help="Path to Scan_*_events.npz")
     ap.add_argument("--gt-dir", type=Path, default=Path("groundtruth_spectrum_2835"))
+    ap.add_argument("--diff-frames-dir", type=Path, required=True, help="Folder of Diff images (e.g., gradient_20nm *_XXXtoYYYnm.png)")
+    ap.add_argument("--ref-frames-dir", type=Path, required=True, help="Folder of Ref images (e.g., ROI matched *_XXXnm.png)")
     ap.add_argument("--bin-width-us", type=float, default=50000.0)
     ap.add_argument("--fine-step-us", type=float, default=RESCALE_FINE_STEP_US)
     ap.add_argument("--sensor-width", type=int, default=1280)
@@ -76,17 +78,9 @@ def parse_args() -> argparse.Namespace:
     # Default to 3x3x3 smoothing enabled; user can turn off with --no-smooth if needed
     ap.add_argument("--smooth", action="store_true", default=True)
     ap.add_argument("--show-wavelength", action="store_true")
-    ap.add_argument(
-        "--add-gt-row",
-        action="store_true",
-        help="Add a 3rd row with nearest-GT-wavelength colour swatches",
-    )
-    ap.add_argument(
-        "--gt-frames-dir",
-        type=Path,
-        default=None,
-        help="ROI-cropped GT frames directory (band_XXX_<nm>nm.png) to build a gradient bar",
-    )
+    # Legacy flags retained (ignored)
+    ap.add_argument("--add-gt-row", action="store_true", help=argparse.SUPPRESS)
+    ap.add_argument("--gt-frames-dir", type=Path, default=None, help=argparse.SUPPRESS)
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument(
         "--bar-height-ratio",
@@ -621,6 +615,7 @@ def render_grid(
     gradient_bar: np.ndarray | None = None,
     bar_height_ratio: float = 0.08,
     gt_frame_paths: List[Path] | None = None,
+    diff_frame_paths: List[Path] | None = None,
 ) -> None:
     setup_style()
 
@@ -718,10 +713,16 @@ def render_grid(
             fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
             fig.colorbar(im1, ax=ax_comp, shrink=0.85, pad=0.01)
 
-        # Diff row: Comp - Orig
+        # Diff row: external images (e.g., gradient_20nm) matched by wavelength
         ax_diff = axes[2, col]
-        diff_frame = (comp_frame.astype(np.float32) - orig_frame.astype(np.float32))
-        ax_diff.imshow(diff_frame, cmap=comp_cmap, origin="lower")
+        if diff_frame_paths is not None and col < len(diff_frame_paths) and diff_frame_paths[col] and diff_frame_paths[col].exists():
+            import matplotlib.image as mpimg
+            img_diff = mpimg.imread(str(diff_frame_paths[col]))
+            ax_diff.imshow(img_diff, origin="lower", cmap="gray")
+        else:
+            # Fallback to computed diff
+            diff_frame = (comp_frame.astype(np.float32) - orig_frame.astype(np.float32))
+            ax_diff.imshow(diff_frame, cmap=comp_cmap, origin="lower")
         ax_diff.axis("off")
 
         # Optional GT images row (now next row)
@@ -842,24 +843,32 @@ def main() -> None:
 
     # 4) Render grid with wavelength labels + optional GT gradient bar
     gt_curves = load_gt_curves(args.gt_dir.resolve())
-    gradient_bar = build_gradient_bar_from_frames(args.gt_frames_dir.resolve(), height=int(args.bar_px)) if args.gt_frames_dir else None
-    # Build GT selection per displayed column and copy to output for provenance
-    gt_frame_paths: List[Path] | None = None
-    if args.gt_frames_dir and args.add_gt_row:
-        # Order metadata in the displayed range
-        displayed_meta = [m for m in metadata_bins if args.start_bin <= m["index"] <= args.end_bin]
-        selections = select_gt_frames_for_bins(args.gt_frames_dir.resolve(), wavelength_lookup, displayed_meta)
-        sel_paths: List[Path] = []
-        out_sel_dir = out_dir / "gt_selected_frames"
-        out_sel_dir.mkdir(parents=True, exist_ok=True)
-        for idx, nm_sel, pth in selections:
-            dest = out_sel_dir / f"bin_{idx:02d}_{nm_sel:.0f}nm{pth.suffix}"
-            try:
-                shutil.copy2(pth, dest)
-                sel_paths.append(dest)
-            except Exception:
-                continue
-        gt_frame_paths = sel_paths
+    # Select and copy Diff and Ref frames
+    displayed_meta = [m for m in metadata_bins if args.start_bin <= m["index"] <= args.end_bin]
+    diff_selections = select_gt_frames_for_bins(args.diff_frames_dir.resolve(), wavelength_lookup, displayed_meta)
+    ref_selections = select_gt_frames_for_bins(args.ref_frames_dir.resolve(), wavelength_lookup, displayed_meta)
+    diff_frame_paths: List[Path] = []
+    ref_frame_paths: List[Path] = []
+    diff_sel_dir = out_dir / "diff_selected_frames"; diff_sel_dir.mkdir(parents=True, exist_ok=True)
+    ref_sel_dir = out_dir / "gt_selected_frames"; ref_sel_dir.mkdir(parents=True, exist_ok=True)
+    ref_sel_dir2 = out_dir / "ref_selected_frames"; ref_sel_dir2.mkdir(parents=True, exist_ok=True)
+    for idx, nm_sel, pth in diff_selections:
+        dest = diff_sel_dir / f"bin_{idx:02d}_{nm_sel:.0f}nm{pth.suffix}"
+        try:
+            shutil.copy2(pth, dest)
+            diff_frame_paths.append(dest)
+        except Exception:
+            diff_frame_paths.append(pth)
+    for idx, nm_sel, pth in ref_selections:
+        dest = ref_sel_dir / f"bin_{idx:02d}_{nm_sel:.0f}nm{pth.suffix}"
+        try:
+            shutil.copy2(pth, dest)
+            # also store in a parallel ref_selected_frames folder
+            shutil.copy2(pth, ref_sel_dir2 / dest.name)
+            ref_frame_paths.append(dest)
+        except Exception:
+            ref_frame_paths.append(pth)
+    gradient_bar = build_gradient_bar_from_frames(args.ref_frames_dir.resolve(), height=int(args.bar_px))
     render_grid(
         originals,
         compensated,
@@ -872,11 +881,12 @@ def main() -> None:
         False,
         out_dir,
         args.save_png,
-        add_gt_row=args.add_gt_row,
-        gt_wavelength_lookup=nearest_wavelength_lookup(wavelength_lookup, gt_curves) if args.add_gt_row else None,
+        add_gt_row=True,
+        gt_wavelength_lookup=nearest_wavelength_lookup(wavelength_lookup, gt_curves),
         gradient_bar=gradient_bar,
         bar_height_ratio=float(args.bar_height_ratio),
-        gt_frame_paths=gt_frame_paths,
+        gt_frame_paths=ref_frame_paths,
+        diff_frame_paths=diff_frame_paths,
     )
 
     # 5) Three-panel normalised overview + third-only export
