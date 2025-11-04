@@ -75,11 +75,11 @@ def find_first_forward(dataset_dir: Path) -> Path:
     return fwd
 
 
-def save_frame(path: Path, frame: np.ndarray, save_png: bool) -> None:
+def save_frame(path: Path, frame: np.ndarray, save_png: bool, cmap: str = "coolwarm", vmin: float | None = None, vmax: float | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(path.with_suffix(".npz"), frame=frame.astype(np.float32))
     fig, ax = plt.subplots(figsize=(5, 3))
-    ax.imshow(frame, cmap="coolwarm")
+    ax.imshow(frame, cmap=cmap, vmin=vmin, vmax=vmax)
     ax.axis("off")
     fig.tight_layout(pad=0)
     fig.savefig(path.with_suffix(".pdf"), dpi=400, bbox_inches="tight")
@@ -159,18 +159,27 @@ def main() -> None:
     # Output structure
     subdir = args.output_subdir or ("apply_alignment_bgsub" if args.bg_subtract else "apply_alignment")
     out_dir = (args.output_root / subdir / dataset_dir.name).resolve()
+    # Parallel grayscale export folder
+    out_dir_gray = (args.output_root / (subdir + "_gray") / dataset_dir.name).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir_gray.mkdir(parents=True, exist_ok=True)
 
     # Save frames (NPZ + PDF/PNG)
     # Save cumulative frames at the lower and upper bounds (first and final in-range cumsum)
     if cum_at_lo is not None:
-        save_frame(out_dir / f"cumulative_start_{int(lo_nm)}nm_bin{int(bin_us/1000)}ms", cum_at_lo, args.save_png)
+        stem = f"cumulative_start_{int(lo_nm)}nm_bin{int(bin_us/1000)}ms"
+        save_frame(out_dir / stem, cum_at_lo, args.save_png, cmap="coolwarm")
+        save_frame(out_dir_gray / stem, cum_at_lo, args.save_png, cmap="gray")
     if cum_at_hi is not None:
-        save_frame(out_dir / f"cumulative_end_{int(hi_nm)}nm_bin{int(bin_us/1000)}ms", cum_at_hi, args.save_png)
+        stem = f"cumulative_end_{int(hi_nm)}nm_bin{int(bin_us/1000)}ms"
+        save_frame(out_dir / stem, cum_at_hi, args.save_png, cmap="coolwarm")
+        save_frame(out_dir_gray / stem, cum_at_hi, args.save_png, cmap="gray")
 
     # Save selected per-bin frames every N within [idx_lo, idx_hi]
     per_bin_dir = out_dir / "per_bin_frames"
     per_bin_dir.mkdir(parents=True, exist_ok=True)
+    per_bin_dir_gray = out_dir_gray / "per_bin_frames"
+    per_bin_dir_gray.mkdir(parents=True, exist_ok=True)
     # Translate every N milliseconds to bin steps based on bin width
     step = max(1, int(round(float(args.save_every_ms) / (bin_us / 1000.0))))
     saved = []
@@ -180,9 +189,10 @@ def main() -> None:
         cum_tmp += frames[i].astype(np.float32)
         if (i - idx_lo) % step == 0 or i == idx_hi:
             wl = float(wl_seq[i])
-            stem = per_bin_dir / f"cumsum_{i:04d}_{wl:.1f}nm_bin{int(bin_us/1000)}ms"
-            save_frame(stem, cum_tmp, args.save_png)
-            saved.append({"index": i, "wavelength_nm": wl, "mode": "cumsum"})
+            stem_name = f"cumsum_{i:04d}_{wl:.1f}nm_bin{int(bin_us/1000)}ms"
+            save_frame(per_bin_dir / stem_name, cum_tmp, args.save_png, cmap="coolwarm")
+            save_frame(per_bin_dir_gray / stem_name, cum_tmp, args.save_png, cmap="gray")
+            saved.append({"index": i, "wavelength_nm": wl, "mode": "cumsum", "folders": [str(per_bin_dir), str(per_bin_dir_gray)]})
 
     # Save mapping JSON
     mapping = {
@@ -212,6 +222,7 @@ def main() -> None:
         json.dump(mapping, fp, indent=2)
 
     print("Output directory:", out_dir)
+    print("Grayscale directory:", out_dir_gray)
     print("Idx for 380nm:", idx_lo, "Idx for 700nm:", idx_hi)
 
 
