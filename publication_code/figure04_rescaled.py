@@ -372,10 +372,15 @@ def render_panel(
     axes[1].axis("off")
 
     cbar0 = fig.colorbar(im0, ax=axes[0], shrink=0.85, pad=0.02)
-    cbar0.ax.set_ylabel("Raw counts", rotation=90)
     cbar1 = fig.colorbar(im1, ax=axes[1], shrink=0.85, pad=0.02)
-    comp_label = "Compensated Δ (a.u.)" if comp_norm is not None else "Compensated (a.u.)"
-    cbar1.ax.set_ylabel(comp_label, rotation=90)
+    # Plain colorbars: no ticks or labels, no outline
+    for cb in (cbar0, cbar1):
+        try:
+            cb.set_ticks([])
+            cb.outline.set_visible(False)
+            cb.ax.tick_params(labelleft=False, labelright=False, labelbottom=False, labeltop=False, length=0)
+        except Exception:
+            pass
 
     output_dir.mkdir(parents=True, exist_ok=True)
     stem = output_dir / f"figure04_rescaled_bin_{bin_idx:02d}"
