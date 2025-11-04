@@ -650,6 +650,8 @@ def render_grid(
     for row in range(n_rows):
         label_ax = fig.add_subplot(gs[row, 0])
         label_ax.axis("off")
+        label_ax.set_xticks([])
+        label_ax.set_yticks([])
         label_ax.text(
             0.5,
             0.5,
@@ -664,7 +666,10 @@ def render_grid(
         # Allocate axes for orig/comp/diff and optional GT image row
         if row < 3 or (has_gt_images and row == 3):
             for col in range(num_cols):
-                axes[row, col] = fig.add_subplot(gs[row, col + 1])
+                ax = fig.add_subplot(gs[row, col + 1])
+                ax.set_xticks([])
+                ax.set_yticks([])
+                axes[row, col] = ax
     fig.subplots_adjust(left=0.02, right=0.995, top=0.995, bottom=0.14)
 
     for col, (orig_frame, comp_frame, meta) in enumerate(selected):
@@ -687,6 +692,8 @@ def render_grid(
         ax_orig = axes[0, col]
         im0 = ax_orig.imshow(orig_frame, cmap=raw_cmap, vmin=raw_vmin, vmax=raw_vmax, origin="lower")
         ax_orig.axis("off")
+        ax_orig.set_xticks([])
+        ax_orig.set_yticks([])
         ax_comp = axes[1, col]
         im1 = ax_comp.imshow(
             comp_frame,
@@ -697,6 +704,8 @@ def render_grid(
             origin="lower",
         )
         ax_comp.axis("off")
+        ax_comp.set_xticks([])
+        ax_comp.set_yticks([])
         if wavelength_lookup is not None and meta["index"] in wavelength_lookup:
             ax_comp.text(
                 0.5,
@@ -724,6 +733,8 @@ def render_grid(
             diff_frame = (comp_frame.astype(np.float32) - orig_frame.astype(np.float32))
             ax_diff.imshow(diff_frame, cmap=comp_cmap, origin="lower")
         ax_diff.axis("off")
+        ax_diff.set_xticks([])
+        ax_diff.set_yticks([])
 
         # Optional GT images row (now next row)
         if has_gt_images:
@@ -735,6 +746,8 @@ def render_grid(
             else:
                 ax_gt.imshow(np.zeros_like(comp_frame), cmap="gray", origin="lower")
             ax_gt.axis("off")
+            ax_gt.set_xticks([])
+            ax_gt.set_yticks([])
 
     # If a gradient bar is provided, draw it at the bottom row
     if has_bar:
@@ -742,6 +755,8 @@ def render_grid(
         ax_bar = fig.add_subplot(gs[bar_row, 1:])
         ax_bar.imshow(gradient_bar, origin="lower", aspect="auto")
         ax_bar.axis("off")
+        ax_bar.set_xticks([])
+        ax_bar.set_yticks([])
 
     stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}{title_suffix}"
     out_stem = output_dir / stem

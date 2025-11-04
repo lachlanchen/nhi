@@ -434,7 +434,10 @@ def render_grid_downsampled(
     axes = np.empty((n_rows, n_img_cols), dtype=object)
     for row in range(n_rows):
         # Row label axis
-        label_ax = fig.add_subplot(gs[row, 0]); label_ax.axis("off")
+        label_ax = fig.add_subplot(gs[row, 0])
+        label_ax.axis("off")
+        label_ax.set_xticks([])
+        label_ax.set_yticks([])
         label_text = (
             "Orig." if row == 0 else ("Comp." if row == 1 else ("Diff." if row == 2 else ("Ref." if (has_gt_images and row == 3) else "")))
         )
@@ -442,7 +445,10 @@ def render_grid_downsampled(
         # Populate content axes on even grid columns (1,3,5,...) skipping ellipsis columns
         for i in range(n_img_cols):
             grid_col = 1 + 2 * i
-            axes[row, i] = fig.add_subplot(gs[row, grid_col])
+            ax = fig.add_subplot(gs[row, grid_col])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            axes[row, i] = ax
     fig.subplots_adjust(left=0.02, right=0.995, top=0.995, bottom=0.16)
 
     # Populate image data
@@ -461,9 +467,15 @@ def render_grid_downsampled(
             comp_norm = TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
 
         ax0 = axes[0, i]
-        ax0.imshow(orig_frame, cmap=raw_cmap, vmin=raw_vmin, vmax=raw_vmax, origin="lower"); ax0.axis("off")
+        ax0.imshow(orig_frame, cmap=raw_cmap, vmin=raw_vmin, vmax=raw_vmax, origin="lower")
+        ax0.axis("off")
+        ax0.set_xticks([])
+        ax0.set_yticks([])
         ax1 = axes[1, i]
-        ax1.imshow(comp_frame, cmap=comp_cmap, vmin=None if comp_norm else comp_vmin, vmax=None if comp_norm else comp_vmax, norm=comp_norm, origin="lower"); ax1.axis("off")
+        ax1.imshow(comp_frame, cmap=comp_cmap, vmin=None if comp_norm else comp_vmin, vmax=None if comp_norm else comp_vmax, norm=comp_norm, origin="lower")
+        ax1.axis("off")
+        ax1.set_xticks([])
+        ax1.set_yticks([])
         if wavelength_lookup is not None and meta["index"] in wavelength_lookup:
             ax1.text(0.5, -0.12, f"{wavelength_lookup[meta['index']]:.0f} nm", transform=ax1.transAxes, ha="center", va="top", fontsize=8)
 
@@ -477,6 +489,8 @@ def render_grid_downsampled(
             diff_frame = (comp_frame.astype(np.float32) - orig_frame.astype(np.float32))
             ax2.imshow(diff_frame, cmap=comp_cmap, origin="lower")
         ax2.axis("off")
+        ax2.set_xticks([])
+        ax2.set_yticks([])
 
         # Optional Ref row
         if has_gt_images:
@@ -488,6 +502,8 @@ def render_grid_downsampled(
             else:
                 ax3.imshow(np.zeros_like(comp_frame), cmap="gray", origin="lower")
             ax3.axis("off")
+            ax3.set_xticks([])
+            ax3.set_yticks([])
 
     # Draw ellipsis columns (use the bar row; if no bar row, use Comp. row)
     bar_row_idx = 3 if not has_gt_images else 4
@@ -495,6 +511,8 @@ def render_grid_downsampled(
         col = 2 + 2 * k  # between two image cols
         ax_dot = fig.add_subplot(gs[bar_row_idx, col])
         ax_dot.axis("off")
+        ax_dot.set_xticks([])
+        ax_dot.set_yticks([])
         ax_dot.text(0.5, 0.5, "…", ha="center", va="center", fontsize=14, color="black")
 
     # Build a wavelength bar with one stripe per kept column (selected wavelengths)
@@ -515,6 +533,8 @@ def render_grid_downsampled(
         ax_bar = fig.add_subplot(gs[bar_row_idx, 1:])
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
         ax_bar.axis("off")
+        ax_bar.set_xticks([])
+        ax_bar.set_yticks([])
 
     stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}_ds{downsample_rate}"
     out_stem = output_dir / stem
