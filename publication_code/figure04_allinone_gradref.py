@@ -438,6 +438,29 @@ def nm_to_rgb_color(nm: float, repo_root: Path) -> np.ndarray:
     return rgb
 
 
+def _parse_start_nm(name: str) -> float | None:
+    # Accept patterns: *_XXXnm.png, *_XXXtoYYYnm.png, *_XXXtoYYY.png
+    m = re.match(r".*_(\d+(?:\.\d+)?)nm\.(?:png|jpg|jpeg)$", name, flags=re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1))
+        except Exception:
+            return None
+    m = re.match(r".*_(\d+(?:\.\d+)?)to(\d+(?:\.\d+)?)nm\.(?:png|jpg|jpeg)$", name, flags=re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1))
+        except Exception:
+            return None
+    m = re.match(r".*_(\d+(?:\.\d+)?)to(\d+(?:\.\d+)?)\.(?:png|jpg|jpeg)$", name, flags=re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1))
+        except Exception:
+            return None
+    return None
+
+
 def build_gradient_bar_from_frames(frames_dir: Path, height: int = 10) -> np.ndarray:
     """Create a thin RGB gradient bar from ROI GT frames directory.
 
@@ -447,15 +470,10 @@ def build_gradient_bar_from_frames(frames_dir: Path, height: int = 10) -> np.nda
     if frames_dir is None or (not frames_dir.exists()):
         return np.zeros((0, 0, 3), dtype=np.uint8)
     wl_vals: list[float] = []
-    pat = re.compile(r".*_(\d+(?:\.\d+)?)nm\.(?:png|jpg|jpeg)$", re.IGNORECASE)
     for p in sorted(frames_dir.glob("*.png")):
-        m = pat.match(p.name)
-        if not m:
-            continue
-        try:
-            wl_vals.append(float(m.group(1)))
-        except Exception:
-            continue
+        nm = _parse_start_nm(p.name)
+        if nm is not None:
+            wl_vals.append(nm)
     if not wl_vals:
         return np.zeros((0, 0, 3), dtype=np.uint8)
     wl_sorted = sorted(wl_vals)
@@ -469,16 +487,12 @@ def build_gradient_bar_from_frames(frames_dir: Path, height: int = 10) -> np.nda
 
 
 def list_gt_frames_with_nm(frames_dir: Path) -> List[Tuple[float, Path]]:
-    pat = re.compile(r".*_(\d+(?:\.\d+)?)nm\.(?:png|jpg|jpeg)$", re.IGNORECASE)
     items: List[Tuple[float, Path]] = []
     for p in sorted(frames_dir.glob("*.png")):
-        m = pat.match(p.name)
-        if not m:
+        nm = _parse_start_nm(p.name)
+        if nm is None:
             continue
-        try:
-            items.append((float(m.group(1)), p))
-        except Exception:
-            continue
+        items.append((float(nm), p))
     return items
 
 
