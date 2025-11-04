@@ -70,7 +70,13 @@ def parse_args() -> argparse.Namespace:
         "--time-bin-us",
         type=int,
         default=1000,
-        help="Temporal bin size in microseconds when forming the activity trace.",
+        help="Temporal bin size in microseconds for plotting the activity trace (panel a).",
+    )
+    parser.add_argument(
+        "--analysis-bin-us",
+        type=int,
+        default=None,
+        help="Optional finer bin size (us) for scanning pattern analysis. If the coarse bin fails, falls back to 1000us.",
     )
     parser.add_argument(
         "--activity-fraction",
@@ -209,6 +215,7 @@ def render_activity_figure(
     activity: np.ndarray,
     results: dict,
     save_png: bool,
+    bin_us: int,
 ) -> None:
     """Create the standalone activity figure."""
 
@@ -236,7 +243,9 @@ def render_activity_figure(
         color = "#1f77b4" if i % 2 == 0 else "#d94801"
         ax.axvline(t_boundary, color=color, linestyle="--", linewidth=1.1, alpha=0.9, zorder=3)
 
-    ax.set_ylabel("Events per 1 ms bin")
+    # Label reflects plotting bin size
+    ms = max(1, int(round(bin_us / 1000.0)))
+    ax.set_ylabel(f"Events per {ms} ms bin")
     ax.set_xlabel("Time (s)")
     ax.set_xlim(time_s[0], time_s[-1])
     ymax = max(1.0, float(activity.max()))
@@ -486,19 +495,45 @@ def main() -> None:
     raw_path = args.raw_file.expanduser().resolve() if args.raw_file else infer_raw_file(
         segment_dirs[0] if segment_dirs else dataset_path
     )
-    time_s, activity, _ = load_activity_from_raw(raw_path, args.time_bin_us)
-    results = analyze_scanning_pattern(
-        activity,
-        activity_fraction=args.activity_fraction,
-        max_iterations=2,
-    )
+    # Build plotting activity (panel a)
+    time_s, activity, t_min_coarse = load_activity_from_raw(raw_path, args.time_bin_us)
+
+    # Try analysis on the plotting bins; if it fails, retry with a finer bin (default 1000us)
+    results = analyze_scanning_pattern(activity, activity_fraction=args.activity_fraction, max_iterations=2)
+    corr_bin_us = args.time_bin_us
+    if not results:
+        analysis_bin_us = args.analysis_bin_us if args.analysis_bin_us else 1000
+        time_s_fine, activity_fine, t_min_fine = load_activity_from_raw(raw_path, analysis_bin_us)
+        results_fine = analyze_scanning_pattern(activity_fine, activity_fraction=args.activity_fraction, max_iterations=2)
+        if not results_fine:
+            raise RuntimeError("Scanning analysis failed on both coarse and fine bins.")
+        # Map fine-bin indices to coarse-bin indices
+        scan_start_us = int(t_min_fine + results_fine["scan_start"] * analysis_bin_us)
+        scan_end_us = int(t_min_fine + results_fine["scan_end"] * analysis_bin_us)
+        one_way_us = int(results_fine["one_way_period"] * analysis_bin_us)
+        scan_start_idx = max(0, int(round((scan_start_us - t_min_coarse) / args.time_bin_us)))
+        scan_end_idx = max(0, int(round((scan_end_us - t_min_coarse) / args.time_bin_us)))
+        one_way_bins = max(1, int(round(one_way_us / args.time_bin_us)))
+        n_cycles = max(1, int((scan_end_idx - scan_start_idx) // one_way_bins))
+        results = dict(results_fine)
+        results.update(
+            {
+                "scan_start": scan_start_idx,
+                "scan_end": scan_end_idx,
+                "one_way_period": one_way_bins,
+                "n_cycles": n_cycles,
+            }
+        )
+        corr_bin_us = analysis_bin_us
+        # Keep autocorr/reverse_corr from fine analysis
+        activity = activity  # plotting remains coarse
 
     auto_corr = results["autocorr"]
     reverse_corr = results["reverse_corr"]
-    lags_ms = np.arange(-len(activity) + 1, len(activity)) * (args.time_bin_us / 1000.0)
+    lags_ms = np.arange(-len(auto_corr) // 2, (len(auto_corr) + 1) // 2) * (corr_bin_us / 1000.0)
     lags_s = lags_ms / 1000.0
-    one_way_s = results["one_way_period"] * args.time_bin_us / 1_000_000.0
-    turnaround_s = results["reverse_peak_lag"] * args.time_bin_us / 1_000_000.0
+    one_way_s = results["one_way_period"] * (corr_bin_us / 1_000_000.0)
+    turnaround_s = results["reverse_peak_lag"] * (corr_bin_us / 1_000_000.0)
 
     setup_figure_style()
     render_activity_figure(
@@ -507,6 +542,7 @@ def main() -> None:
         activity=activity,
         results=results,
         save_png=args.save_png,
+        bin_us=args.time_bin_us,
     )
     # Prepare peak indices for panel (b)
     auto_peak_indices = results.get("autocorr_peaks", [])

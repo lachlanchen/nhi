@@ -11,7 +11,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import os
-from simple_raw_reader import read_raw_simple
+try:
+    # Optional: simple_raw_reader requires Metavision HAL; guard import so
+    # downstream utilities (e.g., analysis from precomputed activity) can be
+    # imported without the HAL runtime.
+    from simple_raw_reader import read_raw_simple  # type: ignore
+except Exception:  # pragma: no cover - environment-dependent
+    read_raw_simple = None
 
 
 def events_to_activity_signal(t, time_bin_us=1000):

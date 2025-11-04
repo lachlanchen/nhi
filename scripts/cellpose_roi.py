@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Extract Cellpose ROI and optionally apply to frames")
-    ap.add_argument("--rgb", type=Path, required=True, help="Path to source RGB image for ROI")
+    ap.add_argument("--rgb", type=Path, required=False, help="Path to source RGB image for ROI")
     ap.add_argument("--out-dir", type=Path, required=True, help="Directory to save ROI mask + JSON (created if missing)")
     ap.add_argument("--model-type", default="cyto2", help="Cellpose model type (default: cyto2)")
     ap.add_argument("--diameter", type=float, default=None, help="Approx cell diameter; None to auto")
@@ -48,10 +48,16 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--largest-only", action="store_true", help="Keep only the largest detected object as ROI")
     ap.add_argument("--square-only", action="store_true", help="Use square bounding box of ROI (no pixel-wise mask)")
     ap.add_argument("--apply", action="store_true", help="Apply ROI to a frames directory (mask/crop frames)")
-    ap.add_argument("--frames-dir", type=Path, help="Directory containing frames (PNG) to mask")
+    ap.add_argument("--roi-json-in", type=Path, help="Use an existing roi.json instead of running detection")
+    ap.add_argument("--frames-dir", type=Path, help="Directory containing frames (PNG) to process")
     ap.add_argument("--frames-glob", default="*.png", help="Glob to select frames (default: *.png)")
     ap.add_argument("--masked-out", type=Path, help="Output directory for masked/cropped frames; defaults to <out-dir>/masked_frames")
-    ap.add_argument("--apply-mode", choices=("mask", "crop"), default="crop", help="Apply mode when using --square-only: crop (default) or mask")
+    ap.add_argument(
+        "--apply-mode",
+        choices=("mask", "crop", "mask-crop"),
+        default="crop",
+        help="Apply mode: with --square-only uses square crop/mask; without --square-only uses mask or mask-crop (crop to mask bbox).",
+    )
     return ap.parse_args()
 
 
@@ -162,12 +168,20 @@ def save_roi(rgb_path: Path, roi_mask: np.ndarray, out_dir: Path) -> Tuple[Path,
     return mask_png, json_path
 
 
-def apply_roi_to_frames(mask_png: Path, frames_dir: Path, out_dir: Path, pattern: str) -> int:
+def apply_roi_to_frames(mask_png: Path, frames_dir: Path, out_dir: Path, pattern: str, crop_bbox: bool = False) -> int:
     ensure_dir(out_dir)
     mask = plt.imread(mask_png)
     if mask.ndim == 3:
         mask = mask[..., 0]
     mask = (mask > 0.5).astype(np.float32)
+    # Precompute bbox if requested
+    if crop_bbox and np.any(mask > 0):
+        ys, xs = np.where(mask > 0)
+        y0m, y1m = int(ys.min()), int(ys.max())
+        x0m, x1m = int(xs.min()), int(xs.max())
+    else:
+        y0m = x0m = 0
+        y1m, x1m = mask.shape[0] - 1, mask.shape[1] - 1
     count = 0
     for i, img_path in enumerate(sorted(frames_dir.glob(pattern))):
         img = plt.imread(img_path)
@@ -175,12 +189,26 @@ def apply_roi_to_frames(mask_png: Path, frames_dir: Path, out_dir: Path, pattern
         if i == 0 and (mask.shape[0] != img.shape[0] or mask.shape[1] != img.shape[1]):
             Ht, Wt = img.shape[0], img.shape[1]
             mask = _resize_gray_nn(mask, (Ht, Wt)).astype(np.float32)
-        if img.ndim == 2:
-            masked = img * mask
+            if crop_bbox and np.any(mask > 0):
+                ys, xs = np.where(mask > 0)
+                y0m, y1m = int(ys.min()), int(ys.max())
+                x0m, x1m = int(xs.min()), int(xs.max())
+        if crop_bbox:
+            # Apply mask then crop to mask bbox
+            if img.ndim == 2:
+                masked = img * mask
+            else:
+                masked = img.copy()
+                for c in range(img.shape[2]):
+                    masked[..., c] = img[..., c] * mask
+            masked = masked[y0m : y1m + 1, x0m : x1m + 1]
         else:
-            masked = img.copy()
-            for c in range(img.shape[2]):
-                masked[..., c] = img[..., c] * mask
+            if img.ndim == 2:
+                masked = img * mask
+            else:
+                masked = img.copy()
+                for c in range(img.shape[2]):
+                    masked[..., c] = img[..., c] * mask
         out_path = out_dir / img_path.name
         plt.imsave(out_path, masked)
         count += 1
@@ -224,11 +252,40 @@ def apply_square_to_frames(meta_json: Path, frames_dir: Path, out_dir: Path, pat
 
 def main() -> None:
     args = parse_args()
+    out_dir = ensure_dir(args.out_dir.resolve())
+
+    # If reusing an existing ROI JSON for application, skip detection
+    if args.roi_json_in and args.apply:
+        meta_json = args.roi_json_in.resolve()
+        meta = json.loads(meta_json.read_text(encoding="utf-8"))
+        mask_png = Path(meta.get("mask_png", "")).resolve()
+        frames_dir = args.frames_dir.resolve()
+        if not frames_dir.is_dir():
+            raise FileNotFoundError(frames_dir)
+        # Choose default subdir based on intent
+        if args.square_only:
+            default_subdir = "cropped_frames" if args.apply_mode == "crop" else "masked_frames"
+        else:
+            default_subdir = "cropped_frames" if args.apply_mode == "mask-crop" else "masked_frames"
+        out_apply = args.masked_out.resolve() if args.masked_out else out_dir / default_subdir
+        ensure_dir(out_apply)
+        if args.square_only:
+            # Use the square bbox from ROI JSON, ignore per-pixel mask
+            n = apply_square_to_frames(meta_json, frames_dir, out_apply, args.frames_glob, mode=args.apply_mode)
+        else:
+            if not mask_png.exists():
+                raise FileNotFoundError(f"Mask PNG not found in ROI JSON: {mask_png}")
+            n = apply_roi_to_frames(mask_png, frames_dir, out_apply, args.frames_glob, crop_bbox=(args.apply_mode == "mask-crop"))
+        print(f"Applied ROI to {n} frame(s): {out_apply}")
+        return
+
+    # Otherwise, run ROI detection from RGB
+    if not args.rgb:
+        raise SystemExit("--rgb is required when not using --roi-json-in for application")
     rgb_path = args.rgb.resolve()
     if not rgb_path.exists():
         raise FileNotFoundError(rgb_path)
 
-    out_dir = ensure_dir(args.out_dir.resolve())
     img = plt.imread(rgb_path)
     if img.ndim == 3 and img.shape[2] == 4:
         img = img[..., :3]
@@ -276,12 +333,13 @@ def main() -> None:
         frames_dir = args.frames_dir.resolve()
         if not frames_dir.is_dir():
             raise FileNotFoundError(frames_dir)
-        out_apply = args.masked_out.resolve() if args.masked_out else out_dir / ("cropped_frames" if args.square_only and args.apply_mode == "crop" else "masked_frames")
+        default_subdir = "cropped_frames" if (args.square_only and args.apply_mode == "crop") or (not args.square_only and args.apply_mode == "mask-crop") else "masked_frames"
+        out_apply = args.masked_out.resolve() if args.masked_out else out_dir / default_subdir
         ensure_dir(out_apply)
         if args.square_only:
             n = apply_square_to_frames(json_path, frames_dir, out_apply, args.frames_glob, args.apply_mode)
         else:
-            n = apply_roi_to_frames(mask_png, frames_dir, out_apply, args.frames_glob)
+            n = apply_roi_to_frames(mask_png, frames_dir, out_apply, args.frames_glob, crop_bbox=(args.apply_mode == "mask-crop"))
         print(f"Applied ROI to {n} frame(s): {out_apply}")
 
 
