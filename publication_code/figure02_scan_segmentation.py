@@ -297,7 +297,8 @@ def render_correlation_figure(
     rev_line_color = "#d62728"    # solid red for reverse corr line
 
     ax.plot(lags_s, auto_corr, color=auto_line_color, linewidth=1.4, label="Auto-correlation")
-    ax.plot(lags_s, reverse_corr, color=rev_line_color, linewidth=1.4, label="Reverse correlation")
+    # Reverse correlation equals convolution with the time-reversed signal
+    ax.plot(lags_s, reverse_corr, color=rev_line_color, linewidth=1.4, label="Auto-convolution")
 
     # Mark peaks: center (closest to 0 lag) in blue, side peaks in red
     if auto_peak_indices:
