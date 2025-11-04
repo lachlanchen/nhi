@@ -514,11 +514,7 @@ def render_grid_downsampled(
         bar_img = np.concatenate(bar_colors, axis=1)
         ax_bar = fig.add_subplot(gs[bar_row_idx, 1:])
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
-        # Ensure absolutely no ticks/labels/spines on the bar
-        ax_bar.set_xticks([]); ax_bar.set_yticks([])
-        ax_bar.tick_params(labelleft=False, labelright=False, labelbottom=False, labeltop=False, length=0)
-        for spine in ax_bar.spines.values():
-            spine.set_visible(False)
+        ax_bar.axis("off")
 
     stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}_ds{downsample_rate}"
     out_stem = output_dir / stem
