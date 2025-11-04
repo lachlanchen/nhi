@@ -710,16 +710,8 @@ def render_grid(
             )
 
         if show_colorbar:
-            cbar0 = fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
-            cbar1 = fig.colorbar(im1, ax=ax_comp, shrink=0.85, pad=0.01)
-            # Plain colorbars: no ticks or labels, no outline
-            for cb in (cbar0, cbar1):
-                try:
-                    cb.set_ticks([])
-                    cb.outline.set_visible(False)
-                    cb.ax.tick_params(labelleft=False, labelright=False, labelbottom=False, labeltop=False, length=0)
-                except Exception:
-                    pass
+            fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
+            fig.colorbar(im1, ax=ax_comp, shrink=0.85, pad=0.01)
 
         # Diff row: external images (e.g., gradient_20nm) matched by wavelength
         ax_diff = axes[2, col]
