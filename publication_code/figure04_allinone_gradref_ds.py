@@ -509,11 +509,13 @@ def render_grid_downsampled(
     bar_row_idx = 3 if not has_gt_images else 4
     for k in range(n_ellipsis):
         col = 2 + 2 * k  # between two image cols
-        ax_dot = fig.add_subplot(gs[bar_row_idx, col])
-        ax_dot.axis("off")
-        ax_dot.set_xticks([])
-        ax_dot.set_yticks([])
-        ax_dot.text(0.5, 0.5, "…", ha="center", va="center", fontsize=14, color="black")
+        # Place ellipsis in each image row (Orig/Comp/Diff[/Ref])
+        for row_idx in range(3 + (1 if has_gt_images else 0)):
+            ax_dot = fig.add_subplot(gs[row_idx, col])
+            ax_dot.axis("off")
+            ax_dot.set_xticks([])
+            ax_dot.set_yticks([])
+            ax_dot.text(0.5, 0.5, "…", ha="center", va="center", fontsize=14, color="black")
 
     # Build a wavelength bar with one stripe per kept column (selected wavelengths)
     bar_colors: List[np.ndarray] = []
