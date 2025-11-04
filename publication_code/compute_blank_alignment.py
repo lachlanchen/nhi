@@ -160,6 +160,8 @@ def main() -> None:
             "first_forward_npz": str(ds.first_forward_npz),
         },
         "params_npz": str(ds.params_npz),
+        "a_params": params["a_params"].astype(float).tolist(),
+        "b_params": params["b_params"].astype(float).tolist(),
         "a_avg": float(a_avg),
         "b_avg": float(b_avg),
         "pos_scale": float(args.pos_scale),
@@ -181,4 +183,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
