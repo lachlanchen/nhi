@@ -310,11 +310,11 @@ def plot_three_panel_normalised(
 
     fig, axes = plt.subplots(1, 3, figsize=(12.5, 3.2), constrained_layout=True)
 
-    # (1) GT normalised
+    # (1) Ref. normalised
     ax0 = axes[0]
     for name, wl, valn in gt_norm_list:
         ax0.plot(wl, valn, linewidth=1.6, label=name)
-    ax0.set_title("GT (normalised)")
+    ax0.set_title("Ref. (normalised)")
     ax0.set_xlabel("Wavelength (nm)")
     ax0.set_ylabel("Norm. intensity")
     ax0.grid(alpha=0.3, linestyle="--", linewidth=0.6)
@@ -618,9 +618,9 @@ def render_grid(
     num_cols = len(selected)
     has_bar = gradient_bar is not None and getattr(gradient_bar, 'size', 0) > 0
     has_gt_images = add_gt_row and gt_frame_paths is not None and len(gt_frame_paths) > 0
-    # 2 content rows (Orig., Comp.) + optional GT images row + optional gradient bar row
+    # 2 content rows (Orig., Comp.) + optional Ref. images row + optional gradient bar row
     n_rows = 2 + (1 if has_gt_images else 0) + (1 if has_bar else 0)
-    # Height ratios: content rows 1.0; GT row 1.0; bar row tiny
+    # Height ratios: content rows 1.0; Ref. row 1.0; bar row tiny
     height_ratios: List[float] = [1.0, 1.0]
     if has_gt_images:
         height_ratios.append(1.0)
@@ -644,7 +644,7 @@ def render_grid(
         label_ax.text(
             0.5,
             0.5,
-            "Orig." if row == 0 else ("Comp." if row == 1 else ("GT" if (has_gt_images and row == 2) else "")),
+            "Orig." if row == 0 else ("Comp." if row == 1 else ("Ref." if (has_gt_images and row == 2) else "")),
             rotation=90,
             va="center",
             ha="center",
