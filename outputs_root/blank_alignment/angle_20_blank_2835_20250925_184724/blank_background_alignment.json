@@ -1,0 +1,1484 @@
+{
+  "dataset": {
+    "root": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184724",
+    "segments_dir": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184724/angle_20_blank_2835_event_20250925_184724_segments",
+    "first_forward_npz": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184724/angle_20_blank_2835_event_20250925_184724_segments/Scan_1_Forward_events.npz"
+  },
+  "params_npz": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184724/angle_20_blank_2835_event_20250925_184724_segments/Scan_1_Forward_events_chunked_processing_learned_params_n13.npz",
+  "a_avg": -4.9608869552612305,
+  "b_avg": -83.90641021728516,
+  "pos_scale": 1.0,
+  "neg_scale": 1.2679328680038453,
+  "bin_width_us": 5000.0,
+  "frame_means_per_bin": [
+    1.6446695351099438e-12,
+    9.610326857228957e-13,
+    8.316823792153816e-13,
+    5.0790227058838955e-12,
+    1.2566185071671843e-12,
+    2.1221542318566877e-12,
+    4.7091614462091425e-12,
+    -3.3994890236144215e-12,
+    3.549050376500107e-12,
+    -2.619344845189442e-12,
+    7.017257001168398e-12,
+    2.4980787837608487e-12,
+    8.690726957527595e-12,
+    9.2000443721596e-12,
+    4.446418493814219e-12,
+    2.6807861486233264e-11,
+    -5.966285191588705e-12,
+    2.1827872842550278e-11,
+    5.626740393060992e-12,
+    3.0073957647119842e-12,
+    -7.308295461860848e-12,
+    1.6912559894222134e-11,
+    1.5489705004756438e-11,
+    6.89437396061976e-11,
+    -1.6362820820514656e-11,
+    -4.511093582015846e-11,
+    -9.436108838745128e-11,
+    -7.321230427459469e-11,
+    9.546056306541928e-11,
+    -8.6923440667519e-11,
+    2.887100003512444e-10,
+    -2.599942205971928e-10,
+    3.135452730784749e-10,
+    -1.4073318899132659e-10,
+    5.380975109936514e-10,
+    7.533365042888818e-10,
+    1.1874362604302746e-09,
+    7.84897979944077e-10,
+    3.681311089298589e-10,
+    2.773271612355188e-10,
+    1.0115197568438816e-09,
+    4.190951752303107e-11,
+    -1.6324015750246446e-10,
+    -1.4681264884353062e-11,
+    4.57900280192991e-11,
+    2.332348723876887e-12,
+    -1.6229427740946378e-12,
+    4.5919375940561835e-11,
+    2.9802322831784522e-09,
+    9.379452770019725e-09,
+    1.5795230012827233e-08,
+    -3.783239321819565e-08,
+    -3.060326037029881e-08,
+    4.4144687905145474e-09,
+    2.119276309997531e-09,
+    1.038942043507518e-09,
+    2.032352730552134e-09,
+    4.71870098550653e-09,
+    1.3211845839578018e-08,
+    1.7301903909583416e-08,
+    -8.112854388286905e-09,
+    8.255657490963131e-09,
+    -1.562552309763987e-09,
+    -3.774960788405224e-09,
+    3.1292437530083816e-09,
+    -3.493494382666995e-09,
+    -1.1581513525982245e-08,
+    -4.213717375023407e-09,
+    1.0596381549987655e-09,
+    -6.328854329495925e-09,
+    -5.608631337139514e-10,
+    2.192747317053545e-09,
+    3.1871927319571114e-10,
+    -5.153318327622003e-10,
+    -1.386635806177594e-10,
+    6.10533706923988e-11,
+    9.778886728151193e-11,
+    -8.019722039231958e-12,
+    8.278423085927855e-12,
+    2.0954758761515535e-11,
+    3.2337589637304598e-12,
+    2.056670632410995e-11,
+    -1.966125352803605e-11,
+    -1.5910094422477705e-11,
+    -5.1869494810397043e-11,
+    -7.22098353334033e-11,
+    -3.8805108432127255e-11,
+    6.661543539010495e-11,
+    -1.831601120771964e-10,
+    -1.1796752463766325e-10,
+    -1.5935963659785557e-10,
+    5.463758889767689e-10,
+    1.3271346521737115e-10,
+    -1.7596822887711028e-09,
+    -5.572413641630192e-10,
+    -4.2219958085176756e-10,
+    2.1968864505339525e-09,
+    -5.836288119454025e-10,
+    3.394153291758073e-10,
+    2.798106857326843e-09,
+    4.215786830741308e-09,
+    3.073364451822158e-09,
+    -1.234778501668643e-09,
+    -8.45433945073637e-10,
+    -1.0089327984186269e-10,
+    3.3858749137749555e-09,
+    2.8573493571215636e-10,
+    -1.202958288537559e-10,
+    1.178123043565904e-09,
+    -4.899791683499188e-10,
+    -1.9092112613083856e-10,
+    -4.100406472695717e-11,
+    -1.396983917434369e-10,
+    -5.652610671202929e-11,
+    -3.343706908576216e-11,
+    -1.0816923745604612e-11,
+    -1.135049346179251e-11,
+    -3.975502219089044e-12,
+    2.813370196530496e-12,
+    -3.676783877359924e-11,
+    3.3857455034036477e-11,
+    -1.0024652635776121e-10,
+    -5.3421697621125475e-11,
+    1.7514038830324097e-10,
+    -4.5660676628589414e-11,
+    7.185412681520731e-11,
+    -4.029263589444554e-10,
+    7.023724657440056e-11,
+    -8.019722039231958e-12,
+    6.281900000182361e-10,
+    6.570998190014166e-10,
+    -1.14656162342186e-09,
+    5.018793713951197e-10,
+    -1.74260805785309e-09,
+    1.5242646034252516e-09,
+    -1.5035686029563067e-09,
+    4.76009343053363e-10,
+    -6.819350639730715e-10,
+    5.879750020199026e-09,
+    -4.284083754413359e-09,
+    -3.1292437530083816e-09,
+    3.7025247312527654e-09,
+    6.010135056300214e-09,
+    4.08540179464012e-09,
+    4.5738285381347055e-10,
+    -3.1023390523188255e-09,
+    -2.7670628011122744e-09,
+    -6.477865799325855e-09,
+    -2.301401513804535e-09,
+    2.2157198742434048e-08,
+    -2.002550480995069e-08,
+    -2.9636753051676124e-09,
+    1.0968910224562478e-08,
+    -2.1198971467129013e-08,
+    5.244380929525505e-09,
+    -5.794896118516135e-09,
+    -4.453791557779141e-09,
+    -1.272393568285679e-08,
+    -1.3328260717315743e-09,
+    -1.7566813781400015e-08,
+    -3.319647490229727e-08,
+    2.0075175299894e-08,
+    5.066394859198908e-09,
+    -3.1437310532567153e-09,
+    -8.489522862475951e-09,
+    8.816519958543267e-09,
+    3.630088452055702e-09,
+    1.3460715209134833e-08,
+    -1.573935115573022e-08,
+    3.0058952660283467e-08,
+    3.103477297372592e-08,
+    -2.2970553459344956e-08,
+    -9.774748122026722e-09,
+    -1.0615007539627186e-08,
+    -1.3682163846340245e-08,
+    -8.833077380643317e-09,
+    5.811452652437765e-09,
+    1.0076909973122383e-08,
+    -2.938840004684806e-10,
+    1.2665987370041876e-08,
+    2.7200828256468412e-08,
+    1.2355546585851584e-09,
+    -1.362421464534691e-08,
+    -1.3711137780703098e-10,
+    -1.391654613769333e-08,
+    -1.0662608573852594e-08,
+    -5.845601336318396e-09,
+    -1.4074871046432236e-08,
+    -7.801896018122534e-09,
+    1.647613068200826e-08,
+    1.0120372317956594e-09,
+    1.4015370197739685e-08,
+    1.620915135447376e-08,
+    1.445826569579367e-08,
+    1.5770396100123207e-09,
+    -5.501012090292079e-09,
+    -1.0766089353353436e-08,
+    -1.334067878389078e-08,
+    5.615875320330588e-09,
+    5.358209431705063e-09,
+    7.10288672323145e-09,
+    9.694033131779634e-09,
+    1.008829286774926e-08,
+    -2.0820234425400486e-09,
+    4.237517892136111e-09,
+    -3.784274227314199e-09,
+    -3.7211511649815066e-09,
+    6.678617658906205e-09,
+    7.266385715354318e-09,
+    -2.9491882269638836e-09,
+    -2.000015264513877e-09,
+    3.994339026203164e-10,
+    -6.713283817738613e-10,
+    1.0368724767673143e-09,
+    3.4174363339189995e-10,
+    1.9053307542815645e-10,
+    -4.779495549334101e-11,
+    -5.956583837285478e-11,
+    -3.6153424004536916e-11,
+    -3.5183297247831646e-11,
+    1.0865430083439875e-11,
+    -5.038196596029998e-11,
+    -2.270098692358502e-11,
+    2.1342808163155036e-12,
+    -9.054525250233592e-13,
+    3.9451858446781785e-11,
+    -2.4835269257783565e-11,
+    2.949188115941581e-11,
+    -1.5522043719795597e-11,
+    -2.3800465070999977e-11,
+    -1.645336505928796e-10,
+    1.469420002342403e-10,
+    -6.726218887420643e-11,
+    1.2521114700625446e-10,
+    -6.415777631385566e-11,
+    2.1523899329523033e-10,
+    5.174014428704909e-13,
+    3.93225070560721e-11,
+    -8.278423085927855e-12,
+    8.951044766503102e-11,
+    -1.4280279736489376e-10,
+    2.6646173115207894e-11
+  ],
+  "series_npz": "figure04_rescaled_bg_series.npz",
+  "alignment": {
+    "time_range_ms": [
+      0.0,
+      1210.0
+    ],
+    "wavelength_range_nm": [
+      399.896,
+      720.819
+    ],
+    "slope_nm_per_ms": 0.4475147286821705,
+    "intercept_nm": 299.2838914728682
+  },
+  "bin_mapping": [
+    {
+      "index": 0,
+      "time_center_ms": 2.5,
+      "wavelength_nm": 300.40267829457366
+    },
+    {
+      "index": 1,
+      "time_center_ms": 7.5,
+      "wavelength_nm": 302.6402519379845
+    },
+    {
+      "index": 2,
+      "time_center_ms": 12.5,
+      "wavelength_nm": 304.87782558139537
+    },
+    {
+      "index": 3,
+      "time_center_ms": 17.5,
+      "wavelength_nm": 307.1153992248062
+    },
+    {
+      "index": 4,
+      "time_center_ms": 22.5,
+      "wavelength_nm": 309.3529728682171
+    },
+    {
+      "index": 5,
+      "time_center_ms": 27.5,
+      "wavelength_nm": 311.5905465116279
+    },
+    {
+      "index": 6,
+      "time_center_ms": 32.5,
+      "wavelength_nm": 313.82812015503873
+    },
+    {
+      "index": 7,
+      "time_center_ms": 37.5,
+      "wavelength_nm": 316.0656937984496
+    },
+    {
+      "index": 8,
+      "time_center_ms": 42.5,
+      "wavelength_nm": 318.30326744186044
+    },
+    {
+      "index": 9,
+      "time_center_ms": 47.5,
+      "wavelength_nm": 320.5408410852713
+    },
+    {
+      "index": 10,
+      "time_center_ms": 52.5,
+      "wavelength_nm": 322.77841472868215
+    },
+    {
+      "index": 11,
+      "time_center_ms": 57.5,
+      "wavelength_nm": 325.01598837209303
+    },
+    {
+      "index": 12,
+      "time_center_ms": 62.5,
+      "wavelength_nm": 327.25356201550386
+    },
+    {
+      "index": 13,
+      "time_center_ms": 67.5,
+      "wavelength_nm": 329.49113565891474
+    },
+    {
+      "index": 14,
+      "time_center_ms": 72.5,
+      "wavelength_nm": 331.72870930232557
+    },
+    {
+      "index": 15,
+      "time_center_ms": 77.5,
+      "wavelength_nm": 333.96628294573645
+    },
+    {
+      "index": 16,
+      "time_center_ms": 82.5,
+      "wavelength_nm": 336.2038565891473
+    },
+    {
+      "index": 17,
+      "time_center_ms": 87.5,
+      "wavelength_nm": 338.44143023255816
+    },
+    {
+      "index": 18,
+      "time_center_ms": 92.5,
+      "wavelength_nm": 340.679003875969
+    },
+    {
+      "index": 19,
+      "time_center_ms": 97.5,
+      "wavelength_nm": 342.91657751937987
+    },
+    {
+      "index": 20,
+      "time_center_ms": 102.5,
+      "wavelength_nm": 345.1541511627907
+    },
+    {
+      "index": 21,
+      "time_center_ms": 107.5,
+      "wavelength_nm": 347.3917248062015
+    },
+    {
+      "index": 22,
+      "time_center_ms": 112.5,
+      "wavelength_nm": 349.6292984496124
+    },
+    {
+      "index": 23,
+      "time_center_ms": 117.5,
+      "wavelength_nm": 351.86687209302323
+    },
+    {
+      "index": 24,
+      "time_center_ms": 122.5,
+      "wavelength_nm": 354.1044457364341
+    },
+    {
+      "index": 25,
+      "time_center_ms": 127.5,
+      "wavelength_nm": 356.34201937984494
+    },
+    {
+      "index": 26,
+      "time_center_ms": 132.5,
+      "wavelength_nm": 358.5795930232558
+    },
+    {
+      "index": 27,
+      "time_center_ms": 137.5,
+      "wavelength_nm": 360.81716666666665
+    },
+    {
+      "index": 28,
+      "time_center_ms": 142.5,
+      "wavelength_nm": 363.05474031007753
+    },
+    {
+      "index": 29,
+      "time_center_ms": 147.5,
+      "wavelength_nm": 365.29231395348836
+    },
+    {
+      "index": 30,
+      "time_center_ms": 152.5,
+      "wavelength_nm": 367.52988759689924
+    },
+    {
+      "index": 31,
+      "time_center_ms": 157.5,
+      "wavelength_nm": 369.76746124031007
+    },
+    {
+      "index": 32,
+      "time_center_ms": 162.5,
+      "wavelength_nm": 372.0050348837209
+    },
+    {
+      "index": 33,
+      "time_center_ms": 167.5,
+      "wavelength_nm": 374.2426085271318
+    },
+    {
+      "index": 34,
+      "time_center_ms": 172.5,
+      "wavelength_nm": 376.48018217054266
+    },
+    {
+      "index": 35,
+      "time_center_ms": 177.5,
+      "wavelength_nm": 378.7177558139535
+    },
+    {
+      "index": 36,
+      "time_center_ms": 182.5,
+      "wavelength_nm": 380.9553294573643
+    },
+    {
+      "index": 37,
+      "time_center_ms": 187.5,
+      "wavelength_nm": 383.1929031007752
+    },
+    {
+      "index": 38,
+      "time_center_ms": 192.5,
+      "wavelength_nm": 385.430476744186
+    },
+    {
+      "index": 39,
+      "time_center_ms": 197.5,
+      "wavelength_nm": 387.6680503875969
+    },
+    {
+      "index": 40,
+      "time_center_ms": 202.5,
+      "wavelength_nm": 389.90562403100773
+    },
+    {
+      "index": 41,
+      "time_center_ms": 207.5,
+      "wavelength_nm": 392.1431976744186
+    },
+    {
+      "index": 42,
+      "time_center_ms": 212.5,
+      "wavelength_nm": 394.38077131782944
+    },
+    {
+      "index": 43,
+      "time_center_ms": 217.5,
+      "wavelength_nm": 396.6183449612403
+    },
+    {
+      "index": 44,
+      "time_center_ms": 222.5,
+      "wavelength_nm": 398.85591860465115
+    },
+    {
+      "index": 45,
+      "time_center_ms": 227.5,
+      "wavelength_nm": 401.09349224806203
+    },
+    {
+      "index": 46,
+      "time_center_ms": 232.5,
+      "wavelength_nm": 403.33106589147286
+    },
+    {
+      "index": 47,
+      "time_center_ms": 237.5,
+      "wavelength_nm": 405.5686395348837
+    },
+    {
+      "index": 48,
+      "time_center_ms": 242.5,
+      "wavelength_nm": 407.80621317829457
+    },
+    {
+      "index": 49,
+      "time_center_ms": 247.5,
+      "wavelength_nm": 410.04378682170545
+    },
+    {
+      "index": 50,
+      "time_center_ms": 252.5,
+      "wavelength_nm": 412.2813604651163
+    },
+    {
+      "index": 51,
+      "time_center_ms": 257.5,
+      "wavelength_nm": 414.5189341085271
+    },
+    {
+      "index": 52,
+      "time_center_ms": 262.5,
+      "wavelength_nm": 416.756507751938
+    },
+    {
+      "index": 53,
+      "time_center_ms": 267.5,
+      "wavelength_nm": 418.9940813953488
+    },
+    {
+      "index": 54,
+      "time_center_ms": 272.5,
+      "wavelength_nm": 421.2316550387597
+    },
+    {
+      "index": 55,
+      "time_center_ms": 277.5,
+      "wavelength_nm": 423.4692286821705
+    },
+    {
+      "index": 56,
+      "time_center_ms": 282.5,
+      "wavelength_nm": 425.7068023255814
+    },
+    {
+      "index": 57,
+      "time_center_ms": 287.5,
+      "wavelength_nm": 427.94437596899223
+    },
+    {
+      "index": 58,
+      "time_center_ms": 292.5,
+      "wavelength_nm": 430.18194961240306
+    },
+    {
+      "index": 59,
+      "time_center_ms": 297.5,
+      "wavelength_nm": 432.41952325581394
+    },
+    {
+      "index": 60,
+      "time_center_ms": 302.5,
+      "wavelength_nm": 434.6570968992248
+    },
+    {
+      "index": 61,
+      "time_center_ms": 307.5,
+      "wavelength_nm": 436.89467054263565
+    },
+    {
+      "index": 62,
+      "time_center_ms": 312.5,
+      "wavelength_nm": 439.1322441860465
+    },
+    {
+      "index": 63,
+      "time_center_ms": 317.5,
+      "wavelength_nm": 441.36981782945736
+    },
+    {
+      "index": 64,
+      "time_center_ms": 322.5,
+      "wavelength_nm": 443.60739147286824
+    },
+    {
+      "index": 65,
+      "time_center_ms": 327.5,
+      "wavelength_nm": 445.84496511627907
+    },
+    {
+      "index": 66,
+      "time_center_ms": 332.5,
+      "wavelength_nm": 448.0825387596899
+    },
+    {
+      "index": 67,
+      "time_center_ms": 337.5,
+      "wavelength_nm": 450.3201124031008
+    },
+    {
+      "index": 68,
+      "time_center_ms": 342.5,
+      "wavelength_nm": 452.55768604651166
+    },
+    {
+      "index": 69,
+      "time_center_ms": 347.5,
+      "wavelength_nm": 454.79525968992243
+    },
+    {
+      "index": 70,
+      "time_center_ms": 352.5,
+      "wavelength_nm": 457.0328333333333
+    },
+    {
+      "index": 71,
+      "time_center_ms": 357.5,
+      "wavelength_nm": 459.2704069767442
+    },
+    {
+      "index": 72,
+      "time_center_ms": 362.5,
+      "wavelength_nm": 461.507980620155
+    },
+    {
+      "index": 73,
+      "time_center_ms": 367.5,
+      "wavelength_nm": 463.74555426356585
+    },
+    {
+      "index": 74,
+      "time_center_ms": 372.5,
+      "wavelength_nm": 465.98312790697673
+    },
+    {
+      "index": 75,
+      "time_center_ms": 377.5,
+      "wavelength_nm": 468.2207015503876
+    },
+    {
+      "index": 76,
+      "time_center_ms": 382.5,
+      "wavelength_nm": 470.45827519379844
+    },
+    {
+      "index": 77,
+      "time_center_ms": 387.5,
+      "wavelength_nm": 472.69584883720927
+    },
+    {
+      "index": 78,
+      "time_center_ms": 392.5,
+      "wavelength_nm": 474.93342248062015
+    },
+    {
+      "index": 79,
+      "time_center_ms": 397.5,
+      "wavelength_nm": 477.17099612403103
+    },
+    {
+      "index": 80,
+      "time_center_ms": 402.5,
+      "wavelength_nm": 479.40856976744186
+    },
+    {
+      "index": 81,
+      "time_center_ms": 407.5,
+      "wavelength_nm": 481.6461434108527
+    },
+    {
+      "index": 82,
+      "time_center_ms": 412.5,
+      "wavelength_nm": 483.88371705426357
+    },
+    {
+      "index": 83,
+      "time_center_ms": 417.5,
+      "wavelength_nm": 486.1212906976744
+    },
+    {
+      "index": 84,
+      "time_center_ms": 422.5,
+      "wavelength_nm": 488.3588643410852
+    },
+    {
+      "index": 85,
+      "time_center_ms": 427.5,
+      "wavelength_nm": 490.5964379844961
+    },
+    {
+      "index": 86,
+      "time_center_ms": 432.5,
+      "wavelength_nm": 492.834011627907
+    },
+    {
+      "index": 87,
+      "time_center_ms": 437.5,
+      "wavelength_nm": 495.0715852713178
+    },
+    {
+      "index": 88,
+      "time_center_ms": 442.5,
+      "wavelength_nm": 497.30915891472864
+    },
+    {
+      "index": 89,
+      "time_center_ms": 447.5,
+      "wavelength_nm": 499.5467325581395
+    },
+    {
+      "index": 90,
+      "time_center_ms": 452.5,
+      "wavelength_nm": 501.7843062015504
+    },
+    {
+      "index": 91,
+      "time_center_ms": 457.5,
+      "wavelength_nm": 504.02187984496123
+    },
+    {
+      "index": 92,
+      "time_center_ms": 462.5,
+      "wavelength_nm": 506.25945348837206
+    },
+    {
+      "index": 93,
+      "time_center_ms": 467.5,
+      "wavelength_nm": 508.49702713178294
+    },
+    {
+      "index": 94,
+      "time_center_ms": 472.5,
+      "wavelength_nm": 510.7346007751938
+    },
+    {
+      "index": 95,
+      "time_center_ms": 477.5,
+      "wavelength_nm": 512.9721744186047
+    },
+    {
+      "index": 96,
+      "time_center_ms": 482.5,
+      "wavelength_nm": 515.2097480620155
+    },
+    {
+      "index": 97,
+      "time_center_ms": 487.5,
+      "wavelength_nm": 517.4473217054264
+    },
+    {
+      "index": 98,
+      "time_center_ms": 492.5,
+      "wavelength_nm": 519.6848953488372
+    },
+    {
+      "index": 99,
+      "time_center_ms": 497.5,
+      "wavelength_nm": 521.922468992248
+    },
+    {
+      "index": 100,
+      "time_center_ms": 502.5,
+      "wavelength_nm": 524.1600426356589
+    },
+    {
+      "index": 101,
+      "time_center_ms": 507.5,
+      "wavelength_nm": 526.3976162790698
+    },
+    {
+      "index": 102,
+      "time_center_ms": 512.5,
+      "wavelength_nm": 528.6351899224805
+    },
+    {
+      "index": 103,
+      "time_center_ms": 517.5,
+      "wavelength_nm": 530.8727635658914
+    },
+    {
+      "index": 104,
+      "time_center_ms": 522.5,
+      "wavelength_nm": 533.1103372093023
+    },
+    {
+      "index": 105,
+      "time_center_ms": 527.5,
+      "wavelength_nm": 535.3479108527132
+    },
+    {
+      "index": 106,
+      "time_center_ms": 532.5,
+      "wavelength_nm": 537.5854844961241
+    },
+    {
+      "index": 107,
+      "time_center_ms": 537.5,
+      "wavelength_nm": 539.8230581395349
+    },
+    {
+      "index": 108,
+      "time_center_ms": 542.5,
+      "wavelength_nm": 542.0606317829457
+    },
+    {
+      "index": 109,
+      "time_center_ms": 547.5,
+      "wavelength_nm": 544.2982054263566
+    },
+    {
+      "index": 110,
+      "time_center_ms": 552.5,
+      "wavelength_nm": 546.5357790697674
+    },
+    {
+      "index": 111,
+      "time_center_ms": 557.5,
+      "wavelength_nm": 548.7733527131783
+    },
+    {
+      "index": 112,
+      "time_center_ms": 562.5,
+      "wavelength_nm": 551.0109263565892
+    },
+    {
+      "index": 113,
+      "time_center_ms": 567.5,
+      "wavelength_nm": 553.2484999999999
+    },
+    {
+      "index": 114,
+      "time_center_ms": 572.5,
+      "wavelength_nm": 555.4860736434109
+    },
+    {
+      "index": 115,
+      "time_center_ms": 577.5,
+      "wavelength_nm": 557.7236472868217
+    },
+    {
+      "index": 116,
+      "time_center_ms": 582.5,
+      "wavelength_nm": 559.9612209302326
+    },
+    {
+      "index": 117,
+      "time_center_ms": 587.5,
+      "wavelength_nm": 562.1987945736435
+    },
+    {
+      "index": 118,
+      "time_center_ms": 592.5,
+      "wavelength_nm": 564.4363682170542
+    },
+    {
+      "index": 119,
+      "time_center_ms": 597.5,
+      "wavelength_nm": 566.6739418604651
+    },
+    {
+      "index": 120,
+      "time_center_ms": 602.5,
+      "wavelength_nm": 568.911515503876
+    },
+    {
+      "index": 121,
+      "time_center_ms": 607.5,
+      "wavelength_nm": 571.1490891472868
+    },
+    {
+      "index": 122,
+      "time_center_ms": 612.5,
+      "wavelength_nm": 573.3866627906976
+    },
+    {
+      "index": 123,
+      "time_center_ms": 617.5,
+      "wavelength_nm": 575.6242364341085
+    },
+    {
+      "index": 124,
+      "time_center_ms": 622.5,
+      "wavelength_nm": 577.8618100775193
+    },
+    {
+      "index": 125,
+      "time_center_ms": 627.5,
+      "wavelength_nm": 580.0993837209303
+    },
+    {
+      "index": 126,
+      "time_center_ms": 632.5,
+      "wavelength_nm": 582.3369573643411
+    },
+    {
+      "index": 127,
+      "time_center_ms": 637.5,
+      "wavelength_nm": 584.574531007752
+    },
+    {
+      "index": 128,
+      "time_center_ms": 642.5,
+      "wavelength_nm": 586.8121046511628
+    },
+    {
+      "index": 129,
+      "time_center_ms": 647.5,
+      "wavelength_nm": 589.0496782945736
+    },
+    {
+      "index": 130,
+      "time_center_ms": 652.5,
+      "wavelength_nm": 591.2872519379845
+    },
+    {
+      "index": 131,
+      "time_center_ms": 657.5,
+      "wavelength_nm": 593.5248255813954
+    },
+    {
+      "index": 132,
+      "time_center_ms": 662.5,
+      "wavelength_nm": 595.7623992248061
+    },
+    {
+      "index": 133,
+      "time_center_ms": 667.5,
+      "wavelength_nm": 597.999972868217
+    },
+    {
+      "index": 134,
+      "time_center_ms": 672.5,
+      "wavelength_nm": 600.2375465116279
+    },
+    {
+      "index": 135,
+      "time_center_ms": 677.5,
+      "wavelength_nm": 602.4751201550387
+    },
+    {
+      "index": 136,
+      "time_center_ms": 682.5,
+      "wavelength_nm": 604.7126937984497
+    },
+    {
+      "index": 137,
+      "time_center_ms": 687.5,
+      "wavelength_nm": 606.9502674418604
+    },
+    {
+      "index": 138,
+      "time_center_ms": 692.5,
+      "wavelength_nm": 609.1878410852713
+    },
+    {
+      "index": 139,
+      "time_center_ms": 697.5,
+      "wavelength_nm": 611.4254147286822
+    },
+    {
+      "index": 140,
+      "time_center_ms": 702.5,
+      "wavelength_nm": 613.662988372093
+    },
+    {
+      "index": 141,
+      "time_center_ms": 707.5,
+      "wavelength_nm": 615.9005620155039
+    },
+    {
+      "index": 142,
+      "time_center_ms": 712.5,
+      "wavelength_nm": 618.1381356589147
+    },
+    {
+      "index": 143,
+      "time_center_ms": 717.5,
+      "wavelength_nm": 620.3757093023255
+    },
+    {
+      "index": 144,
+      "time_center_ms": 722.5,
+      "wavelength_nm": 622.6132829457365
+    },
+    {
+      "index": 145,
+      "time_center_ms": 727.5,
+      "wavelength_nm": 624.8508565891473
+    },
+    {
+      "index": 146,
+      "time_center_ms": 732.5,
+      "wavelength_nm": 627.088430232558
+    },
+    {
+      "index": 147,
+      "time_center_ms": 737.5,
+      "wavelength_nm": 629.326003875969
+    },
+    {
+      "index": 148,
+      "time_center_ms": 742.5,
+      "wavelength_nm": 631.5635775193798
+    },
+    {
+      "index": 149,
+      "time_center_ms": 747.5,
+      "wavelength_nm": 633.8011511627907
+    },
+    {
+      "index": 150,
+      "time_center_ms": 752.5,
+      "wavelength_nm": 636.0387248062016
+    },
+    {
+      "index": 151,
+      "time_center_ms": 757.5,
+      "wavelength_nm": 638.2762984496123
+    },
+    {
+      "index": 152,
+      "time_center_ms": 762.5,
+      "wavelength_nm": 640.5138720930232
+    },
+    {
+      "index": 153,
+      "time_center_ms": 767.5,
+      "wavelength_nm": 642.7514457364341
+    },
+    {
+      "index": 154,
+      "time_center_ms": 772.5,
+      "wavelength_nm": 644.9890193798449
+    },
+    {
+      "index": 155,
+      "time_center_ms": 777.5,
+      "wavelength_nm": 647.2265930232559
+    },
+    {
+      "index": 156,
+      "time_center_ms": 782.5,
+      "wavelength_nm": 649.4641666666666
+    },
+    {
+      "index": 157,
+      "time_center_ms": 787.5,
+      "wavelength_nm": 651.7017403100775
+    },
+    {
+      "index": 158,
+      "time_center_ms": 792.5,
+      "wavelength_nm": 653.9393139534884
+    },
+    {
+      "index": 159,
+      "time_center_ms": 797.5,
+      "wavelength_nm": 656.1768875968992
+    },
+    {
+      "index": 160,
+      "time_center_ms": 802.5,
+      "wavelength_nm": 658.4144612403101
+    },
+    {
+      "index": 161,
+      "time_center_ms": 807.5,
+      "wavelength_nm": 660.652034883721
+    },
+    {
+      "index": 162,
+      "time_center_ms": 812.5,
+      "wavelength_nm": 662.8896085271317
+    },
+    {
+      "index": 163,
+      "time_center_ms": 817.5,
+      "wavelength_nm": 665.1271821705426
+    },
+    {
+      "index": 164,
+      "time_center_ms": 822.5,
+      "wavelength_nm": 667.3647558139535
+    },
+    {
+      "index": 165,
+      "time_center_ms": 827.5,
+      "wavelength_nm": 669.6023294573642
+    },
+    {
+      "index": 166,
+      "time_center_ms": 832.5,
+      "wavelength_nm": 671.8399031007752
+    },
+    {
+      "index": 167,
+      "time_center_ms": 837.5,
+      "wavelength_nm": 674.077476744186
+    },
+    {
+      "index": 168,
+      "time_center_ms": 842.5,
+      "wavelength_nm": 676.3150503875969
+    },
+    {
+      "index": 169,
+      "time_center_ms": 847.5,
+      "wavelength_nm": 678.5526240310078
+    },
+    {
+      "index": 170,
+      "time_center_ms": 852.5,
+      "wavelength_nm": 680.7901976744186
+    },
+    {
+      "index": 171,
+      "time_center_ms": 857.5,
+      "wavelength_nm": 683.0277713178294
+    },
+    {
+      "index": 172,
+      "time_center_ms": 862.5,
+      "wavelength_nm": 685.2653449612403
+    },
+    {
+      "index": 173,
+      "time_center_ms": 867.5,
+      "wavelength_nm": 687.5029186046511
+    },
+    {
+      "index": 174,
+      "time_center_ms": 872.5,
+      "wavelength_nm": 689.740492248062
+    },
+    {
+      "index": 175,
+      "time_center_ms": 877.5,
+      "wavelength_nm": 691.9780658914729
+    },
+    {
+      "index": 176,
+      "time_center_ms": 882.5,
+      "wavelength_nm": 694.2156395348836
+    },
+    {
+      "index": 177,
+      "time_center_ms": 887.5,
+      "wavelength_nm": 696.4532131782946
+    },
+    {
+      "index": 178,
+      "time_center_ms": 892.5,
+      "wavelength_nm": 698.6907868217054
+    },
+    {
+      "index": 179,
+      "time_center_ms": 897.5,
+      "wavelength_nm": 700.9283604651163
+    },
+    {
+      "index": 180,
+      "time_center_ms": 902.5,
+      "wavelength_nm": 703.1659341085272
+    },
+    {
+      "index": 181,
+      "time_center_ms": 907.5,
+      "wavelength_nm": 705.4035077519379
+    },
+    {
+      "index": 182,
+      "time_center_ms": 912.5,
+      "wavelength_nm": 707.6410813953488
+    },
+    {
+      "index": 183,
+      "time_center_ms": 917.5,
+      "wavelength_nm": 709.8786550387597
+    },
+    {
+      "index": 184,
+      "time_center_ms": 922.5,
+      "wavelength_nm": 712.1162286821705
+    },
+    {
+      "index": 185,
+      "time_center_ms": 927.5,
+      "wavelength_nm": 714.3538023255815
+    },
+    {
+      "index": 186,
+      "time_center_ms": 932.5,
+      "wavelength_nm": 716.5913759689922
+    },
+    {
+      "index": 187,
+      "time_center_ms": 937.5,
+      "wavelength_nm": 718.828949612403
+    },
+    {
+      "index": 188,
+      "time_center_ms": 942.5,
+      "wavelength_nm": 721.066523255814
+    },
+    {
+      "index": 189,
+      "time_center_ms": 947.5,
+      "wavelength_nm": 723.3040968992248
+    },
+    {
+      "index": 190,
+      "time_center_ms": 952.5,
+      "wavelength_nm": 725.5416705426356
+    },
+    {
+      "index": 191,
+      "time_center_ms": 957.5,
+      "wavelength_nm": 727.7792441860465
+    },
+    {
+      "index": 192,
+      "time_center_ms": 962.5,
+      "wavelength_nm": 730.0168178294573
+    },
+    {
+      "index": 193,
+      "time_center_ms": 967.5,
+      "wavelength_nm": 732.2543914728682
+    },
+    {
+      "index": 194,
+      "time_center_ms": 972.5,
+      "wavelength_nm": 734.4919651162791
+    },
+    {
+      "index": 195,
+      "time_center_ms": 977.5,
+      "wavelength_nm": 736.7295387596898
+    },
+    {
+      "index": 196,
+      "time_center_ms": 982.5,
+      "wavelength_nm": 738.9671124031008
+    },
+    {
+      "index": 197,
+      "time_center_ms": 987.5,
+      "wavelength_nm": 741.2046860465116
+    },
+    {
+      "index": 198,
+      "time_center_ms": 992.5,
+      "wavelength_nm": 743.4422596899225
+    },
+    {
+      "index": 199,
+      "time_center_ms": 997.5,
+      "wavelength_nm": 745.6798333333334
+    },
+    {
+      "index": 200,
+      "time_center_ms": 1002.5,
+      "wavelength_nm": 747.9174069767441
+    },
+    {
+      "index": 201,
+      "time_center_ms": 1007.5,
+      "wavelength_nm": 750.154980620155
+    },
+    {
+      "index": 202,
+      "time_center_ms": 1012.5,
+      "wavelength_nm": 752.3925542635659
+    },
+    {
+      "index": 203,
+      "time_center_ms": 1017.5,
+      "wavelength_nm": 754.6301279069767
+    },
+    {
+      "index": 204,
+      "time_center_ms": 1022.5,
+      "wavelength_nm": 756.8677015503876
+    },
+    {
+      "index": 205,
+      "time_center_ms": 1027.5,
+      "wavelength_nm": 759.1052751937984
+    },
+    {
+      "index": 206,
+      "time_center_ms": 1032.5,
+      "wavelength_nm": 761.3428488372092
+    },
+    {
+      "index": 207,
+      "time_center_ms": 1037.5,
+      "wavelength_nm": 763.5804224806202
+    },
+    {
+      "index": 208,
+      "time_center_ms": 1042.5,
+      "wavelength_nm": 765.817996124031
+    },
+    {
+      "index": 209,
+      "time_center_ms": 1047.5,
+      "wavelength_nm": 768.0555697674419
+    },
+    {
+      "index": 210,
+      "time_center_ms": 1052.5,
+      "wavelength_nm": 770.2931434108527
+    },
+    {
+      "index": 211,
+      "time_center_ms": 1057.5,
+      "wavelength_nm": 772.5307170542635
+    },
+    {
+      "index": 212,
+      "time_center_ms": 1062.5,
+      "wavelength_nm": 774.7682906976744
+    },
+    {
+      "index": 213,
+      "time_center_ms": 1067.5,
+      "wavelength_nm": 777.0058643410853
+    },
+    {
+      "index": 214,
+      "time_center_ms": 1072.5,
+      "wavelength_nm": 779.243437984496
+    },
+    {
+      "index": 215,
+      "time_center_ms": 1077.5,
+      "wavelength_nm": 781.4810116279069
+    },
+    {
+      "index": 216,
+      "time_center_ms": 1082.5,
+      "wavelength_nm": 783.7185852713178
+    },
+    {
+      "index": 217,
+      "time_center_ms": 1087.5,
+      "wavelength_nm": 785.9561589147286
+    },
+    {
+      "index": 218,
+      "time_center_ms": 1092.5,
+      "wavelength_nm": 788.1937325581396
+    },
+    {
+      "index": 219,
+      "time_center_ms": 1097.5,
+      "wavelength_nm": 790.4313062015503
+    },
+    {
+      "index": 220,
+      "time_center_ms": 1102.5,
+      "wavelength_nm": 792.6688798449612
+    },
+    {
+      "index": 221,
+      "time_center_ms": 1107.5,
+      "wavelength_nm": 794.9064534883721
+    },
+    {
+      "index": 222,
+      "time_center_ms": 1112.5,
+      "wavelength_nm": 797.1440271317829
+    },
+    {
+      "index": 223,
+      "time_center_ms": 1117.5,
+      "wavelength_nm": 799.3816007751938
+    },
+    {
+      "index": 224,
+      "time_center_ms": 1122.5,
+      "wavelength_nm": 801.6191744186046
+    },
+    {
+      "index": 225,
+      "time_center_ms": 1127.5,
+      "wavelength_nm": 803.8567480620154
+    },
+    {
+      "index": 226,
+      "time_center_ms": 1132.5,
+      "wavelength_nm": 806.0943217054264
+    },
+    {
+      "index": 227,
+      "time_center_ms": 1137.5,
+      "wavelength_nm": 808.3318953488372
+    },
+    {
+      "index": 228,
+      "time_center_ms": 1142.5,
+      "wavelength_nm": 810.569468992248
+    },
+    {
+      "index": 229,
+      "time_center_ms": 1147.5,
+      "wavelength_nm": 812.807042635659
+    },
+    {
+      "index": 230,
+      "time_center_ms": 1152.5,
+      "wavelength_nm": 815.0446162790697
+    },
+    {
+      "index": 231,
+      "time_center_ms": 1157.5,
+      "wavelength_nm": 817.2821899224805
+    },
+    {
+      "index": 232,
+      "time_center_ms": 1162.5,
+      "wavelength_nm": 819.5197635658915
+    },
+    {
+      "index": 233,
+      "time_center_ms": 1167.5,
+      "wavelength_nm": 821.7573372093022
+    },
+    {
+      "index": 234,
+      "time_center_ms": 1172.5,
+      "wavelength_nm": 823.9949108527132
+    },
+    {
+      "index": 235,
+      "time_center_ms": 1177.5,
+      "wavelength_nm": 826.232484496124
+    },
+    {
+      "index": 236,
+      "time_center_ms": 1182.5,
+      "wavelength_nm": 828.4700581395348
+    },
+    {
+      "index": 237,
+      "time_center_ms": 1187.5,
+      "wavelength_nm": 830.7076317829458
+    },
+    {
+      "index": 238,
+      "time_center_ms": 1192.5,
+      "wavelength_nm": 832.9452054263566
+    },
+    {
+      "index": 239,
+      "time_center_ms": 1197.5,
+      "wavelength_nm": 835.1827790697673
+    },
+    {
+      "index": 240,
+      "time_center_ms": 1202.5,
+      "wavelength_nm": 837.4203527131783
+    },
+    {
+      "index": 241,
+      "time_center_ms": 1207.5,
+      "wavelength_nm": 839.6579263565891
+    }
+  ],
+  "groundtruth": "/home/lachlan/ProjectsLFS/nhi_reconstruction/groundtruth_spectrum_2835",
+  "bg_vs_gt_plot": "figure04_rescaled_bg_vs_groundtruth.pdf"
+}
