@@ -531,7 +531,10 @@ def main() -> None:
 
     auto_corr = results["autocorr"]
     reverse_corr = results["reverse_corr"]
-    lags_ms = np.arange(-len(auto_corr) // 2, (len(auto_corr) + 1) // 2) * (corr_bin_us / 1000.0)
+    # Build symmetric lag axis matching the full correlation length (2N-1)
+    L = int(len(auto_corr))
+    half = (L - 1) // 2
+    lags_ms = np.arange(-half, half + 1, dtype=np.int64) * (corr_bin_us / 1000.0)
     lags_s = lags_ms / 1000.0
     one_way_s = results["one_way_period"] * (corr_bin_us / 1_000_000.0)
     turnaround_s = results["reverse_peak_lag"] * (corr_bin_us / 1_000_000.0)
