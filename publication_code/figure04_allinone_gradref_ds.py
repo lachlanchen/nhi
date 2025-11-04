@@ -451,7 +451,7 @@ def render_grid_downsampled(
                 )
             )
         )
-        label_ax.text(0.5, 0.5, label_text, rotation=90, va="center", ha="center", fontsize=10, fontweight="bold")
+        label_ax.text(0.5, 0.5, label_text, rotation=90, va="center", ha="center", fontsize=6.0, fontweight="bold")
         # Populate content axes on even grid columns (1,3,5,...) skipping ellipsis columns
         for i in range(n_img_cols):
             grid_col = 1 + 2 * i

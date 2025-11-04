@@ -672,7 +672,7 @@ def render_grid(
             rotation=90,
             va="center",
             ha="center",
-            fontsize=10,
+            fontsize=6.0,
             fontweight="bold",
             color="black",
         )
