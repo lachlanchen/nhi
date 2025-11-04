@@ -632,15 +632,15 @@ def render_grid(
     num_cols = len(selected)
     has_bar = gradient_bar is not None and getattr(gradient_bar, 'size', 0) > 0
     has_gt_images = add_gt_row and gt_frame_paths is not None and len(gt_frame_paths) > 0
-    # 2 content rows (Orig., Comp.) + optional Ref. images row + optional gradient bar row
-    n_rows = 2 + (1 if has_gt_images else 0) + (1 if has_bar else 0)
-    # Height ratios: content rows 1.0; Ref. row 1.0; bar row tiny
-    height_ratios: List[float] = [1.0, 1.0]
+    # 3 content rows (Orig., Comp., Diff.) + optional Ref. images row + optional gradient bar row
+    n_rows = 3 + (1 if has_gt_images else 0) + (1 if has_bar else 0)
+    # Height ratios: content rows 1.0 each; Ref. row 1.0; bar row tiny
+    height_ratios: List[float] = [1.0, 1.0, 1.0]
     if has_gt_images:
         height_ratios.append(1.0)
     if has_bar:
         height_ratios.append(max(0.02, float(bar_height_ratio)))
-    fig_height = 1.8 if n_rows == 2 else (2.4 if n_rows == 3 else 2.6)
+    fig_height = 2.6 if n_rows == 3 else (3.2 if n_rows == 4 else 3.4)
     fig = plt.figure(figsize=(1.2 * num_cols + 0.4, fig_height))
     width_ratios = [0.22] + [1.0] * num_cols
     gs = fig.add_gridspec(
@@ -658,7 +658,7 @@ def render_grid(
         label_ax.text(
             0.5,
             0.5,
-            "Orig." if row == 0 else ("Comp." if row == 1 else ("Ref." if (has_gt_images and row == 2) else "")),
+            ("Orig." if row == 0 else ("Comp." if row == 1 else ("Diff." if row == 2 else ("Ref." if (has_gt_images and row == 3) else "")))),
             rotation=90,
             va="center",
             ha="center",
@@ -666,8 +666,8 @@ def render_grid(
             fontweight="bold",
             color="black",
         )
-        # Allocate axes for orig/comp and optional GT image row
-        if row < 2 or (has_gt_images and row == 2):
+        # Allocate axes for orig/comp/diff and optional GT image row
+        if row < 3 or (has_gt_images and row == 3):
             for col in range(num_cols):
                 axes[row, col] = fig.add_subplot(gs[row, col + 1])
     fig.subplots_adjust(left=0.02, right=0.995, top=0.995, bottom=0.14)
@@ -718,9 +718,15 @@ def render_grid(
             fig.colorbar(im0, ax=ax_orig, shrink=0.85, pad=0.01)
             fig.colorbar(im1, ax=ax_comp, shrink=0.85, pad=0.01)
 
-        # Optional GT images row
+        # Diff row: Comp - Orig
+        ax_diff = axes[2, col]
+        diff_frame = (comp_frame.astype(np.float32) - orig_frame.astype(np.float32))
+        ax_diff.imshow(diff_frame, cmap=comp_cmap, origin="lower")
+        ax_diff.axis("off")
+
+        # Optional GT images row (now next row)
         if has_gt_images:
-            ax_gt = axes[2, col]
+            ax_gt = axes[3, col]
             if gt_frame_paths is not None and col < len(gt_frame_paths):
                 import matplotlib.image as mpimg
                 img_gt = mpimg.imread(gt_frame_paths[col])
@@ -731,7 +737,7 @@ def render_grid(
 
     # If a gradient bar is provided, draw it at the bottom row
     if has_bar:
-        bar_row = 2 if not has_gt_images else 3
+        bar_row = 3 if not has_gt_images else 4
         ax_bar = fig.add_subplot(gs[bar_row, 1:])
         ax_bar.imshow(gradient_bar, origin="lower", aspect="auto")
         ax_bar.axis("off")
