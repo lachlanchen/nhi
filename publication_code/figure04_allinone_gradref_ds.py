@@ -439,7 +439,17 @@ def render_grid_downsampled(
         label_ax.set_xticks([])
         label_ax.set_yticks([])
         label_text = (
-            "Orig." if row == 0 else ("Comp." if row == 1 else ("Diff." if row == 2 else ("Ref." if (has_gt_images and row == 3) else "")))
+            "Original"
+            if row == 0
+            else (
+                "Compensated"
+                if row == 1
+                else (
+                    "Gradient"
+                    if row == 2
+                    else ("Reference" if (has_gt_images and row == 3) else "")
+                )
+            )
         )
         label_ax.text(0.5, 0.5, label_text, rotation=90, va="center", ha="center", fontsize=10, fontweight="bold")
         # Populate content axes on even grid columns (1,3,5,...) skipping ellipsis columns

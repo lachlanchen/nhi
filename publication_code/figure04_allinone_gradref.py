@@ -652,10 +652,23 @@ def render_grid(
         label_ax.axis("off")
         label_ax.set_xticks([])
         label_ax.set_yticks([])
+        row_label = (
+            "Original"
+            if row == 0
+            else (
+                "Compensated"
+                if row == 1
+                else (
+                    "Gradient"
+                    if row == 2
+                    else ("Reference" if (has_gt_images and row == 3) else "")
+                )
+            )
+        )
         label_ax.text(
             0.5,
             0.5,
-            ("Orig." if row == 0 else ("Comp." if row == 1 else ("Diff." if row == 2 else ("Ref." if (has_gt_images and row == 3) else "")))),
+            row_label,
             rotation=90,
             va="center",
             ha="center",
