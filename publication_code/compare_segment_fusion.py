@@ -196,7 +196,12 @@ def frame_metrics(frames: Sequence[np.ndarray]) -> Dict[str, float]:
     }
 
 
-def montage_20_bins(frames: Sequence[np.ndarray], out_path: Path) -> None:
+def montage_20_bins(
+    frames: Sequence[np.ndarray],
+    out_stem: Path,
+    save_png: bool,
+    save_pdf: bool,
+) -> None:
     setup_style()
     k = min(20, len(frames))
     if k == 0:
@@ -213,7 +218,10 @@ def montage_20_bins(frames: Sequence[np.ndarray], out_path: Path) -> None:
             im = ax.imshow(frames[i], cmap="coolwarm")
             ax.set_title(f"Bin {i}", fontsize=7)
     fig.tight_layout()
-    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    if save_png:
+        fig.savefig(str(out_stem) + ".png", dpi=200, bbox_inches="tight")
+    if save_pdf:
+        fig.savefig(str(out_stem) + ".pdf", dpi=400, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -224,6 +232,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--sensor-width", type=int, default=1280)
     ap.add_argument("--sensor-height", type=int, default=720)
     ap.add_argument("--save-png", action="store_true")
+    ap.add_argument("--save-pdf", action="store_true")
     ap.add_argument("--output-dir", type=Path, default=None)
     return ap.parse_args()
 
@@ -339,12 +348,12 @@ def main() -> None:
         write_bin_csv("three_cycles_f_plus_b", frames_C)
 
     # Optional montages of first ~20 frames
-    if args.save_png:
-        montage_20_bins(frames_A, out_dir / "forward_only_montage.png")
+    if args.save_png or args.save_pdf:
+        montage_20_bins(frames_A, out_dir / "forward_only_montage", args.save_png, args.save_pdf)
         if frames_B:
-            montage_20_bins(frames_B, out_dir / "f_plus_b_montage.png")
+            montage_20_bins(frames_B, out_dir / "f_plus_b_montage", args.save_png, args.save_pdf)
         if frames_C:
-            montage_20_bins(frames_C, out_dir / "three_cycles_f_plus_b_montage.png")
+            montage_20_bins(frames_C, out_dir / "three_cycles_f_plus_b_montage", args.save_png, args.save_pdf)
 
     print("Comparison complete. Outputs:")
     print(f"  {out_dir}/summary.json")
