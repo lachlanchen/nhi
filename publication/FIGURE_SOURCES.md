@@ -29,7 +29,7 @@ This document records the primary data, derived artifacts, and commands used to 
 - Outputs: `publication_code/figures/figure03_{a_events,b_variance,c_bin50ms}.{pdf,png}`
 - Command:
   ```bash
-  ~/miniconda3/envs/nhi_test/bin/python publication_code/figure03_multiwindow_compensation.py \
+  ~/miniconda3/envs/nhi_test/bin/python publication_code/multiwindow_compensation_figure.py \
     --variance_mode recompute --var_bin_us 5000 \
     --sensor_width 1280 --sensor_height 720 \
     --sample 0.05 \
@@ -71,4 +71,3 @@ This document records the primary data, derived artifacts, and commands used to 
 Notes
 - Keep large outputs untracked. Timestamped Figure 4 folders contain all rendered panels and provenance (e.g., `gt_selected_frames/`).
 - Use the exact `nhi_test` interpreter path above for RAW/Metavision workflows.
-

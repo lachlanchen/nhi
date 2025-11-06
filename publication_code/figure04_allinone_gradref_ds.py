@@ -83,6 +83,12 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--bar-px", type=int, default=6)
     # Downsampling controls; default pattern keeps 1,4,7,10,13 (stride 3)
     ap.add_argument("--downsample-rate", type=int, default=3, help="Keep every Nth column from the start of the selected range")
+    ap.add_argument(
+        "--figure-name",
+        type=str,
+        default=None,
+        help="Optional base filename for the rendered grid (e.g., figure02_spectral_reconstruction)",
+    )
     return ap.parse_args()
 
 
@@ -380,6 +386,7 @@ def render_grid_downsampled(
     bar_height_ratio: float,
     bar_px: int,
     downsample_rate: int,
+    figure_name: str | None = None,
 ) -> None:
     setup_style()
 
@@ -403,8 +410,7 @@ def render_grid_downsampled(
     diff_paths_sel = [diff_frame_paths[i] for i in keep_positions] if diff_frame_paths else []
 
     n_img_cols = len(kept)
-    n_ellipsis = n_img_cols - 1
-    grid_cols = n_img_cols + n_ellipsis  # interleave '…' spacers
+    grid_cols = n_img_cols
 
     # Determine rows used: 3 content rows + optional Ref row + bar row
     has_gt_images = add_gt_row and bool(ref_paths_sel)
@@ -415,12 +421,10 @@ def render_grid_downsampled(
     height_ratios.append(max(0.02, float(bar_height_ratio)))
 
     # Build width ratios: label col + interleaved image/ellipsis columns
-    width_ratios: List[float] = [0.22]
-    for i in range(grid_cols):
-        width_ratios.append(1.0 if (i % 2 == 0) else 0.12)
+    width_ratios: List[float] = [0.22] + [1.0] * n_img_cols
 
     fig_height = 3.2 if n_rows == 4 else 3.6
-    fig = plt.figure(figsize=(1.2 * n_img_cols + 0.4 + 0.3 * n_ellipsis, fig_height))
+    fig = plt.figure(figsize=(1.2 * n_img_cols + 0.4, fig_height))
     gs = fig.add_gridspec(
         n_rows,
         grid_cols + 1,
@@ -452,9 +456,9 @@ def render_grid_downsampled(
             )
         )
         label_ax.text(0.5, 0.5, label_text, rotation=90, va="center", ha="center", fontsize=6.0, fontweight="bold")
-        # Populate content axes on even grid columns (1,3,5,...) skipping ellipsis columns
+        # Populate content axes
         for i in range(n_img_cols):
-            grid_col = 1 + 2 * i
+            grid_col = 1 + i
             ax = fig.add_subplot(gs[row, grid_col])
             ax.set_xticks([])
             ax.set_yticks([])
@@ -515,19 +519,8 @@ def render_grid_downsampled(
             ax3.set_xticks([])
             ax3.set_yticks([])
 
-    # Draw ellipsis columns (use the bar row; if no bar row, use Comp. row)
-    bar_row_idx = 3 if not has_gt_images else 4
-    for k in range(n_ellipsis):
-        col = 2 + 2 * k  # between two image cols
-        # Place ellipsis in each image row (Orig/Comp/Diff[/Ref])
-        for row_idx in range(3 + (1 if has_gt_images else 0)):
-            ax_dot = fig.add_subplot(gs[row_idx, col])
-            ax_dot.axis("off")
-            ax_dot.set_xticks([])
-            ax_dot.set_yticks([])
-            ax_dot.text(0.5, 0.5, "…", ha="center", va="center", fontsize=14, color="black")
-
     # Build a wavelength bar with one stripe per kept column (selected wavelengths)
+    bar_row_idx = 3 if not has_gt_images else 4
     bar_colors: List[np.ndarray] = []
     for _, _, meta in kept:
         nm_val = None
@@ -548,7 +541,12 @@ def render_grid_downsampled(
         ax_bar.set_xticks([])
         ax_bar.set_yticks([])
 
-    stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}_ds{downsample_rate}"
+    if figure_name:
+        stem = Path(figure_name).stem
+    else:
+        stem = f"figure04_rescaled_grid_bins_{start_bin:02d}_{end_bin:02d}"
+        if downsample_rate > 1:
+            stem += f"_ds{downsample_rate}"
     out_stem = output_dir / stem
     fig.savefig(f"{out_stem}.pdf", dpi=400, bbox_inches="tight")
     if save_png:
@@ -663,6 +661,7 @@ def main() -> None:
         bar_height_ratio=float(args.bar_height_ratio),
         bar_px=int(args.bar_px),
         downsample_rate=int(args.downsample_rate),
+        figure_name=args.figure_name,
     )
 
     # Persist weights metadata (same as base script)

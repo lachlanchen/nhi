@@ -108,7 +108,7 @@ def compute_boundary_lines(a_params: np.ndarray, b_params: np.ndarray, duration_
     return lines
 
 
-def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int, sample: float, out_dir: Path) -> None:
+def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int, sample: float, out_dir: Path, suffix: str = "") -> None:
     # Load full events first to compute true time extent, then sample
     x_full, y_full, t_full, p_full = load_events(segment_npz)
     n = len(x_full)
@@ -131,6 +131,8 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
 
     # Use constrained_layout so labels (e.g., 'Time (ms)') are fully visible
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True, constrained_layout=True)
+    label_font = 16
+    tick_font = 12
 
     # X–T (align with Fig. 4 but use less-saturated tints)
     # Light tints matching Tableau family: light blue / light orange
@@ -152,10 +154,10 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
             linestyle="--",
             solid_capstyle="round",
         )
-    ax1.set_xlabel("X (pixels)")
-    ax1.set_ylabel("Time (ms)")
+    ax1.set_xlabel("X (px)", fontsize=label_font)
+    ax1.set_ylabel("Time (ms)", fontsize=label_font)
     # Ensure left y ticks/labels explicitly visible
-    ax1.tick_params(axis='y', which='both', left=True, labelleft=True)
+    ax1.tick_params(axis='both', labelsize=tick_font)
     ax1.spines["left"].set_visible(True)
     duration_ms_full = duration_us / 1000.0
     # Add headroom for outside legend
@@ -179,9 +181,10 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
             linestyle="--",
             solid_capstyle="round",
         )
-    ax2.set_xlabel("Y (pixels)")
+    ax2.set_xlabel("Y (px)", fontsize=label_font)
     # Share y-axis with left panel; hide label and tick labels on the right
     ax2.set_ylabel("")
+    ax2.tick_params(axis='both', labelsize=tick_font)
     ax2.tick_params(axis='y', which='both', left=False, labelleft=False)
     ax2.set_ylim(0.0, duration_ms_full + 0.2)
     ax2.spines["top"].set_visible(False)
@@ -192,13 +195,20 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # Use short labels to match paper style
     neg_dot = mlines.Line2D([], [], color=NEG_COLOR, marker='o', linestyle='None', markersize=4, label='Neg')
     pos_dot = mlines.Line2D([], [], color=POS_COLOR, marker='o', linestyle='None', markersize=4, label='Pos')
-    ax1.legend(handles=[neg_dot, pos_dot], loc='upper left', bbox_to_anchor=(1.02, 1.0),
-               borderaxespad=0.0, fontsize=7, framealpha=0.9)
+    legend = fig.legend(
+        handles=[neg_dot, pos_dot],
+        loc='upper right',
+        bbox_to_anchor=(1.12, 0.98),
+        borderaxespad=0.0,
+        fontsize=13,
+        framealpha=0.0,
+    )
 
     # No manual subplots_adjust to avoid clipping labels; constrained_layout handles spacing
-    out_path = out_dir / "figure03_a_events.pdf"
+    stem = f"multiwindow_events{suffix}.pdf"
+    out_path = out_dir / stem
     fig.savefig(out_path, dpi=400, bbox_inches="tight")
-    fig.savefig(out_dir / "figure03_a_events.png", dpi=300, bbox_inches="tight")
+    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out_path}")
 
@@ -217,7 +227,8 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
                    var_ylim: float | None = None,
                    segment_npz: Path | None = None,
                    params: dict | None = None,
-                   sensor_w: int = 1280, sensor_h: int = 720) -> None:
+                   sensor_w: int = 1280, sensor_h: int = 720,
+                   suffix: str = "") -> None:
     """
     Plot per-bin VARIANCE exactly as in the trainer panel using the saved
     time-binned NPZ (original_bin_i / compensated_bin_i). This matches the
@@ -291,10 +302,10 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
         raise ValueError(f"Unknown mode: {mode}")
 
     # Make panel (b) readable with compact size
-    fig, ax = plt.subplots(figsize=(5.0, 2.4))
-    ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.4, label="Original")
-    ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.4, label="Compensate")
-    ax.set_xlabel("Time Bin")
+    fig, ax = plt.subplots(figsize=(5.6, 2.6))
+    ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.6, label="Original")
+    ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.6, label="Compensate")
+    ax.set_xlabel("Time Bin", fontsize=12)
     if var_ylim is not None:
         top = float(var_ylim)
         ax.set_ylim(0.0, top)
@@ -310,76 +321,91 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
         top = 1.35 + 1e-6
         ax.set_ylim(0.0, top)
         ax.set_yticks(np.arange(0.0, 1.3, 0.2))
-    ax.set_ylabel("Variance")
+    ax.set_ylabel("Variance", fontsize=12)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    # Place legend at the top-right with adequate headroom
-    ax.legend(loc="upper right", fontsize=8, framealpha=0.9)
-    fig.tight_layout()
-    out_path = out_dir / "figure03_b_variance.pdf"
+    # Place legend outside top-right
+    legend = ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.02), fontsize=9, framealpha=0.0)
+    fig.tight_layout(rect=[0.0, 0.0, 0.92, 1.0])
+    stem = f"multiwindow_variance{suffix}.pdf"
+    out_path = out_dir / stem
     fig.savefig(out_path, dpi=400)
-    fig.savefig(out_dir / "figure03_b_variance.png", dpi=300)
+    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300)
     plt.close(fig)
     print(f"Saved: {out_path}")
 
 
-def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "best") -> None:
+def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "best", suffix: str = "") -> None:
     # Use the aggregated 50 ms bin NPZ for clean single-bin images
     _, allbins_path = find_timebin_csv_and_npz(segments_dir, base)
-    d = np.load(allbins_path, allow_pickle=False)
-    # Heuristic: choose bin with max (orig_std - comp_std) if stats CSV present; otherwise pick middle
-    csv_path = find_latest(str(segments_dir / "time_binned_frames" / f"{base}_chunked_processing_time_bin_statistics_*.csv"))
-    if csv_path:
-        import pandas as pd
-        from io import StringIO
-        lines = [ln.strip() for ln in open(csv_path, "r").read().splitlines()]
-        try:
-            header_idx = next(i for i, ln in enumerate(lines) if ln.startswith("bin_idx,"))
-        except StopIteration:
-            header_idx = None
-        if header_idx is not None:
-            df = pd.read_csv(StringIO("\n".join(lines[header_idx:])))
-            idx = int((df["orig_std"] - df["comp_std"]).idxmax())
-        else:
-            idx = 12
-    else:
-        idx = 12
+    with np.load(allbins_path, allow_pickle=False) as d:
+        orig_keys = sorted(k for k in d.keys() if k.startswith("original_bin_"))
+        comp_keys = sorted(k for k in d.keys() if k.startswith("compensated_bin_"))
+        if not orig_keys or len(orig_keys) != len(comp_keys):
+            raise RuntimeError(f"Unexpected NPZ structure in {allbins_path}")
 
-    orig = d[f"original_bin_{idx}"]
-    comp = d[f"compensated_bin_{idx}"]
+        var_orig = np.array([
+            float(np.var(d[k].astype(np.float32))) for k in orig_keys
+        ], dtype=np.float32)
+        var_comp = np.array([
+            float(np.var(d[k].astype(np.float32))) for k in comp_keys
+        ], dtype=np.float32)
+        diff = var_orig - var_comp
+
+        if choose == "bin4":
+            idx = min(4, len(orig_keys) - 1)
+        else:
+            idx = int(np.argmax(diff))
+            if diff[idx] <= 0:
+                idx = int(np.argmax(var_orig))
+
+        orig = d[orig_keys[idx]]
+        comp = d[comp_keys[idx]]
 
     vmin = float(min(orig.min(), comp.min()))
     vmax = float(max(orig.max(), comp.max()))
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True)
-    im1 = ax1.imshow(orig, cmap="magma", vmin=vmin, vmax=vmax, aspect="auto")
-    ax1.set_title(f"Original – Bin {idx}")
-    ax1.set_xlabel("X (px)")
-    ax1.set_ylabel("Y (px)")
+    label_font = 12
+    tick_font = 10
+    im1 = ax1.imshow(orig, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+    ax1.set_title(f"Original – Bin {idx}", fontsize=label_font)
+    ax1.set_xlabel("X (px)", fontsize=label_font)
+    ax1.set_ylabel("Y (px)", fontsize=label_font)
     # Ensure left y ticks/labels explicitly visible
+    ax1.tick_params(axis='both', labelsize=tick_font)
     ax1.tick_params(axis='y', which='both', left=True, labelleft=True)
     ax1.spines["left"].set_visible(True)
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
-    im2 = ax2.imshow(comp, cmap="magma", vmin=vmin, vmax=vmax, aspect="auto")
-    ax2.set_title(f"Compensated – Bin {idx}")
-    ax2.set_xlabel("X (px)")
+    im2 = ax2.imshow(comp, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+    ax2.set_title(f"Compensated – Bin {idx}", fontsize=label_font)
+    ax2.set_xlabel("X (px)", fontsize=label_font)
     # Hide right panel's y-label and tick labels (shared y-axis)
     ax2.set_ylabel("")
+    ax2.tick_params(axis='both', labelsize=tick_font)
     ax2.tick_params(axis='y', which='both', left=False, labelleft=False)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
     # Shared colorbar at the right side (outside of image area)
-    fig.subplots_adjust(right=0.86, left=0.08, top=0.94, bottom=0.12, wspace=0.06)
-    cax = fig.add_axes([0.88, 0.14, 0.02, 0.72])
+    fig.subplots_adjust(right=0.86, left=0.11, top=0.94, bottom=0.12, wspace=0.06)
+    # Match colorbar height to axes height by using add_axes with normalized coords
+    ax_pos = ax1.get_position()
+    cbar_width = 0.02
+    cbar_left = 0.86 + 0.02
+    cbar_bottom = ax_pos.y0
+    cbar_height = ax_pos.height
+    cax = fig.add_axes([cbar_left, cbar_bottom, cbar_width, cbar_height])
     cbar = fig.colorbar(im2, cax=cax)
-    cbar.ax.set_ylabel("Value", rotation=90)
+    cbar.ax.set_ylabel("Value", rotation=90, fontsize=label_font)
+    cbar.ax.tick_params(labelsize=tick_font)
 
-    out_path = out_dir / "figure03_c_bin50ms.pdf"
+    stem = f"multiwindow_bin50ms{suffix}.pdf"
+    out_path = out_dir / stem
     fig.savefig(out_path, dpi=400)
-    fig.savefig(out_dir / "figure03_c_bin50ms.png", dpi=300)
+    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300)
     plt.close(fig)
     print(f"Saved: {out_path}")
 
@@ -400,10 +426,17 @@ def main() -> None:
     parser.add_argument("--var_ylim", type=float, default=None, help="Upper y-limit for panel (b) variance (e.g., 1.0)")
     parser.add_argument("--sample", type=float, default=0.05, help="Event sampling fraction for panel (a)")
     parser.add_argument("--output_dir", type=Path, default=Path(__file__).resolve().parent / "figures")
+    parser.add_argument("--output_suffix", type=str, default=None,
+                        help="Optional suffix appended to output filenames, e.g. 'blank' or 'sanqin'.")
+    parser.add_argument("--panel_c_choice", choices=["best", "bin4"], default="best",
+                        help="Select which time bin to visualize in panel (c); default 'best' chooses max std diff, 'bin4' forces bin 4.")
     args = parser.parse_args()
 
     setup_style()
-    out_dir = args.output_dir.resolve()
+    import datetime
+    out_root = args.output_dir.resolve()
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = (out_root / f"multiwindow_compensation_{timestamp}").resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Allow passing a dataset directory; search for a forward segment
@@ -439,7 +472,9 @@ def main() -> None:
     param_path = find_param_file(segment_path)
     params = load_params_npz(param_path)
 
-    render_panel_a(segment_path, params, args.sensor_width, args.sensor_height, args.sample, out_dir)
+    suffix = f"_{args.output_suffix}" if args.output_suffix else ""
+
+    render_panel_a(segment_path, params, args.sensor_width, args.sensor_height, args.sample, out_dir, suffix=suffix)
     render_panel_b(
         segments_dir,
         base,
@@ -451,8 +486,9 @@ def main() -> None:
         params=params,
         sensor_w=args.sensor_width,
         sensor_h=args.sensor_height,
+        suffix=suffix,
     )
-    render_panel_c(segments_dir, base, out_dir)
+    render_panel_c(segments_dir, base, out_dir, choose=args.panel_c_choice, suffix=suffix)
 
 
 if __name__ == "__main__":
