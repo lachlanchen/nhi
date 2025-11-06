@@ -26,7 +26,7 @@ This document records the primary data, derived artifacts, and commands used to 
 - Time‑binned artifacts (panel b/c):
   - NPZ: `.../time_binned_frames/Scan_1_Forward_events_chunked_processing_all_time_bins_data_multiwindow_chunked_processing_atrain_-0.5005_14.1464_btrain_-60.3067_-54.8752.npz`
   - CSV: `.../time_binned_frames/Scan_1_Forward_events_chunked_processing_time_bin_statistics_multiwindow_chunked_processing_atrain_-0.5005_14.1464_btrain_-60.3067_-54.8752.csv`
-- Outputs: `publication_code/figures/figure03_{a_events,b_variance,c_bin50ms}.{pdf,png}`
+- Outputs: `publication_code/figures/multiwindow_compensation_blank_vs_sanqin/{multiwindow_events_blank,multiwindow_variance_blank,multiwindow_bin50ms_sanqin}.{pdf,png}`
 - Command:
   ```bash
   ~/miniconda3/envs/nhi_test/bin/python publication_code/multiwindow_compensation_figure.py \
