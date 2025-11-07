@@ -89,7 +89,10 @@ def parse_args() -> argparse.Namespace:
     )
     # Downsampling controls; default pattern keeps 1,4,7,10,13 (stride 3)
     ap.add_argument("--downsample-rate", type=int, default=3, help="Keep every Nth column from the start of the selected range")
-    ap.add_argument("--crop-json", type=Path, default=None, help="Optional JSON file with bbox {x0,y0,x1,y1} for cropping all frames.")
+    ap.add_argument("--crop-json", type=Path, default=None, help="Optional JSON file with bbox {x0,y0,x1,y1} for cropping Orig./Comp. rows (sensor coordinates).")
+    ap.add_argument("--crop-json-key", type=str, default=None, help="Key within --crop-json to use (e.g., ref_crop). Default auto-detects.")
+    ap.add_argument("--external-crop-json", type=Path, default=None, help="Optional JSON file with bbox {x0,y0,x1,y1} for cropping Diff/Ref rows (external PNG coordinates).")
+    ap.add_argument("--external-crop-json-key", type=str, default=None, help="Key within --external-crop-json to use (e.g., template_crop).")
     ap.add_argument(
         "--figure-name",
         type=str,
@@ -97,6 +100,45 @@ def parse_args() -> argparse.Namespace:
         help="Optional base filename for the rendered grid (e.g., figure02_spectral_reconstruction)",
     )
     return ap.parse_args()
+
+
+def _load_crop_box(path: Path | None, preferred_key: str | None = None) -> Tuple[int, int, int, int] | None:
+    if path is None:
+        return None
+    with path.open("r", encoding="utf-8") as fp:
+        payload = json.load(fp)
+    bbox = None
+    if isinstance(payload, dict):
+        keys_to_try: List[str] = []
+        if preferred_key:
+            keys_to_try.append(preferred_key)
+        keys_to_try.extend(["bbox", "ref_crop", "template_crop"])
+        seen: set[str] = set()
+        ordered = []
+        for key in keys_to_try:
+            if key and key not in seen:
+                ordered.append(key)
+                seen.add(key)
+        for key in ordered:
+            candidate = payload.get(key)
+            if isinstance(candidate, dict) and all(k in candidate for k in ("x0", "y0", "x1", "y1")):
+                bbox = candidate
+                break
+        if bbox is None and all(k in payload for k in ("x0", "y0", "x1", "y1")):
+            bbox = payload
+        if bbox is None and "bbox_xyxy" in payload:
+            coords = payload["bbox_xyxy"]
+            if isinstance(coords, (list, tuple)) and len(coords) == 4:
+                x0, y0, x1, y1 = coords
+                bbox = {"x0": x0, "y0": y0, "x1": x1, "y1": y1}
+    if bbox is None:
+        raise ValueError(f"Invalid crop metadata in {path}; expected dict with keys x0/y0/x1/y1.")
+    return (
+        int(bbox["y0"]),
+        int(bbox["y1"]),
+        int(bbox["x0"]),
+        int(bbox["x1"]),
+    )
 
 
 def compute_series_and_weights(
@@ -394,16 +436,17 @@ def render_grid_downsampled(
     bar_px: int,
     downsample_rate: int,
     figure_name: str | None = None,
-    crop_box: Tuple[int, int, int, int] | None = None,
+    event_crop_box: Tuple[int, int, int, int] | None = None,
+    external_crop_box: Tuple[int, int, int, int] | None = None,
     external_origin: str = "lower",
 ) -> None:
     setup_style()
     gray_cmap = plt.get_cmap("gray")
 
-    def crop_array(arr: np.ndarray) -> np.ndarray:
-        if crop_box is None:
+    def crop_array(arr: np.ndarray, box: Tuple[int, int, int, int] | None) -> np.ndarray:
+        if box is None:
             return arr
-        y0, y1, x0, x1 = crop_box
+        y0, y1, x0, x1 = box
         h, w = arr.shape[:2]
         y0c = max(0, min(h, y0))
         y1c = max(y0c, min(h, y1))
@@ -536,8 +579,8 @@ def render_grid_downsampled(
         fname_stub = f"bin_{meta['index']:02d}"
         if nm_label is not None:
             fname_stub += f"_{nm_label:.0f}nm"
-        orig_view = crop_array(orig_frame)
-        comp_view = crop_array(comp_frame)
+        orig_view = crop_array(orig_frame, event_crop_box)
+        comp_view = crop_array(comp_frame, event_crop_box)
         raw_vmin = min(0.0, float(orig_view.min()))
         raw_vmax = max(0.0, float(orig_view.max()))
         comp_vmin = min(float(comp_view.min()), 0.0)
@@ -570,17 +613,18 @@ def render_grid_downsampled(
         if diff_paths_sel and i < len(diff_paths_sel) and diff_paths_sel[i] and diff_paths_sel[i].exists():
             import matplotlib.image as mpimg
             img_diff = mpimg.imread(str(diff_paths_sel[i]))
-            img_diff_view = crop_array(img_diff)
+            img_diff_view = crop_array(img_diff, external_crop_box)
             origin_mode = external_origin
             ax2.imshow(img_diff_view, origin=origin_mode, cmap="gray")
             if diff_used_dir is not None:
                 out_path = diff_used_dir / Path(diff_paths_sel[i]).name
                 plt.imsave(out_path, img_diff_view, cmap="gray")
         else:
-            diff_frame = crop_array(comp_frame.astype(np.float32) - orig_frame.astype(np.float32))
-            ax2.imshow(diff_frame, cmap=comp_cmap, origin="lower")
+            diff_frame = comp_frame.astype(np.float32) - orig_frame.astype(np.float32)
+            diff_view = crop_array(diff_frame, event_crop_box)
+            ax2.imshow(diff_view, cmap=comp_cmap, origin="lower")
             if diff_used_dir is not None:
-                save_frame(diff_used_dir / f"{fname_stub}.png", diff_frame, comp_cmap)
+                save_frame(diff_used_dir / f"{fname_stub}.png", diff_view, comp_cmap)
         ax2.axis("off")
         ax2.set_xticks([])
         ax2.set_yticks([])
@@ -591,14 +635,14 @@ def render_grid_downsampled(
             if ref_paths_sel and i < len(ref_paths_sel):
                 import matplotlib.image as mpimg
                 img_ref = mpimg.imread(str(ref_paths_sel[i]))
-                img_ref_view = crop_array(img_ref)
+                img_ref_view = crop_array(img_ref, external_crop_box if external_crop_box is not None else event_crop_box)
                 origin_mode = external_origin
                 ax3.imshow(img_ref_view, origin=origin_mode, cmap="gray")
                 if ref_used_dir is not None:
                     out_path = ref_used_dir / Path(ref_paths_sel[i]).name
                     plt.imsave(out_path, img_ref_view, cmap="gray")
             else:
-                blank_ref = crop_array(np.zeros_like(comp_frame))
+                blank_ref = crop_array(np.zeros_like(comp_frame), event_crop_box)
                 ax3.imshow(blank_ref, cmap="gray", origin="lower")
                 if ref_used_dir is not None:
                     save_frame(ref_used_dir / f"{fname_stub}.png", blank_ref, gray_cmap)
@@ -691,20 +735,8 @@ def main() -> None:
     out_dir = (figures_root / f"{base_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}").resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    crop_box: Tuple[int, int, int, int] | None = None
-    if args.crop_json:
-        with args.crop_json.open("r", encoding="utf-8") as fp:
-            crop_meta = json.load(fp)
-        bbox = crop_meta.get("bbox") if isinstance(crop_meta, dict) else None
-        if bbox and all(k in bbox for k in ("x0", "y0", "x1", "y1")):
-            crop_box = (
-                int(bbox["y0"]),
-                int(bbox["y1"]),
-                int(bbox["x0"]),
-                int(bbox["x1"]),
-            )
-        else:
-            raise ValueError(f"Invalid crop metadata in {args.crop_json}")
+    event_crop_box = _load_crop_box(args.crop_json, args.crop_json_key)
+    external_crop_box = _load_crop_box(args.external_crop_json, args.external_crop_json_key)
 
     # Load events and params
     x, y, t, p = load_segment_events(segment_path)
@@ -809,7 +841,8 @@ def main() -> None:
         downsample_rate=int(args.downsample_rate),
         figure_name=args.figure_name,
         external_origin=args.external_origin,
-        crop_box=crop_box,
+        event_crop_box=event_crop_box,
+        external_crop_box=external_crop_box,
     )
 
     # Persist weights metadata (same as base script)

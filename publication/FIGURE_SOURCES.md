@@ -65,9 +65,11 @@ This document records the primary data, derived artifacts, and commands used to 
     --ref-frames-dir hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched \
     --bin-width-us 50000 --start-bin 3 --end-bin 15 \
     --downsample-rate 3 --show-wavelength \
+    --external-crop-json <hyperspectral ROI bbox json> \
     --figure-name spectral_reconstruction_scan \
     --save-png
   ```
+  - Provide `--external-crop-json` whenever the hyperspectral PNGs still span the full field so rows 3–4 can be trimmed to the matched ROI.
 
 ## Figure 5 — RGB render from Figure 4 mapping (if used)
 - Alignment JSON: `publication_code/figures/figure04_allinone_*/figure04_rescaled_bg_alignment.json`

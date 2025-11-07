@@ -78,13 +78,20 @@ def imread_gray(path: Path) -> np.ndarray:
 def save_frame(stem: Path, frame: np.ndarray, save_png: bool) -> None:
     stem.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(stem.with_suffix(".npz"), frame=frame.astype(np.float32))
+    data = frame.astype(np.float32)
+    vmin = float(np.min(data))
+    vmax = float(np.max(data))
+    if np.isclose(vmin, vmax):
+        vmax = vmin + 1e-6
     fig, ax = plt.subplots(figsize=(5, 3))
-    ax.imshow(frame, cmap="gray")
+    ax.imshow(data, cmap="gray", vmin=vmin, vmax=vmax)
     ax.axis("off")
     fig.tight_layout(pad=0)
     fig.savefig(stem.with_suffix(".pdf"), dpi=400, bbox_inches="tight")
     if save_png:
-        fig.savefig(stem.with_suffix(".png"), dpi=300, bbox_inches="tight")
+        normed = (data - vmin) / (vmax - vmin)
+        normed = np.clip(normed, 0.0, 1.0)
+        plt.imsave(stem.with_suffix(".png"), normed, cmap="gray", vmin=0.0, vmax=1.0)
     plt.close(fig)
 
 
