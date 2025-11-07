@@ -1,0 +1,9 @@
+{
+  "segment": "/home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz",
+  "pos_scale": 1.0,
+  "neg_scale": 1.3052505493164062,
+  "bin_width_us": 50000.0,
+  "bin_width_ms": 50.0,
+  "smooth": true,
+  "rescale_step_us": 5000.0
+}

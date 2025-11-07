@@ -1,10 +1,24 @@
 \documentclass[9pt,twocolumn]{opticajnl}
 \journal{opticajournal}
 \setboolean{shortarticle}{true}
-\usepackage{siunitx}
-\sisetup{range-phrase = --, range-units = single}
-\usepackage{siunitx}
-\sisetup{per-mode = symbol}
+\IfFileExists{siunitx.sty}{%
+  \usepackage{siunitx}
+  \sisetup{range-phrase = --, range-units = single}
+  \sisetup{per-mode = symbol}%
+}{%
+  \newcommand{\sisetup}[1]{}
+  \newcommand{\SI}[2]{\ensuremath{##1\,##2}}
+  \newcommand{\SIrange}[3]{\ensuremath{##1\text{--}##2\,##3}}
+  \newcommand{\DeclareSIUnit}[2]{}
+}
+\providecommand{\nano}{\ensuremath{\mathrm{n}}}
+\providecommand{\micro}{\ensuremath{\mu}}
+\providecommand{\milli}{\ensuremath{\mathrm{m}}}
+\providecommand{\second}{\ensuremath{\mathrm{s}}}
+\providecommand{\meter}{\ensuremath{\mathrm{m}}}
+\providecommand{\per}{\ensuremath{\,/\,}}
+\providecommand{\pixel}{\ensuremath{\mathrm{px}}}
+\providecommand{\USD}{\ensuremath{\mathrm{USD}}}
 \DeclareSIUnit{\pixel}{px}
 \DeclareSIUnit{\USD}{USD}
 
@@ -65,6 +79,14 @@ The system operates in transmission across the visible band (\SIrange{420}{700}{
 \end{figure}
 % \endgroup
 
+\begin{figure*}[t]
+  \centering
+  % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
+\includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan.pdf}
+  \caption{Spectral reconstruction across a single forward scan. The view spans 175--775~ms (\(\approx 390\) to 660~nm). Columns sample five 50~ms bins centred near 389, 456, 523, 590, and 657~nm. Rows (top to bottom): original cumulative events, multi-window compensated accumulation, 20~nm wavelength-gradient slices from the reference hyperspectral camera, and the 300~s reference exposure.}
+  \label{fig:spectrum}
+\end{figure*}
+
 \olsection{System architecture and sensing model}
 Figure~\ref{fig:overview} sketches the optical layout. A broadband LED source passes through a slit and diffraction grating before illuminating the specimen. The transmitted light is collected by a microscope and relayed through a 4$f$ system onto a hybrid detection plane comprising an event camera and a frame camera. The motor executes repeated forward/backward scans, but its speed is neither constant nor calibrated.
 
@@ -108,7 +130,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   % Figure 3(a): Events with learned boundaries (X--T and Y--T)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3a) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/multiwindow_events_blank.pdf}};
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_a_events.pdf}};
       {\includegraphics[width=0.8\linewidth]{figures/multiwindow_events_blank.pdf}};
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(a)};
@@ -117,7 +139,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   % Figure 3(b): Variance vs time (50 ms bins)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3b) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/multiwindow_variance_blank.pdf}};
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_b_variance.pdf}};
       {\includegraphics[width=0.8\linewidth]{figures/multiwindow_variance_blank.pdf}};
     \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(b)};
@@ -126,7 +148,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   % Figure 3(c): Single 50 ms bin comparison (original vs compensated)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3c) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/multiwindow_bin50ms_sanqin.pdf}};
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
       {\includegraphics[width=0.8\linewidth]{figures/multiwindow_bin50ms_sanqin.pdf}};
     \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(c)};
@@ -136,16 +158,16 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   \label{fig:warp}
 \end{figure}
 
-\begin{figure*}[t]
-  \centering
-  % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
-\includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan.pdf}
-  \caption{
-  Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin.
-   % (top: original; bottom: compensated with 3$\times$3$\times$3 smoothing and background subtraction). 
-   }
-  \label{fig:spectrum}
-\end{figure*}
+% \begin{figure*}[t]
+%   \centering
+%   % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
+% \includegraphics[width=0.98\textwidth]{figures/figure04_rescaled_grid_bins_03_15.pdf}
+%   \caption{
+%   Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin.
+%    % (top: original; bottom: compensated with 3$\times$3$\times$3 smoothing and background subtraction). 
+%    }
+%   \label{fig:spectrum}
+% \end{figure*}
 
 \olsection{Event-trigger probability model}
 Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
@@ -179,11 +201,11 @@ This probabilistic link between event statistics and intensity gradients underpi
 \olsection{Self-synchronized scan segmentation}
 We first convert the event timestamps into an activity signal $a[n]$ (the number of events per 1~ms bin). The peak of auto-correlation
 \begin{equation}
-  R[k] = \sum_{n} a[n]\,a[n+k]
+  R[k] = \sum_{n} a[n]\\,a[n+k]
 \end{equation}
-reveals the scanning period, while the auto-convolution between $a[n]$ and its time-reversed sequence $a_{\mathrm{rev}}[n] = a[N{-}1{-}n]$,
+reveals the scanning period, while the auto-convolution of $a[n]$ the correlation of $a[n]$ and its time-reversed sequence $a_{\mathrm{rev}}[n] = a[N{-}1{-}n]$,
 \begin{equation}
-  R_{\mathrm{rev}}[k] = \sum_{n} a[n]\,a[N{-}1{-}n],
+  R_{\mathrm{rev}}[k] = \sum_{n} a[n]\\,a[N{-}1{-}n],
   \label{eq:rev_corr}
 \end{equation}
 exposes the pre- and post-scan regions through the mirror-symmetric peaks around the turnaround time. 
@@ -309,6 +331,38 @@ Data underlying the results presented in this paper are available from the corre
 \end{backmatter}
 
 
-\bibliography{ref}
+\begin{thebibliography}{10}
+
+\bibitem{hagen2013review}
+N.~Hagen and M.~W. Kudenov, Opt. Eng. \textbf{52}, 090901 (2013).
+
+\bibitem{yeh2011selfcal}
+C.-K. Yeh and V.~J. Tsai, ``Self-calibrated direct geo-referencing of airborne pushbroom hyperspectral images,'' in \emph{2011 IEEE International Geoscience and Remote Sensing Symposium} (IEEE, 2011), pp.~2881--2883.
+
+\bibitem{alhourani2023linescan}
+A.~Al-Hourani, S.~Balendhran, S.~Walia, and T.~Hourani, Remote Sens. \textbf{15}, 2787 (2023).
+
+\bibitem{gallego2020event}
+G.~Gallego, T.~Delbr\"uck, G.~Orchard, \emph{et al.}, IEEE Trans. Pattern Anal. Mach. Intell. \textbf{44}, 154 (2022).
+
+\bibitem{ge2025event}
+Z.~Ge, C.~Wang, J.~Huang, and E.~Y. Lam, Opt. Lett. \textbf{50}, 1496 (2025).
+
+\bibitem{zhang2024neuromorphic}
+P.~Zhang, S.~Zhu, C.~Wang, \emph{et al.}, IEEE Trans. Circuits Syst. Video Technol. (2024).
+
+\bibitem{reinbacher2016manifold}
+G.~Reinbacher, C.~Munda, and T.~Pock, IEEE Conf. Comput. Vis. Pattern Recognit. Workshops (2016).
+
+\bibitem{bardow2016simultaneous}
+P.~Bardow, A.~J. Davison, and S.~Leutenegger, ``Simultaneous optical flow and intensity estimation from an event camera,'' in \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)} (IEEE, 2016), pp.~884--892.
+
+\bibitem{mitrokhin2018mobility}
+A.~Mitrokhin, C.~Ferm\"uller, C.~Parameshwara, and Y.~Aloimonos, ``Event-based moving object detection and tracking,'' in \emph{2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)} (IEEE, 2018), pp.~1--9.
+
+\bibitem{wang2025angle}
+C.~Wang, S.~Zhu, P.~Zhang, \emph{et al.}, Laser \& Photonics Rev. \textbf{19}, 2400647 (2025).
+
+\end{thebibliography}
 
 \end{document}

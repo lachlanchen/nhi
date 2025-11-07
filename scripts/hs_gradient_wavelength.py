@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def list_frames_with_nm(frames_dir: Path) -> List[Tuple[float, Path]]:
-    pat = re.compile(r".*_(\d+(?:\.\d+)?)nm\.(?:png|jpg|jpeg)$", re.IGNORECASE)
+    pat = re.compile(r".*_(\d+(?:\.\d+)?)nm(?:_[^.]*)?\.(?:png|jpg|jpeg)$", re.IGNORECASE)
     items: List[Tuple[float, Path]] = []
     for p in sorted(frames_dir.glob("*.png")):
         m = pat.match(p.name)
@@ -92,6 +92,10 @@ def main() -> None:
     args = parse_args()
     frames_dir = args.frames_dir.resolve()
     items = list_frames_with_nm(frames_dir)
+    if not items and frames_dir.name.endswith("_roi_crops"):
+        parent = frames_dir.parent / frames_dir.name.replace("_roi_crops", "")
+        if parent.exists():
+            items = list_frames_with_nm(parent)
     if not items:
         raise FileNotFoundError(f"No wavelength-tagged frames found in {frames_dir}")
 

@@ -1,0 +1,18 @@
+{
+  "reference": {
+    "path": "publication_code/figures/spectral_reconstruction_scan_20251106_165501/ref_used_frames/bin_06_455nm.png",
+    "width": 211,
+    "height": 211
+  },
+  "overlay": {
+    "path": "publication_code/figures/spectral_reconstruction_scan_20251106_165501/comp_used_frames/bin_03_389nm.png",
+    "orig_width": 1280,
+    "orig_height": 720
+  },
+  "transform": {
+    "scale": 0.21762913579014892,
+    "tx": -43.09255370201285,
+    "ty": 31.1796936700367,
+    "alpha": 0.6
+  }
+}

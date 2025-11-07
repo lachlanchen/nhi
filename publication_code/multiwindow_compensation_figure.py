@@ -306,27 +306,34 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     ax.plot(bins, var_orig, color="#7f7f7f", linewidth=1.6, label="Original")
     ax.plot(bins, var_comp, color="#1f77b4", linewidth=1.6, label="Compensate")
     ax.set_xlabel("Time Bin", fontsize=12)
+    # add headroom above max variance (user requested max + 0.2 to fit legend)
+    data_top = max(float(np.max(var_orig) if len(var_orig) else 0.0),
+                   float(np.max(var_comp) if len(var_comp) else 0.0))
+    default_top = data_top + 0.2
     if var_ylim is not None:
-        top = float(var_ylim)
-        ax.set_ylim(0.0, top)
-        # Show ticks every 0.2 if range allows
-        try:
-            step = 0.2
-            ticks = np.arange(0.0, top + 1e-9, step)
-            ax.set_yticks(ticks)
-        except Exception:
-            pass
+        top = max(float(var_ylim), default_top)
     else:
-        # Default headroom and ticks
-        top = 1.35 + 1e-6
-        ax.set_ylim(0.0, top)
-        ax.set_yticks(np.arange(0.0, 1.3, 0.2))
+        top = default_top
+    ax.set_ylim(0.0, top)
+    # Choose tick spacing heuristically based on range
+    try:
+        span = top
+        if span <= 0.5:
+            step = 0.05
+        elif span <= 1.0:
+            step = 0.1
+        else:
+            step = 0.2
+        ticks = np.arange(0.0, top + 1e-9, step)
+        ax.set_yticks(ticks)
+    except Exception:
+        pass
     ax.set_ylabel("Variance", fontsize=12)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    # Place legend outside top-right
-    legend = ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.02), fontsize=9, framealpha=0.0)
-    fig.tight_layout(rect=[0.0, 0.0, 0.92, 1.0])
+    # Place legend inside top-right with slight transparency for readability
+    legend = ax.legend(loc="upper right", fontsize=9, framealpha=0.8)
+    fig.tight_layout()
     stem = f"multiwindow_variance{suffix}.pdf"
     out_path = out_dir / stem
     fig.savefig(out_path, dpi=400)

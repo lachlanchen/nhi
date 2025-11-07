@@ -26,33 +26,46 @@ This document records the primary data, derived artifacts, and commands used to 
 - Time‑binned artifacts (panel b/c):
   - NPZ: `.../time_binned_frames/Scan_1_Forward_events_chunked_processing_all_time_bins_data_multiwindow_chunked_processing_atrain_-0.5005_14.1464_btrain_-60.3067_-54.8752.npz`
   - CSV: `.../time_binned_frames/Scan_1_Forward_events_chunked_processing_time_bin_statistics_multiwindow_chunked_processing_atrain_-0.5005_14.1464_btrain_-60.3067_-54.8752.csv`
-- Outputs: `publication_code/figures/multiwindow_compensation_blank_vs_sanqin/{multiwindow_events_blank,multiwindow_variance_blank,multiwindow_bin50ms_sanqin}.{pdf,png}`
+- Outputs: 
+  - `publication_code/figures/multiwindow_compensation_20251106_121021/{multiwindow_events_blank,multiwindow_variance_blank}.{pdf,png}`
+  - `publication_code/figures/multiwindow_compensation_20251106_121034/multiwindow_bin50ms_sanqin.{pdf,png}`
 - Command:
   ```bash
   ~/miniconda3/envs/nhi_test/bin/python publication_code/multiwindow_compensation_figure.py \
-    --variance_mode recompute --var_bin_us 5000 \
+    --variance_mode recompute --var_bin_us 50000 \
     --sensor_width 1280 --sensor_height 720 \
     --sample 0.05 \
     --output_dir publication_code/figures \
+    --output_suffix blank \
     scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184747/angle_20_blank_2835_event_20250925_184747_segments/Scan_1_Forward_events.npz
+  ~/miniconda3/envs/nhi_test/bin/python publication_code/multiwindow_compensation_figure.py \
+    --variance_mode recompute --var_bin_us 50000 \
+    --sensor_width 1280 --sensor_height 720 \
+    --sample 0.05 \
+    --output_dir publication_code/figures \
+    --output_suffix sanqin \
+    scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz
   ```
 
 ## Figure 4 — Spectral reconstruction (grid + GT)
 - Segment NPZ: `scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz`
 - Ground truth (spectrometer): directory `groundtruth_spectrum_2835`
-- GT ROI frames (for GT row + gradient bar): `hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched`
-- Outputs (timestamped): `publication_code/figures/figure04_allinone_<timestamp>/`
-  - `figure04_rescaled_grid_bins_03_15.{pdf,png}` (Orig., Comp., GT row, gradient bar)
-  - `gt_selected_frames/` (per‑bin GT frame copies used)
+- GT ROI frames / gradients:
+  - `hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched`
+  - `hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched_gradient_20nm`
+- Outputs (timestamped): `publication_code/figures/spectral_reconstruction_scan_<timestamp>/`
+  - `spectral_reconstruction_scan.{pdf,png}` (Orig., Comp., gradient, reference rows + annotated wavelength bar)
+  - `gt_selected_frames/`, `ref_selected_frames/`, `diff_selected_frames/`
 - Command:
   ```bash
-  ~/miniconda3/envs/nhi_test/bin/python publication_code/figure04_rescaled_allinone.py \
+  ~/miniconda3/envs/nhi_test/bin/python publication_code/spectral_reconstruction_figure.py \
     --segment scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz \
     --gt-dir groundtruth_spectrum_2835 \
-    --gt-frames-dir hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched \
+    --diff-frames-dir hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched_gradient_20nm \
+    --ref-frames-dir hyperspectral_data_sanqin_gt/test300_roi_square_frames_matched \
     --bin-width-us 50000 --start-bin 3 --end-bin 15 \
-    --show-wavelength --add-gt-row \
-    --bar-height-ratio 0.06 --bar-px 4 \
+    --downsample-rate 3 --show-wavelength \
+    --figure-name spectral_reconstruction_scan \
     --save-png
   ```
 
