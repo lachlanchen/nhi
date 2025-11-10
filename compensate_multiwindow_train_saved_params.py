@@ -1413,12 +1413,19 @@ def plot_learned_parameters_with_data(model, x, y, t, sensor_width, sensor_heigh
         x_plot = x
         y_plot = y
         t_plot = t
+
+    # Rebase timestamps so scatter overlays always match 0..duration (handles absolute μs inputs)
+    if t_plot.size:
+        t0 = int(np.min(t))
+        t_plot_rel = (t_plot.astype(np.int64) - t0) / 1000.0  # ms
+    else:
+        t_plot_rel = t_plot
     
     # Plot 1: X-T view with data and boundaries
     ax = axes[0, 0]
     
     # Plot event data as scatter (in background)
-    ax.scatter(x_plot, t_plot/1000, c='lightblue', alpha=0.1, s=0.1, rasterized=True, label='Events')
+    ax.scatter(x_plot, t_plot_rel, c='lightblue', alpha=0.1, s=0.1, rasterized=True, label='Events')
     
     # Plot learned boundary lines (on top)
     final_x_lines = compute_boundary_lines_simple(final_a_params, final_b_params, x_range, 'x')
@@ -1438,7 +1445,7 @@ def plot_learned_parameters_with_data(model, x, y, t, sensor_width, sensor_heigh
     ax = axes[0, 1]
     
     # Plot event data as scatter (in background)
-    ax.scatter(y_plot, t_plot/1000, c='lightgreen', alpha=0.1, s=0.1, rasterized=True, label='Events')
+    ax.scatter(y_plot, t_plot_rel, c='lightgreen', alpha=0.1, s=0.1, rasterized=True, label='Events')
     
     # Plot learned boundary lines (on top)
     final_y_lines = compute_boundary_lines_simple(final_a_params, final_b_params, y_range, 'y')
