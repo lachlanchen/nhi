@@ -9,7 +9,7 @@ Key features
 - For Backward scans, flip polarity and reverse time before merging.
   - If p ∈ {0,1} → map p := 1-p
   - If p ∈ {−1,1} → map p := −p
-- Concatenate per‑scan relative time axes into a single continuous timeline.
+- Fold multiple scans onto the same 0..period time axis (after normalizing backward scans).
 - Forward all extra flags to compensate_multiwindow_train_saved_params.py.
 
 This script intentionally reuses the proven trainer to avoid divergence, while
@@ -125,22 +125,21 @@ def merge_segments(paths: Iterable[Path], include: str, sort_key: str) -> Tuple[
     ys: List[np.ndarray] = []
     ts: List[np.ndarray] = []
     ps: List[np.ndarray] = []
-    offset = 0
     for p, back, _ in items:
         with np.load(p, allow_pickle=False) as d:
             x, y, t, p_arr = d["x"], d["y"], d["t"], d["p"]
         x, y, dt, pp, dur = normalize_scan(x, y, t, p_arr, back)
-        ts.append(dt + offset)
+        # Always fold: align all scans to 0..period after polarity/time normalization
+        ts.append(dt)
         xs.append(x)
         ys.append(y)
         ps.append(pp)
-        offset += dur + 1  # keep scans separated by 1μs to preserve ordering
 
     x_all = np.concatenate(xs).astype(np.uint16)
     y_all = np.concatenate(ys).astype(np.uint16)
     t_all = np.concatenate(ts).astype(np.int64)
     p_all = np.concatenate(ps).astype(np.int16)
-    duration = int(t_all.max() - t_all.min()) if t_all.size else 0
+    duration = int(t_all.max()) if t_all.size else 0
     return x_all, y_all, t_all, p_all, duration
 
 
