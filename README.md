@@ -219,6 +219,57 @@ python scan_compensation_gui_cloud.py
 
 Synchronized recording system for event and frame cameras.
 
+## Turbo Multi‑Scan Compensation
+
+When you have multiple one‑way scans (Forward/Backward) of the same sweep, you can merge them and run the proven trainer on a single combined event stream using `compensate_multiwindow_turbo.py`.
+
+What it does
+
+- Accepts one segment, an explicit list, or a whole segments directory.
+- For Backward scans, flips polarity and reverses time before merging:
+  - If polarity p ∈ {0,1}: p := 1 − p; then reverse time within the scan.
+  - If polarity p ∈ {−1,1}: p := −p; then reverse time within the scan.
+- Concatenates scans on a continuous timeline (with a 1 μs gap between scans) and calls `compensate_multiwindow_train_saved_params.py` under the hood.
+
+Usage
+
+```bash
+# Merge all scans (Forward+Backward) from a segments folder and train at 5 ms
+python compensate_multiwindow_turbo.py \
+  --segments-dir path/to/…/_segments \
+  --include all --sort name \
+  --bin-width 5000 \
+  -- --a_trainable --iterations 1000 --smoothness_weight 0.001 --chunk_size 250000 --visualize --plot_params
+
+# Reuse learned params and just render at 10 ms (fast, no training)
+python compensate_multiwindow_turbo.py \
+  --segments-dir path/to/…/_segments \
+  --include all --sort time \
+  --bin-width 10000 \
+  --load-params path/to/learned_params.npz \
+  -- --visualize --plot_params
+
+# Only Forward scans
+python compensate_multiwindow_turbo.py \
+  --segments-dir path/to/…/_segments \
+  --include forward --sort time \
+  --bin-width 5000 \
+  -- --a_trainable --iterations 1000 --smoothness_weight 0.001 --chunk_size 250000
+```
+
+Options
+
+- `--segment`, `--segments`, `--segments-dir`: choose your input set.
+- `--include {all|forward|backward}`: filter by scan direction.
+- `--sort {name|time}`: natural filename order or NPZ `start_time` order.
+- `--bin-width <μs>`: forwarded to the base trainer.
+- `--load-params`: reuse saved parameters (skip training and regenerate outputs quickly at new bin widths).
+- `--extra …` after `--`: any additional flags are forwarded to the base trainer.
+
+Speed scaling tip
+
+If your scan is N× faster than baseline, reduce `--bin-width` by the same factor (e.g., baseline 50 ms → 10× faster → 5 ms: `--bin-width 5000`). You can train once (e.g., 5 ms), then use `--load-params` to quickly regenerate results at 10 ms without retraining.
+
 **Features**:
 
 * Simultaneous event and frame recording
@@ -374,4 +425,3 @@ If you use this work in your research, please cite:
 ## Contributing
 
 Contributions welcome! Please read our contributing guidelines and submit pull requests for any improvements.
-

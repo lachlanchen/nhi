@@ -85,3 +85,17 @@ Tips
 - Reuse trained params: supply `--load_params <params.npz>` to the trainer to skip optimization.
 - GPU memory: the trainer uses chunked processing throughout; adjust `--chunk_size` if needed.
 - For other datasets, replace the paths above with your *.raw and segment *.npz files.
+
+Turbo multi‑scan workflow
+
+Merge multiple Forward/Backward segments into one stream and run the same trainer:
+
+```
+python compensate_multiwindow_turbo.py \
+  --segments-dir <path to *_segments> \
+  --include all --sort name \
+  --bin-width 5000 \
+  -- --a_trainable --iterations 1000 --smoothness_weight 0.001 --chunk_size 250000 --visualize --plot_params
+```
+
+If the scan runs N× faster than baseline, scale the bin width by 1/N (e.g., 10× faster → `--bin-width 5000`). Train once, then use `--load-params <npz>` to change bin width quickly without retraining.
