@@ -547,7 +547,7 @@ def analyze_scanning_pattern(activity, activity_fraction=0.80, max_iterations=2,
     return results
 
 
-def segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min):
+def segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min, manual_start_shift_ms: float = 0.0):
     """
     Segment events into 6 scanning periods (forward/backward)
     """
@@ -564,9 +564,13 @@ def segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min):
     scan_labels = []
     
     # Convert bin indices to absolute timestamps
-    scan_start_time = t_min + results['scan_start'] * time_bin_us
+    # Apply optional manual shift to start/end boundaries (ms → us)
+    shift_us = int(manual_start_shift_ms * 1000.0)
+    scan_start_time = t_min + results['scan_start'] * time_bin_us + shift_us
     one_way_period_us = results['one_way_period'] * time_bin_us
     
+    if shift_us != 0:
+        print(f"Manual start shift: {manual_start_shift_ms:.1f} ms ({shift_us} μs)")
     print(f"Scan start time: {scan_start_time} μs")
     print(f"One-way period: {one_way_period_us} μs ({one_way_period_us/1000:.1f} ms)")
     
@@ -577,7 +581,7 @@ def segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min):
         end_time = scan_start_time + (i + 1) * one_way_period_us
         
         # Make sure we don't exceed the scanning end boundary
-        scan_end_time = t_min + results['scan_end'] * time_bin_us
+        scan_end_time = t_min + results['scan_end'] * time_bin_us + shift_us
         end_time = min(end_time, scan_end_time)
         
         # Determine scan direction (even indices = forward, odd = backward)
@@ -733,7 +737,7 @@ def plot_segmented_scans(scan_segments, scan_labels, output_dir, base_name):
     print(f"Segmented scans plot saved to: {plot_path}")
 
 
-def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
+def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min, manual_start_shift_ms: float = 0.0):
     """
     Plot comprehensive results including estimated period analysis
     """
@@ -749,16 +753,17 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     # Plot 1: Activity with boundaries and most active region
     axes[0].plot(time_axis, activity, 'b-', alpha=0.8, linewidth=0.8)
     
-    # Mark boundaries
-    scan_start_time = (results['scan_start'] * time_bin_us + t_min) / 1000
-    scan_end_time = (results['scan_end'] * time_bin_us + t_min) / 1000
+    # Mark boundaries (apply optional manual shift)
+    shift_us = int(manual_start_shift_ms * 1000.0)
+    scan_start_time = (results['scan_start'] * time_bin_us + t_min + shift_us) / 1000
+    scan_end_time = (results['scan_end'] * time_bin_us + t_min + shift_us) / 1000
     
     axes[0].axvline(x=scan_start_time, color='red', linestyle='--', linewidth=2, label='Scan boundaries')
     axes[0].axvline(x=scan_end_time, color='red', linestyle='--', linewidth=2)
     
     # Mark smallest active window
-    active_start_time = (results['active_start'] * time_bin_us + t_min) / 1000
-    active_end_time = (results['active_end'] * time_bin_us + t_min) / 1000
+    active_start_time = (results['active_start'] * time_bin_us + t_min + shift_us) / 1000
+    active_end_time = (results['active_end'] * time_bin_us + t_min + shift_us) / 1000
     
     axes[0].axvspan(active_start_time, active_end_time, alpha=0.1, color='green', 
                    label=f'{results["activity_fraction"]*100:.0f}% smallest window')
@@ -795,7 +800,7 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
         for i in range(6):  # 6 one-way scans
             cycle_pos = results['scan_start'] + i * results['one_way_period']
             if cycle_pos < results['scan_end']:
-                cycle_time = (cycle_pos * time_bin_us + t_min) / 1000
+                cycle_time = (cycle_pos * time_bin_us + t_min + shift_us) / 1000
                 color_idx = i % 2
                 color = scan_colors[color_idx]
                 direction = scan_labels[color_idx]
@@ -805,7 +810,7 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
                 # Add scan number and direction labels
                 if i < 5:  # Don't label the last boundary
                     next_cycle_pos = results['scan_start'] + (i + 1) * results['one_way_period']
-                    next_cycle_time = (min(next_cycle_pos, results['scan_end']) * time_bin_us + t_min) / 1000
+                    next_cycle_time = (min(next_cycle_pos, results['scan_end']) * time_bin_us + t_min + shift_us) / 1000
                     mid_time = (cycle_time + next_cycle_time) / 2
                     max_val = np.max(main_activity)
                     
@@ -901,7 +906,7 @@ def plot_results(activity, results, output_dir, base_name, time_bin_us, t_min):
     print(f"Analysis plot saved to {plot_path}")
 
 
-def save_results(results, time_bin_us, t_min, output_dir, base_name):
+def save_results(results, time_bin_us, t_min, output_dir, base_name, manual_start_shift_ms: float = 0.0):
     """
     Save detailed results including iterative refinement info
     """
@@ -921,6 +926,8 @@ def save_results(results, time_bin_us, t_min, output_dir, base_name):
         
         f.write(f"Time bin size: {time_bin_us} μs\n")
         f.write(f"Recording start: {t_min} μs\n\n")
+        if abs(manual_start_shift_ms) > 1e-6:
+            f.write(f"Manual start shift applied: {manual_start_shift_ms:.1f} ms\n\n")
         
         f.write("ANALYSIS METHOD:\n")
         if results.get('manual_period_used', False):
@@ -1025,6 +1032,9 @@ def main():
                        help='Manual round trip period in bins (default: 1688). Use --auto_calculate_period to override.')
     parser.add_argument('--auto_calculate_period', action='store_true',
                        help='Automatically calculate round trip period using autocorrelation (overrides --round_trip_period)')
+    parser.add_argument('--manual_start_shift_ms', type=float, default=0.0,
+                       help='Optional manual shift applied to scan start/end boundaries in milliseconds. '
+                            'Positive shifts move start/end to the right; negative shifts to the left (default: 0).')
     
     args = parser.parse_args()
     
@@ -1048,6 +1058,10 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     
     base_name = os.path.splitext(os.path.basename(args.raw_file))[0]
+    # If a manual shift is requested, reflect it in the output filenames
+    if abs(args.manual_start_shift_ms) > 1e-6:
+        suffix = f"_shift_{int(round(args.manual_start_shift_ms))}ms"
+        base_name = f"{base_name}{suffix}"
     
     print(f"Analyzing: {args.raw_file}")
     print(f"Activity fraction: {args.activity_fraction*100:.0f}%")
@@ -1075,12 +1089,14 @@ def main():
     
     if results is not None:
         # Plot and save results
-        plot_results(activity, results, args.output_dir, base_name, time_bin_us, t_min)
-        save_results(results, time_bin_us, t_min, args.output_dir, base_name)
+        plot_results(activity, results, args.output_dir, base_name, time_bin_us, t_min, args.manual_start_shift_ms)
+        save_results(results, time_bin_us, t_min, args.output_dir, base_name, args.manual_start_shift_ms)
         
         # Segment events if requested
         if args.segment_events:
-            scan_segments, scan_labels = segment_events_into_scans(x, y, t, p, results, time_bin_us, t_min)
+            scan_segments, scan_labels = segment_events_into_scans(
+                x, y, t, p, results, time_bin_us, t_min, args.manual_start_shift_ms
+            )
             
             if scan_segments:
                 # Save segmented events
