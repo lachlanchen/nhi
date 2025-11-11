@@ -1611,13 +1611,13 @@ def visualize_results(model, x, y, t, p, losses, variance_losses, smoothness_los
     
     # Original event frame
     frame_orig = event_tensor_orig[bin_idx].detach().cpu().numpy()
-    im1 = axes[0, 2].imshow(frame_orig, cmap='inferno', aspect='auto')
+    im1 = axes[0, 2].imshow(frame_orig, cmap='inferno', aspect='equal')
     axes[0, 2].set_title(f'Original - Bin {bin_idx}')
     plt.colorbar(im1, ax=axes[0, 2])
     
     # Compensated event frame  
     frame_comp = event_tensor_comp[bin_idx].detach().cpu().numpy()
-    im2 = axes[1, 2].imshow(frame_comp, cmap='inferno', aspect='auto')
+    im2 = axes[1, 2].imshow(frame_comp, cmap='inferno', aspect='equal')
     axes[1, 2].set_title(f'Multi-Window Compensated - Bin {bin_idx}')
     plt.colorbar(im2, ax=axes[1, 2])
     
