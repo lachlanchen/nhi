@@ -193,7 +193,7 @@ def render_spectral_grid(
                           height_ratios=[1.0, 1.0, 1.0, 1.0, max(0.02, float(bar_px) / 80.0)])
     def label_column(r: int, text: str) -> None:
         ax = fig.add_subplot(gs[r, 0]); ax.axis("off"); ax.text(0.5, 0.5, text, rotation=90, ha="center", va="center", fontsize=9, fontweight="bold")
-    label_column(0, "Original"); label_column(1, "Compensated"); label_column(2, "Diff."); label_column(3, "Reference")
+    label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
 
     # Draw row 1/2
     for row, frames, cmap in [(0, originals, raw_cmap), (1, compensated, comp_cmap)]:
