@@ -175,6 +175,8 @@ def render_spectral_grid(
     flip_row12: bool = False,
     flip_row34: bool = False,
     ext_crop: Tuple[int, int, int, int] | None = None,
+    sens_crop: Tuple[int, int, int, int] | None = None,
+    wavelength_lookup: Dict[int, float] | None = None,
 ) -> None:
     setup_style()
     selected = [m for m in metadata if start_bin <= m["index"] <= end_bin]
@@ -197,6 +199,9 @@ def render_spectral_grid(
             frame = frames[idx] if idx < len(frames) else np.zeros_like(frames[0])
             if flip_row12:
                 frame = np.flipud(frame)
+            if sens_crop is not None:
+                y0, y1, x0, x1 = sens_crop
+                frame = frame[y0:y1, x0:x1]
             ax.imshow(frame, cmap=cmap, origin="lower")
             ax.axis("off")
     # Draw row 3/4 from file paths (already cropped/rotated externally)
@@ -239,6 +244,66 @@ def render_spectral_grid(
     if save_png:
         fig.savefig(f"{out_stem}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+    # Save used/selected frames similar to cropped pipeline
+    def save_frame_png(path: Path, data: np.ndarray, cmap: Colormap, vmin: float | None = None, vmax: float | None = None) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        arr = data
+        if vmin is None: vmin = float(arr.min())
+        if vmax is None: vmax = float(arr.max())
+        if np.isclose(vmin, vmax): vmax = vmin + 1e-3
+        normed = (arr - vmin) / (vmax - vmin)
+        normed = np.clip(normed, 0.0, 1.0)
+        rgba = cmap(normed)
+        plt.imsave(path, rgba, origin="lower")
+
+    kept_idx = [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin]
+    kept_idx = kept_idx[:: max(1, int(downsample_rate))] or kept_idx
+    if kept_idx and kept_idx[-1] != ( [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin ][-1] ):
+        kept_idx.append( [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin ][-1] )
+
+    orig_used_dir = output_dir / "orig_used_frames"; orig_used_dir.mkdir(parents=True, exist_ok=True)
+    comp_used_dir = output_dir / "comp_used_frames"; comp_used_dir.mkdir(parents=True, exist_ok=True)
+    diff_used_dir = output_dir / "diff_used_frames"; diff_used_dir.mkdir(parents=True, exist_ok=True)
+    ref_used_dir  = output_dir / "ref_used_frames";  ref_used_dir.mkdir(parents=True, exist_ok=True)
+    diff_sel_dir  = output_dir / "diff_selected_frames"; diff_sel_dir.mkdir(parents=True, exist_ok=True)
+    gt_sel_dir    = output_dir / "gt_selected_frames";   gt_sel_dir.mkdir(parents=True, exist_ok=True)
+    ref_sel_dir   = output_dir / "ref_selected_frames";  ref_sel_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save downsampled frames with names bin_XX_YYYnm.png
+    for idx in kept_idx:
+        nm_label = None
+        if wavelength_lookup and idx in wavelength_lookup:
+            nm_label = float(wavelength_lookup[idx])
+        fname = f"bin_{idx:02d}" + (f"_{nm_label:.0f}nm" if nm_label is not None else "") + ".png"
+        # Sensor rows
+        f_raw = originals[idx] if idx < len(originals) else np.zeros_like(originals[0])
+        f_comp = compensated[idx] if idx < len(compensated) else np.zeros_like(compensated[0])
+        if flip_row12:
+            f_raw = np.flipud(f_raw); f_comp = np.flipud(f_comp)
+        if sens_crop is not None:
+            y0, y1, x0, x1 = sens_crop
+            f_raw = f_raw[y0:y1, x0:x1]; f_comp = f_comp[y0:y1, x0:x1]
+        save_frame_png(orig_used_dir / fname, f_raw, raw_cmap)
+        save_frame_png(comp_used_dir / fname, f_comp, comp_cmap)
+        # External rows: copy/crop matching images by index if available
+        if 0 <= idx < len(diff_paths) and diff_paths[idx] and diff_paths[idx].exists():
+            img = plt.imread(diff_paths[idx])
+            if ext_crop is not None:
+                y0, y1, x0, x1 = ext_crop; img = img[y0:y1, x0:x1]
+            if flip_row34: img = np.flipud(img)
+            plt.imsave(diff_used_dir / fname, img, origin="lower")
+            # Also record as selected
+            plt.imsave(diff_sel_dir / fname, img, origin="lower")
+        if 0 <= idx < len(ref_paths) and ref_paths[idx] and ref_paths[idx].exists():
+            img = plt.imread(ref_paths[idx])
+            if ext_crop is not None:
+                y0, y1, x0, x1 = ext_crop; img = img[y0:y1, x0:x1]
+            if flip_row34: img = np.flipud(img)
+            plt.imsave(ref_used_dir / fname, img, origin="lower")
+            # Selected copies
+            plt.imsave(ref_sel_dir / fname, img, origin="lower")
+            plt.imsave(gt_sel_dir / fname, img, origin="lower")
 
 
 def main() -> None:
@@ -296,13 +361,26 @@ def main() -> None:
     diff_pngs = list_pngs_sorted(args.diff_frames_dir.resolve())
     ref_pngs = list_pngs_sorted(args.ref_frames_dir.resolve())
 
-    # Render spectral grid (cropped rows assumed preprocessed by caller)
+    # Prepare crop boxes and wavelength lookup for labels
+    sens_crop = _load_crop_box(args.crop_json)
+    ext_crop = _load_crop_box(args.external_crop_json)
+    # Compute wavelength lookup per bin using edges-only slope/intercept
+    slope = float(payload["alignment"]["slope_nm_per_ms"])  # type: ignore
+    intercept = float(payload["alignment"]["intercept_nm"])  # type: ignore
+    base_start = metadata_bins[0]["start_us"] if metadata_bins else 0.0
+    wavelength_lookup: Dict[int, float] = {}
+    for item in metadata_bins:
+        centre_ms = (((item["start_us"] + item["end_us"]) * 0.5) - base_start) / 1000.0
+        wavelength_lookup[int(item["index"])] = float(slope * centre_ms + intercept)
+
+    # Render spectral grid (cropped rows and flips applied here)
     shared_base = args.colormap or DEFAULT_SHARED_COLORMAP
     raw_cmap = prepare_colormap(args.raw_colormap or shared_base, "min", RAW_LIGHTEN_FRACTION)
     comp_cmap = prepare_colormap(args.comp_colormap or shared_base, "center", COMP_LIGHTEN_FRACTION)
     render_spectral_grid(
         originals, compensated, diff_pngs, ref_pngs, metadata_bins, args.start_bin, args.end_bin, args.downsample_rate,
         raw_cmap, comp_cmap, out_dir, base_name, bool(args.save_png), int(args.bar_px),
+        flip_row12=bool(args.flip_row12), flip_row34=bool(args.flip_row34), ext_crop=ext_crop, sens_crop=sens_crop, wavelength_lookup=wavelength_lookup,
     )
 
     # Save weights summary (mirrors all-in-one)
