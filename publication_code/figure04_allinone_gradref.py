@@ -378,16 +378,22 @@ def plot_aligned_overlay_only(
     fig, ax = plt.subplots(figsize=(5.6, 3.0))
     BG_COLOR = "#1f77b4"
     SPD_COLOR = "#ff7f0e"
-    # Match Fig. 4 colors and use minimal text: legend inside, no other text
+    # Match Fig. 4 colors
     ax.plot(wl_bg, bg_norm_wl, color=BG_COLOR, linewidth=1.8, label="Background")
     ax.plot(wl0, gt0_norm, color=SPD_COLOR, linewidth=1.8, label="Light SPD")
-    # Remove all text except legend
-    ax.set_xlabel("")
-    ax.set_ylabel("")
-    ax.set_title("")
-    ax.grid(False)
-    ax.tick_params(labelbottom=False, labelleft=False)
-    # Legend inside top-right
+    # Label wavelength ticks and add dashed lines at the visible-band edges
+    ax.set_xlabel("Wavelength (nm)")
+    ax.set_ylabel("Normalised intensity (a.u.)")
+    ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
+    try:
+        wl_start = float(wl0[region0.start_idx])
+        wl_end = float(wl0[region0.end_idx])
+        ax.axvline(wl_start, color="black", linestyle="--", linewidth=1.0, alpha=0.6)
+        ax.axvline(wl_end, color="black", linestyle="--", linewidth=1.0, alpha=0.6)
+    except Exception:
+        if wl_bg.size:
+            ax.axvline(float(wl_bg.min()), color="black", linestyle="--", linewidth=1.0, alpha=0.6)
+            ax.axvline(float(wl_bg.max()), color="black", linestyle="--", linewidth=1.0, alpha=0.6)
     ax.legend(loc="upper right", framealpha=0.9)
 
     out_path = out_dir / "figure04_rescaled_bg_gt_third_only.pdf"
