@@ -90,12 +90,16 @@ def parse_args() -> argparse.Namespace:
     return ap.parse_args()
 
 
-def _load_crop_box(path: Path | None) -> Tuple[int, int, int, int] | None:
+def _load_crop_box(path: Path | None, preferred_key: str | None = None) -> Tuple[int, int, int, int] | None:
     if path is None or not path.exists():
         return None
     payload = json.loads(path.read_text())
     cand = None
-    for key in ("bbox", "ref_crop", "template_crop", "bbox_xyxy"):
+    keys = []
+    if preferred_key:
+        keys.append(preferred_key)
+    keys += ["bbox", "ref_crop", "template_crop", "bbox_xyxy"]
+    for key in keys:
         if key in payload:
             cand = payload[key]
             break
@@ -362,8 +366,8 @@ def main() -> None:
     ref_pngs = list_pngs_sorted(args.ref_frames_dir.resolve())
 
     # Prepare crop boxes and wavelength lookup for labels
-    sens_crop = _load_crop_box(args.crop_json)
-    ext_crop = _load_crop_box(args.external_crop_json)
+    sens_crop = _load_crop_box(args.crop_json, preferred_key="ref_crop")
+    ext_crop = _load_crop_box(args.external_crop_json, preferred_key="template_crop")
     # Compute wavelength lookup per bin using edges-only slope/intercept
     slope = float(payload["alignment"]["slope_nm_per_ms"])  # type: ignore
     intercept = float(payload["alignment"]["intercept_nm"])  # type: ignore
