@@ -465,9 +465,25 @@ def main() -> None:
     raw_cmap = prepare_colormap(args.raw_colormap or shared_base, "min", RAW_LIGHTEN_FRACTION)
     comp_cmap = prepare_colormap(args.comp_colormap or shared_base, "center", COMP_LIGHTEN_FRACTION)
     render_spectral_grid(
-        originals, compensated, ref_pngs=ref_pngs, diff_paths=diff_pngs, metadata=metadata_bins, start_bin=args.start_bin, end_bin=args.end_bin, downsample_rate=args.downsample_rate,
-        raw_cmap, comp_cmap, out_dir, base_name, bool(args.save_png), int(args.bar_px),
-        flip_row12=bool(args.flip_row12), flip_row34=bool(args.flip_row34), ext_crop=ext_crop, sens_crop=sens_crop, wavelength_lookup=wavelength_lookup,
+        originals=originals,
+        compensated=compensated,
+        diff_paths=diff_pngs,
+        ref_paths=ref_pngs,
+        metadata=metadata_bins,
+        start_bin=args.start_bin,
+        end_bin=args.end_bin,
+        downsample_rate=args.downsample_rate,
+        raw_cmap=raw_cmap,
+        comp_cmap=comp_cmap,
+        output_dir=out_dir,
+        figure_name=base_name,
+        save_png=bool(args.save_png),
+        bar_px=int(args.bar_px),
+        flip_row12=bool(args.flip_row12),
+        flip_row34=bool(args.flip_row34),
+        ext_crop=ext_crop,
+        sens_crop=sens_crop,
+        wavelength_lookup=wavelength_lookup,
     )
 
     # Save weights summary (mirrors all-in-one)
