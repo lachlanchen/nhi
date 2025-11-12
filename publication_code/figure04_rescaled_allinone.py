@@ -156,16 +156,41 @@ def align_with_groundtruth(
     gt_curves = load_gt_curves(gt_dir)
     gt_start_nm, gt_end_nm = detect_visible_edges(gt_curves)
 
-    # Edge-of-active-region anchors (entering/leaving flats) for background (time) and GT (wavelength)
+    # Edge-of-active-region anchors with quantile refinement
+    # 1) Background (time axis)
     smooth_bg = moving_average(exp_rescaled, max(21, int(len(exp_rescaled) // 200) | 1))
     region_bg = detect_active_region(smooth_bg)
-    # Background edges in time: first rise from flat and return to flat
-    t0 = float(time_ms[region_bg.start_idx])
-    t1 = float(time_ms[region_bg.end_idx])
+    series_norm = normalise_curve(exp_rescaled, region_bg)
 
-    # GT edges in wavelength (average across curves)
-    wl0_list: list[float] = []
-    wl1_list: list[float] = []
+    def quantile_edge_x(x: np.ndarray, y: np.ndarray, q: float) -> float:
+        """Return x at which y crosses quantile q (0..1) using linear interpolation.
+        Falls back to first/last valid index if monotonicity is imperfect."""
+        y_clipped = np.clip(y, 0.0, 1.0)
+        # Ensure 1D and sorted by x (x is already increasing)
+        if y_clipped.size < 2:
+            return float(x[0])
+        # Find first index where y >= q
+        idx = int(np.argmax(y_clipped >= q))
+        if idx == 0:
+            return float(x[0])
+        if idx >= y_clipped.size:
+            return float(x[-1])
+        # Linear interp between (idx-1, idx)
+        x0, x1 = float(x[idx - 1]), float(x[idx])
+        y0, y1 = float(y_clipped[idx - 1]), float(y_clipped[idx])
+        if y1 == y0:
+            return float(x1)
+        t = (q - y0) / (y1 - y0)
+        return float(x0 + t * (x1 - x0))
+
+    q_low, q_high = 0.05, 0.95
+    t_low = quantile_edge_x(time_ms, series_norm, q_low)
+    t_high = quantile_edge_x(time_ms, series_norm, q_high)
+
+    # 2) Ground truth (wavelength axis) — normalise and use same quantiles
+    # Average edges across available curves after normalisation
+    wl_low_list: list[float] = []
+    wl_high_list: list[float] = []
     x_min, x_max = float(gt_start_nm), float(gt_end_nm)
     for _, wl, val in gt_curves:
         mask = (wl >= x_min) & (wl <= x_max)
@@ -175,21 +200,24 @@ def align_with_groundtruth(
             continue
         smooth_gt = moving_average(val_sel, max(21, len(val_sel) // 300))
         region_gt = detect_active_region(smooth_gt)
-        # Use the edges of the active region on GT
-        wl0_list.append(float(wl_sel[region_gt.start_idx]))
-        wl1_list.append(float(wl_sel[region_gt.end_idx]))
-    if wl0_list and wl1_list:
-        wl0 = float(np.mean(wl0_list))
-        wl1 = float(np.mean(wl1_list))
+        gt_norm = np.clip(normalise_curve(smooth_gt, region_gt), 0.0, 1.0)
+        wl_low = quantile_edge_x(wl_sel.astype(np.float32), gt_norm, q_low)
+        wl_high = quantile_edge_x(wl_sel.astype(np.float32), gt_norm, q_high)
+        wl_low_list.append(float(wl_low))
+        wl_high_list.append(float(wl_high))
+    if wl_low_list and wl_high_list:
+        wl_low = float(np.median(wl_low_list))
+        wl_high = float(np.median(wl_high_list))
     else:
-        wl0, wl1 = float(gt_start_nm), float(gt_end_nm)
+        # Fallback: visible edges from helper
+        wl_low, wl_high = float(gt_start_nm), float(gt_end_nm)
 
-    # Linear map from time→wavelength using plateau centroids
-    if t1 == t0:
-        slope, intercept = (wl1 - wl0) / 1.0, wl0 - ((wl1 - wl0) / 1.0) * t0
+    # Linear map from time→wavelength using quantile-constrained endpoints
+    if t_high == t_low:
+        slope, intercept = (wl_high - wl_low) / 1.0, wl_low - ((wl_high - wl_low) / 1.0) * t_low
     else:
-        slope = (wl1 - wl0) / (t1 - t0)
-        intercept = wl0 - slope * t0
+        slope = (wl_high - wl_low) / (t_high - t_low)
+        intercept = wl_low - slope * t_low
     wl_series = slope * time_ms + intercept
     series_norm = normalise_curve(exp_rescaled, region_bg)
 
@@ -262,6 +290,9 @@ def align_with_groundtruth(
             "wavelength_range_nm": [x_min, x_max],
             "slope_nm_per_ms": float(slope),
             "intercept_nm": float(intercept),
+            "edge_quantiles": [q_low, q_high],
+            "bg_edges_ms": [float(t_low), float(t_high)],
+            "gt_edges_nm": [float(wl_low), float(wl_high)],
         },
         "bin_mapping": mapping,
         "bg_vs_gt_plot": out_plot.name,
