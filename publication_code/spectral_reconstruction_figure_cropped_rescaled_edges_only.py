@@ -189,12 +189,12 @@ def render_spectral_grid(
     num_cols = len(columns)
     # Build rows
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
-    gap = 0.045  # make row and column gaps identical
+    gap = 0.045  # column gap; row gap will be half
     gs = fig.add_gridspec(
         5,
         num_cols + 1,
         wspace=gap,
-        hspace=gap,
+        hspace=gap * 0.5,
         width_ratios=[0.22] + [1] * num_cols,
         height_ratios=[1.0, 1.0, 1.0, 1.0, max(0.02, float(bar_px) / 80.0)],
     )
