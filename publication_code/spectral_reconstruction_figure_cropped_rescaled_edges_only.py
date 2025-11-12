@@ -231,10 +231,11 @@ def render_spectral_grid(
                 ax.imshow(np.zeros((10, 10)), origin="lower", cmap="gray")
             ax.axis("off")
 
-    # Gradient bar using GT reference wavelengths from filenames if available
+    # Gradient bar with wavelength ticks under the bar
     ref_nms: List[float] = []
     for p in ref_paths:
-        if p is None: continue
+        if p is None:
+            continue
         m = re.search(r"_(\d+(?:\.\d+)?)nm", p.name)
         if m:
             ref_nms.append(float(m.group(1)))
@@ -247,7 +248,35 @@ def render_spectral_grid(
         scale = 1.0 / np.maximum(XYZ[:, 1:2], 1e-6)
         rgb = xyz_to_srgb(XYZ * scale)
         bar_img = np.tile(rgb[None, :, :], (int(bar_px), 1, 1))
-        ax_bar = fig.add_subplot(gs[4, 1:]); ax_bar.imshow(bar_img, origin="lower", aspect="auto"); ax_bar.axis("off")
+        ax_bar = fig.add_subplot(gs[4, 1:])
+        ax_bar.imshow(bar_img, origin="lower", aspect="auto")
+        # Configure ticks: one tick per kept column using mapped wavelengths
+        bar_labels: List[float] = []
+        for meta in columns:
+            idx = int(meta["index"])
+            nm = None
+            if wavelength_lookup and idx in wavelength_lookup:
+                nm = float(wavelength_lookup[idx])
+            elif 0 <= idx < len(ref_paths) and ref_paths[idx] is not None:
+                m = re.search(r"_(\d+(?:\.\d+)?)nm", ref_paths[idx].name)
+                if m:
+                    nm = float(m.group(1))
+            if nm is not None:
+                bar_labels.append(nm)
+        if bar_labels:
+            total_w = bar_img.shape[1]
+            # Normalize labels to bar width
+            wl_min_plot, wl_max_plot = wl_min, wl_max
+            denom = (wl_max_plot - wl_min_plot) if not np.isclose(wl_max_plot, wl_min_plot) else 1.0
+            xticks = [((nm - wl_min_plot) / denom) * (total_w - 1) for nm in bar_labels]
+            ax_bar.set_xlim(0, total_w)
+            ax_bar.set_xticks(xticks)
+            ax_bar.set_xticklabels([f"{nm:.0f}" for nm in bar_labels], fontsize=9)
+            ax_bar.set_xlabel("Wavelength (nm)", fontsize=10)
+        ax_bar.set_yticks([])
+        # Remove spines for a clean bar with labels below
+        for spine in ax_bar.spines.values():
+            spine.set_visible(False)
 
     stem = Path(figure_name).stem if figure_name else "spectral_reconstruction_scan"
     out_stem = output_dir / stem
