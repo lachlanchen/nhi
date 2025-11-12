@@ -172,6 +172,9 @@ def render_spectral_grid(
     figure_name: str,
     save_png: bool,
     bar_px: int,
+    flip_row12: bool = False,
+    flip_row34: bool = False,
+    ext_crop: Tuple[int, int, int, int] | None = None,
 ) -> None:
     setup_style()
     selected = [m for m in metadata if start_bin <= m["index"] <= end_bin]
@@ -192,6 +195,8 @@ def render_spectral_grid(
             idx = meta["index"]
             ax = fig.add_subplot(gs[row, ci + 1])
             frame = frames[idx] if idx < len(frames) else np.zeros_like(frames[0])
+            if flip_row12:
+                frame = np.flipud(frame)
             ax.imshow(frame, cmap=cmap, origin="lower")
             ax.axis("off")
     # Draw row 3/4 from file paths (already cropped/rotated externally)
@@ -200,6 +205,11 @@ def render_spectral_grid(
             idx = meta["index"]; ax = fig.add_subplot(gs[row, ci + 1])
             if 0 <= idx < len(paths) and paths[idx] and paths[idx].exists():
                 img = plt.imread(paths[idx])
+                if ext_crop is not None and img.ndim >= 2:
+                    y0, y1, x0, x1 = ext_crop
+                    img = img[y0:y1, x0:x1]
+                if flip_row34:
+                    img = np.flipud(img)
                 ax.imshow(img, origin="lower")
             else:
                 ax.imshow(np.zeros((10, 10)), origin="lower", cmap="gray")
@@ -319,4 +329,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
