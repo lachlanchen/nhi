@@ -80,6 +80,23 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument("--bar-height-ratio", type=float, default=0.08)
     ap.add_argument("--bar-px", type=int, default=6)
+    # Layout gaps
+    ap.add_argument("--col-gap", type=float, default=0.045, help="Column gap (matplotlib wspace)")
+    ap.add_argument("--row-gap", type=float, default=None, help="Row gap (matplotlib hspace); default = 0.35 * col-gap")
+    # Column selection by wavelength (optional). If provided, overrides start/end/downsample.
+    ap.add_argument("--wl-min", type=float, default=None, help="Minimum wavelength (nm) for column selection")
+    ap.add_argument("--wl-max", type=float, default=None, help="Maximum wavelength (nm) for column selection")
+    ap.add_argument("--wl-step", type=float, default=None, help="Step in nm for selecting columns (e.g., 20 for 400,420,...) ")
+    ap.add_argument("--wl-list", type=str, default=None, help="Comma-separated list of wavelengths (nm) to select as columns, e.g. '400,450,500' ")
+    # Bottom spectrum bar extent override
+    ap.add_argument("--bar-wl-min", type=float, default=None, help="Force spectrum bar to start at this nm (default: min selected nm)")
+    ap.add_argument("--bar-wl-max", type=float, default=None, help="Force spectrum bar to end at this nm (default: max selected nm)")
+    # Image aspect controls. Use 'equal' for sensor rows to preserve pixel aspect;
+    # 'auto' can be used on external rows to pack vertically.
+    ap.add_argument("--image-aspect12", type=str, choices=["equal", "auto"], default="equal",
+                    help="Aspect for rows 1–2 (Original/Comp.)")
+    ap.add_argument("--image-aspect34", type=str, choices=["equal", "auto"], default="equal",
+                    help="Aspect for rows 3–4 (Gradient/Reference)")
     ap.add_argument("--downsample-rate", type=int, default=3, help="Keep every Nth column from the selected range (1,4,7,...) ")
     ap.add_argument("--crop-json", type=Path, default=None, help="JSON with bbox {x0,y0,x1,y1} for cropping Orig./Comp. rows (sensor coords)")
     ap.add_argument("--external-crop-json", type=Path, default=None, help="JSON with bbox {x0,y0,x1,y1} for cropping Diff/Ref rows (PNG coords)")
@@ -181,20 +198,31 @@ def render_spectral_grid(
     ext_crop: Tuple[int, int, int, int] | None = None,
     sens_crop: Tuple[int, int, int, int] | None = None,
     wavelength_lookup: Dict[int, float] | None = None,
+    col_gap: float = 0.045,
+    row_gap: float | None = None,
+    override_columns: Optional[List[Dict[str, float]]] = None,
+    bar_wl_min: Optional[float] = None,
+    bar_wl_max: Optional[float] = None,
+    image_aspect12: str = "equal",
+    image_aspect34: str = "equal",
 ) -> None:
     setup_style()
-    selected = [m for m in metadata if start_bin <= m["index"] <= end_bin]
-    kept_indices = set(_downsample_indices(start_bin, end_bin, downsample_rate))
-    columns = [m for m in selected if m["index"] in kept_indices]
+    if override_columns is not None and len(override_columns) > 0:
+        columns = override_columns
+    else:
+        selected = [m for m in metadata if start_bin <= m["index"] <= end_bin]
+        kept_indices = set(_downsample_indices(start_bin, end_bin, downsample_rate))
+        columns = [m for m in selected if m["index"] in kept_indices]
     num_cols = len(columns)
     # Build rows
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
-    gap = 0.045  # column gap; row gap will be half
+    gap = float(col_gap)
+    rgap = float(row_gap) if (row_gap is not None) else max(0.01, 0.35 * gap)
     gs = fig.add_gridspec(
         5,
         num_cols + 1,
         wspace=gap,
-        hspace=gap * 0.5,
+        hspace=rgap,
         width_ratios=[0.22] + [1] * num_cols,
         height_ratios=[1.0, 1.0, 1.0, 1.0, max(0.02, float(bar_px) / 80.0)],
     )
@@ -213,7 +241,7 @@ def render_spectral_grid(
             if sens_crop is not None:
                 y0, y1, x0, x1 = sens_crop
                 frame = frame[y0:y1, x0:x1]
-            ax.imshow(frame, cmap=cmap, origin="lower")
+            ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12)
             ax.axis("off")
     # Draw row 3/4 from file paths (already cropped/rotated externally)
     for row, paths in [(2, diff_paths), (3, ref_paths)]:
@@ -226,21 +254,36 @@ def render_spectral_grid(
                     img = img[y0:y1, x0:x1]
                 if flip_row34:
                     img = np.flipud(img)
-                ax.imshow(img, origin="lower")
+                ax.imshow(img, origin="lower", aspect=image_aspect34)
             else:
-                ax.imshow(np.zeros((10, 10)), origin="lower", cmap="gray")
+                ax.imshow(np.zeros((10, 10)), origin="lower", cmap="gray", aspect=image_aspect34)
             ax.axis("off")
 
     # Gradient bar with wavelength ticks under the bar
-    ref_nms: List[float] = []
-    for p in ref_paths:
-        if p is None:
-            continue
-        m = re.search(r"_(\d+(?:\.\d+)?)nm", p.name)
-        if m:
-            ref_nms.append(float(m.group(1)))
-    if ref_nms:
-        wl_min, wl_max = min(ref_nms), max(ref_nms)
+    # Determine bar wavelength range: prefer override, else from selected columns' nm, else guess from ref paths
+    wl_min = bar_wl_min
+    wl_max = bar_wl_max
+    if wl_min is None or wl_max is None:
+        sel_nms: List[float] = []
+        for meta in columns:
+            nm_v = meta.get("nm") if isinstance(meta, dict) else None
+            if nm_v is not None:
+                sel_nms.append(float(nm_v))
+        if sel_nms:
+            wl_min = min(sel_nms) if wl_min is None else wl_min
+            wl_max = max(sel_nms) if wl_max is None else wl_max
+        else:
+            ref_nms: List[float] = []
+            for p in ref_paths:
+                if p is None:
+                    continue
+                m = re.search(r"_(\d+(?:\.\d+)?)nm", p.name)
+                if m:
+                    ref_nms.append(float(m.group(1)))
+            if ref_nms:
+                wl_min = min(ref_nms) if wl_min is None else wl_min
+                wl_max = max(ref_nms) if wl_max is None else wl_max
+    if wl_min is not None and wl_max is not None and wl_max > wl_min:
         samples = np.linspace(wl_min, wl_max, 600)
         wl, xbar, ybar, zbar = load_cie_cmf(REPO_ROOT)
         x = np.interp(samples, wl, xbar); y = np.interp(samples, wl, ybar); z = np.interp(samples, wl, zbar)
@@ -256,14 +299,17 @@ def render_spectral_grid(
         xticks = [((i + 0.5) / n_cols) * (total_w - 1) for i in range(n_cols)]
         labels = []
         for meta in columns:
-            idx = int(meta["index"])
             nm_val = None
-            if wavelength_lookup and idx in wavelength_lookup:
-                nm_val = float(wavelength_lookup[idx])
-            elif 0 <= idx < len(ref_paths) and ref_paths[idx] is not None:
-                m = re.search(r"_(\d+(?:\.\d+)?)nm", ref_paths[idx].name)
-                if m:
-                    nm_val = float(m.group(1))
+            if isinstance(meta, dict) and ("nm" in meta):
+                nm_val = float(meta["nm"])  # preferred if provided
+            else:
+                idx = int(meta["index"])  # fallback lookup
+                if wavelength_lookup and idx in wavelength_lookup:
+                    nm_val = float(wavelength_lookup[idx])
+                elif 0 <= idx < len(ref_paths) and ref_paths[idx] is not None:
+                    m = re.search(r"_(\d+(?:\.\d+)?)nm", ref_paths[idx].name)
+                    if m:
+                        nm_val = float(m.group(1))
             labels.append(f"{nm_val:.0f}" if nm_val is not None else "")
         ax_bar.set_xlim(0, total_w)
         ax_bar.set_xticks(xticks)
@@ -293,10 +339,16 @@ def render_spectral_grid(
         rgba = cmap(normed)
         plt.imsave(path, rgba, origin="lower")
 
-    kept_idx = [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin]
-    kept_idx = kept_idx[:: max(1, int(downsample_rate))] or kept_idx
-    if kept_idx and kept_idx[-1] != ( [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin ][-1] ):
-        kept_idx.append( [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin ][-1] )
+    if override_columns is not None and len(override_columns) > 0:
+        kept_idx = [int(m["index"]) for m in columns]
+        kept_nm  = [float(m.get("nm", np.nan)) for m in columns]
+    else:
+        kept_idx = [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin]
+        kept_idx = kept_idx[:: max(1, int(downsample_rate))] or kept_idx
+        kept_nm = [float(wavelength_lookup.get(idx)) if wavelength_lookup is not None and idx in wavelength_lookup else np.nan for idx in kept_idx]
+        if kept_idx and kept_idx[-1] != ( [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin ][-1] ):
+            kept_idx.append( [m["index"] for m in metadata if start_bin <= m["index"] <= end_bin ][-1] )
+            kept_nm.append(float(wavelength_lookup.get(kept_idx[-1])) if wavelength_lookup is not None and kept_idx[-1] in wavelength_lookup else np.nan)
 
     orig_used_dir = output_dir / "orig_used_frames"; orig_used_dir.mkdir(parents=True, exist_ok=True)
     comp_used_dir = output_dir / "comp_used_frames"; comp_used_dir.mkdir(parents=True, exist_ok=True)
@@ -307,9 +359,11 @@ def render_spectral_grid(
     ref_sel_dir   = output_dir / "ref_selected_frames";  ref_sel_dir.mkdir(parents=True, exist_ok=True)
 
     # Save downsampled frames with names bin_XX_YYYnm.png
-    for idx in kept_idx:
+    for i, idx in enumerate(kept_idx):
         nm_label = None
-        if wavelength_lookup and idx in wavelength_lookup:
+        if override_columns is not None and i < len(kept_nm) and not np.isnan(kept_nm[i]):
+            nm_label = float(kept_nm[i])
+        elif wavelength_lookup and idx in wavelength_lookup:
             nm_label = float(wavelength_lookup[idx])
         fname = f"bin_{idx:02d}" + (f"_{nm_label:.0f}nm" if nm_label is not None else "") + ".png"
         # Sensor rows
@@ -432,19 +486,6 @@ def main() -> None:
                 best = (d, p)
         return best[1] if best else None
 
-    # Build per-bin external paths based on wavelength mapping
-    diff_pngs: List[Optional[Path]] = [None] * num_bins
-    ref_pngs: List[Optional[Path]] = [None] * num_bins
-    diff_dir = args.diff_frames_dir.resolve()
-    ref_dir = args.ref_frames_dir.resolve()
-    for it in metadata_bins:
-        idx = int(it['index'])
-        nm = wavelength_lookup.get(idx) if 'wavelength_lookup' in locals() else None
-        if nm is None:
-            continue
-        ref_pngs[idx] = choose_ref_for_nm(ref_dir, nm)
-        diff_pngs[idx] = choose_grad_for_nm(diff_dir, nm)
-
     # Prepare crop boxes and wavelength lookup for labels
     sens_crop = _load_crop_box(args.crop_json, preferred_key="ref_crop")
     ext_crop = _load_crop_box(args.external_crop_json, preferred_key="template_crop")
@@ -492,6 +533,39 @@ def main() -> None:
         ref_pngs[idx] = choose_ref_for_nm(nm)
         diff_pngs[idx] = choose_grad_for_nm(nm)
 
+    # If wavelength-based column selection is requested, build the target columns now
+    override_columns: List[Dict[str, float]] = []
+    if args.wl_list or (args.wl_min is not None and args.wl_max is not None and args.wl_step is not None):
+        # Build a list of target wavelengths
+        targets: List[float] = []
+        if args.wl_list:
+            try:
+                targets = [float(s.strip()) for s in str(args.wl_list).split(',') if s.strip()]
+            except Exception:
+                targets = []
+        else:
+            # Inclusive range using wl_min..wl_max with the given step
+            cur = float(args.wl_min)
+            while cur <= float(args.wl_max) + 1e-6:
+                targets.append(cur)
+                cur += float(args.wl_step)
+        # Map every bin to its wavelength
+        idx_to_nm = {int(it['index']): float(wavelength_lookup.get(int(it['index']))) for it in metadata_bins if wavelength_lookup.get(int(it['index'])) is not None}
+        # For each target, find the nearest bin index (deduplicate)
+        used_idx: set[int] = set()
+        for nm in targets:
+            best_idx = None
+            best_d = None
+            for idx, nm_val in idx_to_nm.items():
+                d = abs(nm_val - nm)
+                if (best_d is None) or (d < best_d):
+                    best_d = d; best_idx = idx
+            if best_idx is not None and best_idx not in used_idx:
+                used_idx.add(best_idx)
+                override_columns.append({"index": best_idx, "nm": float(idx_to_nm[best_idx])})
+        # Sort by wavelength ascending
+        override_columns.sort(key=lambda m: m.get("nm", 0.0))
+
     # Render spectral grid (cropped rows and flips applied here)
     shared_base = args.colormap or DEFAULT_SHARED_COLORMAP
     raw_cmap = prepare_colormap(args.raw_colormap or shared_base, "min", RAW_LIGHTEN_FRACTION)
@@ -516,6 +590,13 @@ def main() -> None:
         ext_crop=ext_crop,
         sens_crop=sens_crop,
         wavelength_lookup=wavelength_lookup,
+        col_gap=float(args.col_gap),
+        row_gap=(None if args.row_gap is None else float(args.row_gap)),
+        override_columns=(override_columns if len(override_columns) > 0 else None),
+        bar_wl_min=(float(args.bar_wl_min) if args.bar_wl_min is not None else None),
+        bar_wl_max=(float(args.bar_wl_max) if args.bar_wl_max is not None else None),
+        image_aspect12=str(args.image_aspect12),
+        image_aspect34=str(args.image_aspect34),
     )
 
     # Save weights summary (mirrors all-in-one)
