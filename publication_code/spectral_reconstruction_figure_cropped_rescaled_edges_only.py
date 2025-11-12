@@ -19,7 +19,7 @@ import re
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -359,11 +359,59 @@ def main() -> None:
         metadata_bins.append({"index": k, "start_us": s, "end_us": e, "duration_ms": (e - s) / 1000.0})
 
     # Prepare external rows (Diff/Ref) paths;
-    def list_pngs_sorted(folder: Path) -> List[Path]:
-        items = sorted(folder.glob('*.png'))
-        return items
-    diff_pngs = list_pngs_sorted(args.diff_frames_dir.resolve())
-    ref_pngs = list_pngs_sorted(args.ref_frames_dir.resolve())
+    # Build wavelength-indexed selectors for external rows
+    def parse_ref_nm(path: Path) -> Optional[float]:
+        m = re.search(r"_(\d+(?:\.\d+)?)nm", path.name, re.IGNORECASE)
+        return float(m.group(1)) if m else None
+
+    def parse_grad_range(path: Path) -> Optional[Tuple[float, float]]:
+        # Patterns like: grad_bin_001_400.0to420.png or *_400to420.png
+        m = re.search(r"_(\d+(?:\.\d+)?)\s*to\s*(\d+(?:\.\d+)?)", path.stem, re.IGNORECASE)
+        if not m:
+            return None
+        a = float(m.group(1)); b = float(m.group(2))
+        lo, hi = (a, b) if a <= b else (b, a)
+        return (lo, hi)
+
+    def choose_ref_for_nm(folder: Path, nm: float) -> Optional[Path]:
+        best: Tuple[float, Path] | None = None
+        for p in folder.glob('*.png'):
+            nm_p = parse_ref_nm(p)
+            if nm_p is None:
+                continue
+            d = abs(nm_p - nm)
+            if best is None or d < best[0]:
+                best = (d, p)
+        return best[1] if best else None
+
+    def choose_grad_for_nm(folder: Path, nm: float) -> Optional[Path]:
+        best: Tuple[float, Path] | None = None
+        for p in folder.glob('*.png'):
+            rng = parse_grad_range(p)
+            if rng is None:
+                continue
+            lo, hi = rng
+            if lo <= nm <= hi:
+                # Exact containment wins
+                return p
+            centre = 0.5 * (lo + hi)
+            d = abs(centre - nm)
+            if best is None or d < best[0]:
+                best = (d, p)
+        return best[1] if best else None
+
+    # Build per-bin external paths based on wavelength mapping
+    diff_pngs: List[Optional[Path]] = [None] * num_bins
+    ref_pngs: List[Optional[Path]] = [None] * num_bins
+    diff_dir = args.diff_frames_dir.resolve()
+    ref_dir = args.ref_frames_dir.resolve()
+    for it in metadata_bins:
+        idx = int(it['index'])
+        nm = wavelength_lookup.get(idx)
+        if nm is None:
+            continue
+        ref_pngs[idx] = choose_ref_for_nm(ref_dir, nm)
+        diff_pngs[idx] = choose_grad_for_nm(diff_dir, nm)
 
     # Prepare crop boxes and wavelength lookup for labels
     sens_crop = _load_crop_box(args.crop_json, preferred_key="ref_crop")
