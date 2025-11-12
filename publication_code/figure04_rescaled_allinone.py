@@ -183,9 +183,28 @@ def align_with_groundtruth(
         t = (q - y0) / (y1 - y0)
         return float(x0 + t * (x1 - x0))
 
+    def quantile_last_edge_x(x: np.ndarray, y: np.ndarray, q: float) -> float:
+        """Return last x where y crosses quantile q from the right (falling edge)."""
+        y_clipped = np.clip(y, 0.0, 1.0)
+        if y_clipped.size < 2:
+            return float(x[-1])
+        # Walk from the end to find last index where y >= q
+        rev = y_clipped[::-1]
+        ridx = int(np.argmax(rev >= q))
+        idx = len(y_clipped) - 1 - ridx
+        if idx <= 0:
+            return float(x[0])
+        x0, x1 = float(x[idx - 1]), float(x[idx])
+        y0, y1 = float(y_clipped[idx - 1]), float(y_clipped[idx])
+        if y1 == y0:
+            return float(x1)
+        t = (q - y0) / (y1 - y0)
+        return float(x0 + t * (x1 - x0))
+
     q_low, q_high = 0.05, 0.95
+    # Initial two-point anchors (rising 5%, falling 5%)
     t_low = quantile_edge_x(time_ms, series_norm, q_low)
-    t_high = quantile_edge_x(time_ms, series_norm, q_high)
+    t_high = quantile_last_edge_x(time_ms, series_norm, q_low)
 
     # 2) Ground truth (wavelength axis) — normalise and use same quantiles
     # Average edges across available curves after normalisation
@@ -202,7 +221,7 @@ def align_with_groundtruth(
         region_gt = detect_active_region(smooth_gt)
         gt_norm = np.clip(normalise_curve(smooth_gt, region_gt), 0.0, 1.0)
         wl_low = quantile_edge_x(wl_sel.astype(np.float32), gt_norm, q_low)
-        wl_high = quantile_edge_x(wl_sel.astype(np.float32), gt_norm, q_high)
+        wl_high = quantile_last_edge_x(wl_sel.astype(np.float32), gt_norm, q_low)
         wl_low_list.append(float(wl_low))
         wl_high_list.append(float(wl_high))
     if wl_low_list and wl_high_list:
@@ -212,12 +231,50 @@ def align_with_groundtruth(
         # Fallback: visible edges from helper
         wl_low, wl_high = float(gt_start_nm), float(gt_end_nm)
 
-    # Linear map from time→wavelength using quantile-constrained endpoints
-    if t_high == t_low:
-        slope, intercept = (wl_high - wl_low) / 1.0, wl_low - ((wl_high - wl_low) / 1.0) * t_low
-    else:
-        slope = (wl_high - wl_low) / (t_high - t_low)
-        intercept = wl_low - slope * t_low
+    # Multi-landmark refinement: solve weighted least squares over multiple quantiles
+    qs = np.array([0.05, 0.10, 0.20, 0.30, 0.40], dtype=np.float32)
+    # Rising-side landmarks (first crossing)
+    t_rise = np.array([quantile_edge_x(time_ms, series_norm, float(q)) for q in qs], dtype=np.float64)
+    wl_rise_list = []
+    for _, wl, val in gt_curves:
+        mask = (wl >= x_min) & (wl <= x_max)
+        wl_sel = wl[mask].astype(np.float32)
+        smooth_gt = moving_average(val[mask], max(21, len(wl_sel) // 300))
+        region_gt = detect_active_region(smooth_gt)
+        gt_norm = np.clip(normalise_curve(smooth_gt, region_gt), 0.0, 1.0)
+        wl_rise_list.append(
+            np.array([quantile_edge_x(wl_sel, gt_norm, float(q)) for q in qs], dtype=np.float64)
+        )
+    wl_rise = np.mean(np.stack(wl_rise_list, axis=0), axis=0)
+
+    # Falling-side landmarks (last crossing)
+    t_fall = np.array([quantile_last_edge_x(time_ms, series_norm, float(q)) for q in qs], dtype=np.float64)
+    wl_fall_list = []
+    for _, wl, val in gt_curves:
+        mask = (wl >= x_min) & (wl <= x_max)
+        wl_sel = wl[mask].astype(np.float32)
+        smooth_gt = moving_average(val[mask], max(21, len(wl_sel) // 300))
+        region_gt = detect_active_region(smooth_gt)
+        gt_norm = np.clip(normalise_curve(smooth_gt, region_gt), 0.0, 1.0)
+        wl_fall_list.append(
+            np.array([quantile_last_edge_x(wl_sel, gt_norm, float(q)) for q in qs], dtype=np.float64)
+        )
+    wl_fall = np.mean(np.stack(wl_fall_list, axis=0), axis=0)
+
+    # Stack landmarks and weights (emphasise edges more)
+    T = np.concatenate([t_rise, t_fall, np.array([t_low, t_high], dtype=np.float64)])
+    L = np.concatenate([wl_rise, wl_fall, np.array([wl_low, wl_high], dtype=np.float64)])
+    W = np.concatenate([
+        np.interp(qs, [0.05, 0.40], [3.0, 1.0]),  # rising weights
+        np.interp(qs, [0.05, 0.40], [3.0, 1.0]),  # falling weights
+        np.array([4.0, 4.0], dtype=np.float64),   # hard anchors at 5% edges
+    ])
+    # Weighted least squares for slope/intercept
+    A = np.stack([T, np.ones_like(T)], axis=1)
+    Aw = A * W[:, None]
+    Lw = L * W
+    theta, *_ = np.linalg.lstsq(Aw, Lw, rcond=None)
+    slope, intercept = float(theta[0]), float(theta[1])
     wl_series = slope * time_ms + intercept
     series_norm = normalise_curve(exp_rescaled, region_bg)
 
@@ -293,6 +350,7 @@ def align_with_groundtruth(
             "edge_quantiles": [q_low, q_high],
             "bg_edges_ms": [float(t_low), float(t_high)],
             "gt_edges_nm": [float(wl_low), float(wl_high)],
+            "landmark_quantiles": qs.tolist(),
         },
         "bin_mapping": mapping,
         "bg_vs_gt_plot": out_plot.name,
