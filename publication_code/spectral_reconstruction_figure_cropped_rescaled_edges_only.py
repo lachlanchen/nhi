@@ -407,7 +407,7 @@ def main() -> None:
     ref_dir = args.ref_frames_dir.resolve()
     for it in metadata_bins:
         idx = int(it['index'])
-        nm = wavelength_lookup.get(idx)
+        nm = wavelength_lookup.get(idx) if 'wavelength_lookup' in locals() else None
         if nm is None:
             continue
         ref_pngs[idx] = choose_ref_for_nm(ref_dir, nm)
@@ -425,12 +425,47 @@ def main() -> None:
         centre_ms = (((item["start_us"] + item["end_us"]) * 0.5) - base_start) / 1000.0
         wavelength_lookup[int(item["index"])] = float(slope * centre_ms + intercept)
 
+    # Rebuild external path arrays using wavelength lookup
+    diff_pngs: List[Optional[Path]] = [None] * num_bins
+    ref_pngs: List[Optional[Path]] = [None] * num_bins
+    diff_dir = args.diff_frames_dir.resolve(); ref_dir = args.ref_frames_dir.resolve()
+    def parse_ref_nm(path: Path) -> Optional[float]:
+        m = re.search(r"_(\d+(?:\.\d+)?)nm", path.name, re.IGNORECASE)
+        return float(m.group(1)) if m else None
+    def parse_grad_range(path: Path) -> Optional[Tuple[float, float]]:
+        m = re.search(r"_(\d+(?:\.\d+)?)\s*to\s*(\d+(?:\.\d+)?)", path.stem, re.IGNORECASE)
+        if not m: return None
+        a = float(m.group(1)); b = float(m.group(2)); lo, hi = (a,b) if a<=b else (b,a); return (lo,hi)
+    def choose_ref_for_nm(nm: float) -> Optional[Path]:
+        best: Tuple[float, Path] | None = None
+        for p in ref_dir.glob('*.png'):
+            nm_p = parse_ref_nm(p)
+            if nm_p is None: continue
+            d = abs(nm_p - nm)
+            if best is None or d < best[0]: best = (d, p)
+        return best[1] if best else None
+    def choose_grad_for_nm(nm: float) -> Optional[Path]:
+        best: Tuple[float, Path] | None = None
+        for p in diff_dir.glob('*.png'):
+            rng = parse_grad_range(p)
+            if rng is None: continue
+            lo, hi = rng
+            if lo <= nm <= hi: return p
+            centre = 0.5 * (lo + hi); d = abs(centre - nm)
+            if best is None or d < best[0]: best = (d, p)
+        return best[1] if best else None
+    for it in metadata_bins:
+        idx = int(it['index']); nm = wavelength_lookup.get(idx)
+        if nm is None: continue
+        ref_pngs[idx] = choose_ref_for_nm(nm)
+        diff_pngs[idx] = choose_grad_for_nm(nm)
+
     # Render spectral grid (cropped rows and flips applied here)
     shared_base = args.colormap or DEFAULT_SHARED_COLORMAP
     raw_cmap = prepare_colormap(args.raw_colormap or shared_base, "min", RAW_LIGHTEN_FRACTION)
     comp_cmap = prepare_colormap(args.comp_colormap or shared_base, "center", COMP_LIGHTEN_FRACTION)
     render_spectral_grid(
-        originals, compensated, diff_pngs, ref_pngs, metadata_bins, args.start_bin, args.end_bin, args.downsample_rate,
+        originals, compensated, ref_pngs=ref_pngs, diff_paths=diff_pngs, metadata=metadata_bins, start_bin=args.start_bin, end_bin=args.end_bin, downsample_rate=args.downsample_rate,
         raw_cmap, comp_cmap, out_dir, base_name, bool(args.save_png), int(args.bar_px),
         flip_row12=bool(args.flip_row12), flip_row34=bool(args.flip_row34), ext_crop=ext_crop, sens_crop=sens_crop, wavelength_lookup=wavelength_lookup,
     )
