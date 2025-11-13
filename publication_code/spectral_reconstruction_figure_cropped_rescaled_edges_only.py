@@ -474,13 +474,6 @@ def render_spectral_grid(
     except Exception:
         pass
 
-    # Apply symmetrical tight margins once layout is finalized
-    try:
-        margin = max(0.01, target_gap if target_gap > 0 else 0.01)
-        fig.subplots_adjust(left=0.04, right=0.98, top=0.985, bottom=max(0.035, margin * 1.2))
-    except Exception:
-        pass
-
     # If requested, add colorbars for rows 1–2 at the far right
     if add_row12_colorbars and col_bar is not None:
         if row12_shared_cbar:
@@ -647,9 +640,9 @@ def render_spectral_grid(
     # Now save the main figure with all colorbars included
     stem = Path(figure_name).stem if figure_name else "spectral_reconstruction_scan"
     out_stem = output_dir / stem
-    fig.savefig(f"{out_stem}.pdf", dpi=400, bbox_inches="tight", pad_inches=0.02)
+    fig.savefig(f"{out_stem}.pdf", dpi=400, bbox_inches="tight", pad_inches=0.0)
     if save_png:
-        fig.savefig(f"{out_stem}.png", dpi=300, bbox_inches="tight", pad_inches=0.02)
+        fig.savefig(f"{out_stem}.png", dpi=300, bbox_inches="tight", pad_inches=0.0)
     plt.close(fig)
 
 
