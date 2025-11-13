@@ -267,8 +267,10 @@ def render_spectral_grid(
         pass
     # Track per-row image axes for precise colorbar alignment later
     row_axes = [[], [], [], []]
+    label_axes = []
     def label_column(r: int, text: str) -> None:
         ax = fig.add_subplot(gs[r, 0]); ax.axis("off"); ax.text(0.5, 0.5, text, rotation=90, ha="center", va="center", fontsize=9, fontweight="bold")
+        label_axes.append((r, ax))
     label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
 
     # Precompute unified scales for rows 1–2 if requested
@@ -454,6 +456,10 @@ def render_spectral_grid(
                 for ax in cur_axes:
                     pos = ax.get_position()
                     ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
+                for idx, lbl_ax in label_axes:
+                    if idx == row_idx:
+                        pos = lbl_ax.get_position()
+                        lbl_ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
     except Exception:
         pass
 
