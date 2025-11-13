@@ -259,6 +259,8 @@ def render_spectral_grid(
         width_ratios=width_ratios,
         height_ratios=[1.0, 1.0, 1.0, 1.0, max(0.02, float(bar_px) / 80.0)],
     )
+    # Track per-row image axes for precise colorbar alignment later
+    row_axes = [[], [], [], []]
     def label_column(r: int, text: str) -> None:
         ax = fig.add_subplot(gs[r, 0]); ax.axis("off"); ax.text(0.5, 0.5, text, rotation=90, ha="center", va="center", fontsize=9, fontweight="bold")
     label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
@@ -346,6 +348,8 @@ def render_spectral_grid(
                     else:
                         ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12)
             ax.axis("off")
+            # record axis for later colorbar alignment
+            row_axes[row].append(ax)
     # Draw row 3/4 from file paths (already cropped/rotated externally)
     for row, paths in [(2, diff_paths), (3, ref_paths)]:
         for ci, meta in enumerate(columns, start=0):
@@ -361,6 +365,7 @@ def render_spectral_grid(
             else:
                 ax.imshow(np.zeros((10, 10)), origin="lower", cmap="gray", aspect=image_aspect34)
             ax.axis("off")
+            row_axes[row].append(ax)
 
     # Gradient bar with wavelength ticks under the bar
     # Determine bar wavelength range: prefer override, else from selected columns' nm, else guess from ref paths
@@ -455,6 +460,14 @@ def render_spectral_grid(
             cb12.ax.set_ylabel("Comp. Δ (a.u.)", rotation=90)
             cb12.outline.set_visible(True); cb12.outline.set_linewidth(0.8)
             cb12.ax.tick_params(labelsize=8, width=0.6, length=3)
+            # Align colorbar to rows 0–1 image bounds
+            try:
+                top01 = max(ax.get_position().y1 for ax in row_axes[0]) if row_axes[0] else cax12.get_position().y1
+                bot01 = min(ax.get_position().y0 for ax in row_axes[1]) if row_axes[1] else cax12.get_position().y0
+                pos = cax12.get_position()
+                cax12.set_position([pos.x0, bot01, pos.width, max(0.0, top01 - bot01)])
+            except Exception:
+                pass
         else:
             # Legacy: two stacked bars (Raw and Comp.)
             cax1 = fig.add_subplot(gs[0, col_bar])
@@ -504,6 +517,14 @@ def render_spectral_grid(
         cb34.ax.set_ylabel("External Intensity", rotation=90)
         cb34.outline.set_visible(True); cb34.outline.set_linewidth(0.8)
         cb34.ax.tick_params(labelsize=8, width=0.6, length=3)
+        # Align colorbar to rows 2–3 image bounds
+        try:
+            top23 = max(ax.get_position().y1 for ax in row_axes[2]) if row_axes[2] else cax34.get_position().y1
+            bot23 = min(ax.get_position().y0 for ax in row_axes[3]) if row_axes[3] else cax34.get_position().y0
+            pos = cax34.get_position()
+            cax34.set_position([pos.x0, bot23, pos.width, max(0.0, top23 - bot23)])
+        except Exception:
+            pass
 
     # Save used/selected frames similar to cropped pipeline
     def save_frame_png(path: Path, data: np.ndarray, cmap: Colormap, vmin: float | None = None, vmax: float | None = None) -> None:
