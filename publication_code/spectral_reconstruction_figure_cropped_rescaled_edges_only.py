@@ -100,6 +100,9 @@ def parse_args() -> argparse.Namespace:
     # Row 1–2 colorbars at right
     ap.add_argument("--no-row12-colorbars", action="store_true", help="Disable colorbars for rows 1–2 at the right")
     ap.add_argument("--cbar-ratio", type=float, default=0.10, help="Width ratio for the colorbar column (relative to an image column)")
+    # Row 3–4 colorbar at right
+    ap.add_argument("--row34-colorbar", action="store_true", help="Add a colorbar for rows 3–4 (external images)")
+    ap.add_argument("--row34-cmap", type=str, default="gray", help="Colormap name for the rows 3–4 colorbar (intensity)")
     # Unified scaling for rows 1–2
     ap.add_argument("--unified-row12-scales", action="store_true", help="Use a single global scale per row across all selected columns for rows 1–2")
     ap.add_argument("--raw-global-vmin", type=float, default=None, help="Override global vmin for row 1 (Original)")
@@ -219,6 +222,8 @@ def render_spectral_grid(
     comp_global_abs: float | None = None,
     add_row12_colorbars: bool = True,
     cbar_ratio: float = 0.10,
+    add_row34_colorbar: bool = False,
+    row34_cmap_name: str = "gray",
 ) -> None:
     setup_style()
     if override_columns is not None and len(override_columns) > 0:
@@ -232,8 +237,8 @@ def render_spectral_grid(
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
     gap = float(col_gap)
     rgap = float(row_gap) if (row_gap is not None) else max(0.01, 0.35 * gap)
-    # Reserve two narrow columns (raw + comp) when colorbars enabled
-    cbar_cols = 2 if add_row12_colorbars else 0
+    # Reserve two narrow columns (raw + comp) when colorbars enabled, plus one optional for rows 3–4
+    cbar_cols = (2 if add_row12_colorbars else 0) + (1 if add_row34_colorbar else 0)
     total_cols = num_cols + 1 + cbar_cols
     width_ratios = [0.22] + [1] * num_cols + ([cbar_ratio] * cbar_cols)
     gs = fig.add_gridspec(
@@ -372,9 +377,9 @@ def render_spectral_grid(
         scale = 1.0 / np.maximum(XYZ[:, 1:2], 1e-6)
         rgb = xyz_to_srgb(XYZ * scale)
         bar_img = np.tile(rgb[None, :, :], (int(bar_px), 1, 1))
-        # If colorbar columns present, exclude the last two columns from the bar
-        if add_row12_colorbars:
-            ax_bar = fig.add_subplot(gs[4, 1:-2])
+        # If colorbar columns present, exclude them from the spectrum bar
+        if cbar_cols > 0:
+            ax_bar = fig.add_subplot(gs[4, 1:-cbar_cols])
         else:
             ax_bar = fig.add_subplot(gs[4, 1:])
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
@@ -416,7 +421,9 @@ def render_spectral_grid(
     if add_row12_colorbars:
         # Tall colorbars spanning rows 0 and 1
         # Row 1 colorbar (Original) in the first cbar column
-        cax1 = fig.add_subplot(gs[0:2, -2])
+        # Determine base column index for row1/2 colorbars (could be -3 if row34 bar exists)
+        base_cbar_col = - (1 + (1 if add_row34_colorbar else 0))
+        cax1 = fig.add_subplot(gs[0:2, base_cbar_col - 1])
         if raw_vmin is None or raw_vmax is None:
             # Fallback to per-row global based on currently drawn frames
             # Use Normalize with a safe default if missing
@@ -428,8 +435,8 @@ def render_spectral_grid(
         sm1.set_array([])
         cb1 = fig.colorbar(sm1, cax=cax1)
         cb1.ax.set_ylabel("Raw counts", rotation=90)
-        # Row 2 colorbar (Comp.) in the second cbar column
-        cax2 = fig.add_subplot(gs[0:2, -1])
+        # Row 2 colorbar (Comp.) in the next cbar column
+        cax2 = fig.add_subplot(gs[0:2, base_cbar_col])
         if comp_norm is None:
             # Build a symmetric norm from the selected frames
             # (fallback if unified scales not provided)
@@ -456,6 +463,35 @@ def render_spectral_grid(
         sm2.set_array([])
         cb2 = fig.colorbar(sm2, cax=cax2)
         cb2.ax.set_ylabel("Comp. Δ (a.u.)", rotation=90)
+
+    # Optional colorbar for rows 3–4 (external images): use intensity scale
+    if add_row34_colorbar:
+        # Compute global intensity min/max across selected external images
+        emin, emax = None, None
+        for idx in [int(m["index"]) for m in columns]:
+            for paths in (diff_paths, ref_paths):
+                if 0 <= idx < len(paths) and paths[idx] and paths[idx].exists():
+                    img = plt.imread(paths[idx])
+                    if ext_crop is not None and img.ndim >= 2:
+                        y0, y1, x0, x1 = ext_crop; img = img[y0:y1, x0:x1]
+                    # Convert to intensity
+                    if img.ndim == 3 and img.shape[2] >= 3:
+                        # luminance approximation
+                        lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
+                    else:
+                        lum = img.astype(np.float32)
+                    vmin = float(np.nanmin(lum)); vmax = float(np.nanmax(lum))
+                    emin = vmin if (emin is None or vmin < emin) else emin
+                    emax = vmax if (emax is None or vmax > emax) else emax
+        if emin is None or emax is None or np.isclose(emin, emax):
+            emin, emax = 0.0, 1.0
+        # Place colorbar in the last column spanning rows 2–3
+        cax3 = fig.add_subplot(gs[2:4, -1])
+        ext_cmap = plt.get_cmap(row34_cmap_name)
+        sm3 = plt.cm.ScalarMappable(norm=Normalize(vmin=emin, vmax=emax), cmap=ext_cmap)
+        sm3.set_array([])
+        cb3 = fig.colorbar(sm3, cax=cax3)
+        cb3.ax.set_ylabel("External Intensity", rotation=90)
 
     # Save used/selected frames similar to cropped pipeline
     def save_frame_png(path: Path, data: np.ndarray, cmap: Colormap, vmin: float | None = None, vmax: float | None = None) -> None:
@@ -733,6 +769,8 @@ def main() -> None:
         comp_global_abs=(float(args.comp_global_abs) if args.comp_global_abs is not None else None),
         add_row12_colorbars=(not bool(args.no_row12_colorbars)),
         cbar_ratio=float(args.cbar_ratio),
+        add_row34_colorbar=bool(getattr(args, 'row34_colorbar', False)),
+        row34_cmap_name=str(getattr(args, 'row34_cmap', 'gray')),
     )
 
     # Save weights summary (mirrors all-in-one)
