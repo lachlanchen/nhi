@@ -244,15 +244,11 @@ def render_spectral_grid(
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
     gap = float(col_gap)
     rgap = float(row_gap) if (row_gap is not None) else max(0.01, 0.35 * gap)
-    # Reserve narrow columns for optional colorbars: row3/4, then row1/2 (so sensor colorbars remain outermost)
+    # Reserve a single narrow column for all colorbars on the far right
     width_ratios = [0.22] + [1] * num_cols
-    col_row34 = None
-    if add_row34_colorbar:
-        col_row34 = len(width_ratios)
-        width_ratios.append(cbar_ratio)
-    col_row12 = None
-    if add_row12_colorbars:
-        col_row12 = len(width_ratios)
+    col_bar = None
+    if add_row12_colorbars or add_row34_colorbar:
+        col_bar = len(width_ratios)
         width_ratios.append(cbar_ratio)
     total_cols = len(width_ratios)
     gs = fig.add_gridspec(
@@ -431,10 +427,10 @@ def render_spectral_grid(
     # Defer saving until after colorbars are added
 
     # If requested, add colorbars for rows 1–2 at the far right
-    if add_row12_colorbars and col_row12 is not None:
+    if add_row12_colorbars and col_bar is not None:
         if row12_shared_cbar:
             # One tall shared bar spanning rows 0–1 using comp_norm
-            cax12 = fig.add_subplot(gs[0:2, col_row12])
+            cax12 = fig.add_subplot(gs[0:2, col_bar])
             if comp_norm is None:
                 # Fallback: compute symmetric
                 cmins = []
@@ -461,7 +457,7 @@ def render_spectral_grid(
             cb12.ax.tick_params(labelsize=8, width=0.6, length=3)
         else:
             # Legacy: two stacked bars (Raw and Comp.)
-            cax1 = fig.add_subplot(gs[0, col_row12])
+            cax1 = fig.add_subplot(gs[0, col_bar])
             rvmin = raw_vmin if raw_vmin is not None else 0.0
             rvmax = raw_vmax if raw_vmax is not None else 1.0
             sm1 = plt.cm.ScalarMappable(norm=Normalize(vmin=rvmin, vmax=rvmax), cmap=raw_cmap)
@@ -470,7 +466,7 @@ def render_spectral_grid(
             cb1.ax.set_ylabel("Raw counts", rotation=90)
             cb1.outline.set_visible(True); cb1.outline.set_linewidth(0.8)
             cb1.ax.tick_params(labelsize=8, width=0.6, length=3)
-            cax2 = fig.add_subplot(gs[1, col_row12])
+            cax2 = fig.add_subplot(gs[1, col_bar])
             sm2 = plt.cm.ScalarMappable(norm=(comp_norm if comp_norm is not None else Normalize(vmin=-1.0, vmax=1.0)), cmap=comp_cmap)
             sm2.set_array([])
             cb2 = fig.colorbar(sm2, cax=cax2)
@@ -479,7 +475,7 @@ def render_spectral_grid(
             cb2.ax.tick_params(labelsize=8, width=0.6, length=3)
 
     # Optional colorbar for rows 3–4 (external images): use intensity scale
-    if add_row34_colorbar and col_row34 is not None:
+    if add_row34_colorbar and col_bar is not None:
         # Compute global intensity min/max across selected external images
         emin, emax = None, None
         for idx in [int(m["index"]) for m in columns]:
@@ -501,7 +497,7 @@ def render_spectral_grid(
             emin, emax = 0.0, 1.0
         ext_cmap = plt.get_cmap(row34_cmap_name)
         # Single tall external bar spanning rows 2–3
-        cax34 = fig.add_subplot(gs[2:4, col_row34])
+        cax34 = fig.add_subplot(gs[2:4, col_bar])
         sm34 = plt.cm.ScalarMappable(norm=Normalize(vmin=emin, vmax=emax), cmap=ext_cmap)
         sm34.set_array([])
         cb34 = fig.colorbar(sm34, cax=cax34)
