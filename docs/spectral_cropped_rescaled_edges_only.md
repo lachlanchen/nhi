@@ -37,6 +37,10 @@ Essential Flags
   - `--row-gap` (default 0.35 × col-gap). Use smaller values to compress rows; set near 0 for minimal spacing.
   - `--image-aspect12 {equal,auto}`: aspect for rows 1–2 (Original/Comp.). Use `equal` to preserve sensor pixel aspect.
   - `--image-aspect34 {equal,auto}`: aspect for rows 3–4 (Gradient/Reference). Use `auto` to pack vertically if desired.
+  - `--unified-row12-scales`: enforce a single global scale per row (Original counts + Comp. Δ) so comparisons across columns stay consistent.
+  - `--raw-global-vmin/--raw-global-vmax`, `--comp-global-abs`: manually override the sensor row ranges.
+  - `--cbar-ratio` (default 0.15): width of each colorbar column, as a fraction of a data column.
+  - `--row34-colorbar`: add intensity colorbars for Gradient/Reference rows (per-row bars stacked in the rightmost column).
 - Crops/flip
   - `--crop-json` (sensor rows, used for Original/Comp.)
   - `--external-crop-json` (external rows, used for Gradient/Reference)
@@ -106,6 +110,7 @@ export MPLBACKEND=Agg
   --image-aspect12 equal --image-aspect34 equal \
   --crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
   --external-crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --unified-row12-scales --row34-colorbar --cbar-ratio 0.2 \
   --figure-name spectral_reconstruction_scan_rotated_cropped_400_700 \
   --save-png
 ```

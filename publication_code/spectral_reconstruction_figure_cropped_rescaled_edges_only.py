@@ -221,7 +221,7 @@ def render_spectral_grid(
     raw_global_vmax: float | None = None,
     comp_global_abs: float | None = None,
     add_row12_colorbars: bool = True,
-    cbar_ratio: float = 0.10,
+    cbar_ratio: float = 0.15,
     add_row34_colorbar: bool = False,
     row34_cmap_name: str = "gray",
 ) -> None:
@@ -237,10 +237,17 @@ def render_spectral_grid(
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
     gap = float(col_gap)
     rgap = float(row_gap) if (row_gap is not None) else max(0.01, 0.35 * gap)
-    # Reserve two narrow columns (raw + comp) when colorbars enabled, plus one optional for rows 3–4
-    cbar_cols = (2 if add_row12_colorbars else 0) + (1 if add_row34_colorbar else 0)
-    total_cols = num_cols + 1 + cbar_cols
-    width_ratios = [0.22] + [1] * num_cols + ([cbar_ratio] * cbar_cols)
+    # Reserve narrow columns for optional colorbars: row3/4, then row1/2 (so sensor colorbars remain outermost)
+    width_ratios = [0.22] + [1] * num_cols
+    col_row34 = None
+    if add_row34_colorbar:
+        col_row34 = len(width_ratios)
+        width_ratios.append(cbar_ratio)
+    col_row12 = None
+    if add_row12_colorbars:
+        col_row12 = len(width_ratios)
+        width_ratios.append(cbar_ratio)
+    total_cols = len(width_ratios)
     gs = fig.add_gridspec(
         5,
         total_cols,
@@ -377,11 +384,8 @@ def render_spectral_grid(
         scale = 1.0 / np.maximum(XYZ[:, 1:2], 1e-6)
         rgb = xyz_to_srgb(XYZ * scale)
         bar_img = np.tile(rgb[None, :, :], (int(bar_px), 1, 1))
-        # If colorbar columns present, exclude them from the spectrum bar
-        if cbar_cols > 0:
-            ax_bar = fig.add_subplot(gs[4, 1:-cbar_cols])
-        else:
-            ax_bar = fig.add_subplot(gs[4, 1:])
+        # Spectrum bar spans only the data columns (exclude label + colorbar columns)
+        ax_bar = fig.add_subplot(gs[4, 1:1 + num_cols])
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
         # Configure ticks: one tick per kept column, centered under each column
         total_w = bar_img.shape[1]
@@ -418,12 +422,9 @@ def render_spectral_grid(
     plt.close(fig)
 
     # If requested, add colorbars for rows 1–2 at the far right
-    if add_row12_colorbars:
-        # Tall colorbars spanning rows 0 and 1
-        # Row 1 colorbar (Original) in the first cbar column
-        # Determine base column index for row1/2 colorbars (could be -3 if row34 bar exists)
-        base_cbar_col = - (1 + (1 if add_row34_colorbar else 0))
-        cax1 = fig.add_subplot(gs[0:2, base_cbar_col - 1])
+    if add_row12_colorbars and col_row12 is not None:
+        # Row 1 colorbar (Original)
+        cax1 = fig.add_subplot(gs[0, col_row12])
         if raw_vmin is None or raw_vmax is None:
             # Fallback to per-row global based on currently drawn frames
             # Use Normalize with a safe default if missing
@@ -438,8 +439,8 @@ def render_spectral_grid(
         cb1.outline.set_visible(True)
         cb1.outline.set_linewidth(0.8)
         cb1.ax.tick_params(labelsize=8, width=0.6, length=3)
-        # Row 2 colorbar (Comp.) in the next cbar column
-        cax2 = fig.add_subplot(gs[0:2, base_cbar_col])
+        # Row 2 colorbar (Comp.) stacked below
+        cax2 = fig.add_subplot(gs[1, col_row12])
         if comp_norm is None:
             # Build a symmetric norm from the selected frames
             # (fallback if unified scales not provided)
@@ -471,7 +472,7 @@ def render_spectral_grid(
         cb2.ax.tick_params(labelsize=8, width=0.6, length=3)
 
     # Optional colorbar for rows 3–4 (external images): use intensity scale
-    if add_row34_colorbar:
+    if add_row34_colorbar and col_row34 is not None:
         # Compute global intensity min/max across selected external images
         emin, emax = None, None
         for idx in [int(m["index"]) for m in columns]:
@@ -491,16 +492,23 @@ def render_spectral_grid(
                     emax = vmax if (emax is None or vmax > emax) else emax
         if emin is None or emax is None or np.isclose(emin, emax):
             emin, emax = 0.0, 1.0
-        # Place colorbar in the last column spanning rows 2–3
-        cax3 = fig.add_subplot(gs[2:4, -1])
         ext_cmap = plt.get_cmap(row34_cmap_name)
+        # Row 3 colorbar (Gradient)
+        cax3 = fig.add_subplot(gs[2, col_row34])
         sm3 = plt.cm.ScalarMappable(norm=Normalize(vmin=emin, vmax=emax), cmap=ext_cmap)
         sm3.set_array([])
         cb3 = fig.colorbar(sm3, cax=cax3)
-        cb3.ax.set_ylabel("External Intensity", rotation=90)
-        cb3.outline.set_visible(True)
-        cb3.outline.set_linewidth(0.8)
-        cb3.ax.tick_params(labelsize=8, width=0.6, length=3)
+        cb3.ax.set_ylabel("Grad", rotation=90)
+        cb3.outline.set_visible(True); cb3.outline.set_linewidth(0.8)
+        cb3.ax.tick_params(labelsize=7, width=0.6, length=3)
+        # Row 4 colorbar (Reference)
+        cax4 = fig.add_subplot(gs[3, col_row34])
+        sm4 = plt.cm.ScalarMappable(norm=Normalize(vmin=emin, vmax=emax), cmap=ext_cmap)
+        sm4.set_array([])
+        cb4 = fig.colorbar(sm4, cax=cax4)
+        cb4.ax.set_ylabel("Ref", rotation=90)
+        cb4.outline.set_visible(True); cb4.outline.set_linewidth(0.8)
+        cb4.ax.tick_params(labelsize=7, width=0.6, length=3)
 
     # Save used/selected frames similar to cropped pipeline
     def save_frame_png(path: Path, data: np.ndarray, cmap: Colormap, vmin: float | None = None, vmax: float | None = None) -> None:
