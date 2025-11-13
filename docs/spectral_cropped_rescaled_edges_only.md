@@ -10,13 +10,16 @@ Overview
   - Correct frame selection for each row
 
 Quick Presets
-- No‑flip, equal aspect for all rows (consistent pixel aspect):
+- No-flip, equal aspect for all rows (consistent pixel aspect):
   - Skip both `--flip-row12` and `--flip-row34`.
   - Pass `--image-aspect12 equal --image-aspect34 equal`.
   - Typical spacing: `--col-gap 0.045 --row-gap 0.045`.
-- No‑flip, tighter external rows (pack gradient/reference):
+- No-flip, tighter external rows (pack gradient/reference):
   - `--image-aspect12 equal --image-aspect34 auto`.
   - Use smaller `--row-gap` (e.g., 0.006) if needed.
+- Zero-gap stacked layout (shared colorbars, min margins):
+  - `--row-gap 0.0`, `--column-step 2`, `--row12-shared-cbar`, `--row34-colorbar`, `--cbar-ratio 0.15`
+  - Figure saving uses tight bounding box; final gap controlled entirely by `--row-gap`.
 
 Essential Flags
 - Input
@@ -57,7 +60,7 @@ Correct Row/Frame Sources
 - Spectrum bar: ticks centered under each kept column, labels = mapped wavelength for that column.
 
 Example Commands
-1) Typical run (400→700 nm, 20‑nm step), tighter rows
+1) Typical run (400→700 nm, 20-nm step), tighter rows
 ```
 export MPLBACKEND=Agg
 ~/miniconda3/envs/nhi_test/bin/python \
@@ -93,7 +96,7 @@ export MPLBACKEND=Agg
   --flip-row12 --save-png
 ```
 
-3) No‑flip, equal aspect for all rows (crop applied to both sensor/external rows)
+3) No-flip, equal aspect for all rows (crop applied to both sensor/external rows)
 ```
 export MPLBACKEND=Agg
 ~/miniconda3/envs/nhi_test/bin/python publication_code/spectral_reconstruction_figure_cropped_rescaled_edges_only.py \
@@ -113,6 +116,27 @@ export MPLBACKEND=Agg
   --unified-row12-scales --row34-colorbar --cbar-ratio 0.2 \
   --figure-name spectral_reconstruction_scan_rotated_cropped_400_700 \
   --save-png
+4) Zero-gap shared-colorbar layout (7 columns, minimal margins)
+```
+export MPLBACKEND=Agg
+~/miniconda3/envs/nhi_test/bin/python publication_code/spectral_reconstruction_figure_cropped_rescaled_edges_only.py \
+  --segment /home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz \
+  --gt-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/groundtruth_spectrum_2835 \
+  --diff-frames-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/test300_rotated_frames_137d37_roi_crops_gradient_20nm \
+  --ref-frames-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/test300_rotated_frames_137d37_roi_crops \
+  --bin-width-us 50000 --fine-step-us 5000 \
+  --sensor-width 1280 --sensor-height 720 \
+  --edge-quantile 0.05 \
+  --wl-min 400 --wl-max 700 --wl-step 20 \
+  --bar-wl-min 400 --bar-wl-max 700 \
+  --col-gap 0.045 --row-gap 0.0 \
+  --image-aspect12 equal --image-aspect34 equal \
+  --crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --external-crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --unified-row12-scales --row12-shared-cbar --row34-colorbar --cbar-ratio 0.15 --column-step 2 \
+  --figure-name spectral_reconstruction_scan_rotated_cropped_400_700 \
+  --save-png
+```
 ```
 
 Outputs
