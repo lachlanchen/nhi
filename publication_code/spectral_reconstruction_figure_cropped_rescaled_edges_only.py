@@ -362,6 +362,7 @@ def render_spectral_grid(
     for row, paths in [(2, diff_paths), (3, ref_paths)]:
         for ci, meta in enumerate(columns, start=0):
             idx = meta["index"]; ax = fig.add_subplot(gs[row, ci + 1])
+            img = None
             if 0 <= idx < len(paths) and paths[idx] and paths[idx].exists():
                 img = plt.imread(paths[idx])
                 if ext_crop is not None and img.ndim >= 2:
@@ -369,9 +370,16 @@ def render_spectral_grid(
                     img = img[y0:y1, x0:x1]
                 if flip_row34:
                     img = np.flipud(img)
+            if img is None:
+                img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
+            if row == 2:
                 ax.imshow(img, origin="lower", aspect=image_aspect34)
             else:
-                ax.imshow(np.zeros((10, 10)), origin="lower", cmap="gray", aspect=image_aspect34)
+                if img.ndim == 3 and img.shape[2] >= 3:
+                    lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
+                else:
+                    lum = img.astype(np.float32)
+                ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap="gray")
             ax.axis("off")
             row_axes[row].append(ax)
 
