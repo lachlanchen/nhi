@@ -376,6 +376,7 @@ def render_spectral_grid(
             row_axes[row].append(ax)
 
     # Gradient bar with wavelength ticks under the bar
+    ax_bar_ref = None
     # Determine bar wavelength range: prefer override, else from selected columns' nm, else guess from ref paths
     wl_min = bar_wl_min
     wl_max = bar_wl_max
@@ -409,6 +410,7 @@ def render_spectral_grid(
         bar_img = np.tile(rgb[None, :, :], (int(bar_px), 1, 1))
         # Spectrum bar spans only the data columns (exclude label + colorbar columns)
         ax_bar = fig.add_subplot(gs[4, 1:1 + num_cols])
+        ax_bar_ref = ax_bar
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
         # Configure ticks: one tick per kept column, centered under each column
         total_w = bar_img.shape[1]
@@ -456,10 +458,20 @@ def render_spectral_grid(
                 for ax in cur_axes:
                     pos = ax.get_position()
                     ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
-                for idx, lbl_ax in label_axes:
-                    if idx == row_idx:
-                        pos = lbl_ax.get_position()
-                        lbl_ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
+            # move left label with its row
+            for idx, lbl_ax in label_axes:
+                if idx == row_idx:
+                    pos = lbl_ax.get_position()
+                    lbl_ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
+        # Align spectrum bar just below row 3 block with small margin
+        if ax_bar_ref is not None and row_axes[3]:
+            row4_bottom = min(ax.get_position().y0 for ax in row_axes[3])
+            pos = ax_bar_ref.get_position()
+            margin = max(0.005, target_gap * 0.5)
+            new_top = row4_bottom - margin
+            new_height = pos.height
+            new_y0 = max(0.0, new_top - new_height)
+            ax_bar_ref.set_position([pos.x0, new_y0, pos.width, new_height])
     except Exception:
         pass
 
