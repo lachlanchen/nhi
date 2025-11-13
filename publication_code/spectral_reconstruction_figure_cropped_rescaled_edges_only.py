@@ -23,7 +23,7 @@ from typing import Dict, List, Sequence, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import Colormap, TwoSlopeNorm
+from matplotlib.colors import Colormap, TwoSlopeNorm, Normalize
 
 import sys
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -97,6 +97,14 @@ def parse_args() -> argparse.Namespace:
                     help="Aspect for rows 1–2 (Original/Comp.)")
     ap.add_argument("--image-aspect34", type=str, choices=["equal", "auto"], default="equal",
                     help="Aspect for rows 3–4 (Gradient/Reference)")
+    # Row 1–2 colorbars at right
+    ap.add_argument("--no-row12-colorbars", action="store_true", help="Disable colorbars for rows 1–2 at the right")
+    ap.add_argument("--cbar-ratio", type=float, default=0.10, help="Width ratio for the colorbar column (relative to an image column)")
+    # Unified scaling for rows 1–2
+    ap.add_argument("--unified-row12-scales", action="store_true", help="Use a single global scale per row across all selected columns for rows 1–2")
+    ap.add_argument("--raw-global-vmin", type=float, default=None, help="Override global vmin for row 1 (Original)")
+    ap.add_argument("--raw-global-vmax", type=float, default=None, help="Override global vmax for row 1 (Original)")
+    ap.add_argument("--comp-global-abs", type=float, default=None, help="Override symmetric abs value for TwoSlopeNorm on row 2 (Comp.)")
     ap.add_argument("--downsample-rate", type=int, default=3, help="Keep every Nth column from the selected range (1,4,7,...) ")
     ap.add_argument("--crop-json", type=Path, default=None, help="JSON with bbox {x0,y0,x1,y1} for cropping Orig./Comp. rows (sensor coords)")
     ap.add_argument("--external-crop-json", type=Path, default=None, help="JSON with bbox {x0,y0,x1,y1} for cropping Diff/Ref rows (PNG coords)")
@@ -205,6 +213,12 @@ def render_spectral_grid(
     bar_wl_max: Optional[float] = None,
     image_aspect12: str = "equal",
     image_aspect34: str = "equal",
+    unify_row12_scales: bool = False,
+    raw_global_vmin: float | None = None,
+    raw_global_vmax: float | None = None,
+    comp_global_abs: float | None = None,
+    add_row12_colorbars: bool = True,
+    cbar_ratio: float = 0.10,
 ) -> None:
     setup_style()
     if override_columns is not None and len(override_columns) > 0:
@@ -218,18 +232,77 @@ def render_spectral_grid(
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
     gap = float(col_gap)
     rgap = float(row_gap) if (row_gap is not None) else max(0.01, 0.35 * gap)
+    total_cols = num_cols + 1 + (1 if add_row12_colorbars else 0)
+    width_ratios = [0.22] + [1] * num_cols + ([cbar_ratio] if add_row12_colorbars else [])
     gs = fig.add_gridspec(
         5,
-        num_cols + 1,
+        total_cols,
         wspace=gap,
         hspace=rgap,
-        width_ratios=[0.22] + [1] * num_cols,
+        width_ratios=width_ratios,
         height_ratios=[1.0, 1.0, 1.0, 1.0, max(0.02, float(bar_px) / 80.0)],
     )
     def label_column(r: int, text: str) -> None:
         ax = fig.add_subplot(gs[r, 0]); ax.axis("off"); ax.text(0.5, 0.5, text, rotation=90, ha="center", va="center", fontsize=9, fontweight="bold")
     label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
 
+    # Precompute unified scales for rows 1–2 if requested
+    raw_vmin = raw_global_vmin
+    raw_vmax = raw_global_vmax
+    comp_norm = None
+    selected_indices = [int(m["index"]) for m in columns]
+    if unify_row12_scales and selected_indices:
+        # Build cropped frames for scale calculation
+        def crop_sensor(frame: np.ndarray) -> np.ndarray:
+            if sens_crop is None:
+                return frame
+            y0, y1, x0, x1 = sens_crop
+            return frame[y0:y1, x0:x1]
+        # Row 1 global min/max
+        if raw_vmin is None or raw_vmax is None:
+            rmins = []
+            rmaxs = []
+            for idx in selected_indices:
+                if not (0 <= idx < len(originals)):
+                    continue
+                fr = originals[idx]
+                if flip_row12:
+                    fr = np.flipud(fr)
+                fr = crop_sensor(fr)
+                rmins.append(float(np.nanmin(fr)))
+                rmaxs.append(float(np.nanmax(fr)))
+            if rmins and rmaxs:
+                rvmin = min(rmins); rvmax = max(rmaxs)
+                # Avoid degenerate range
+                if np.isclose(rvmin, rvmax):
+                    rvmax = rvmin + 1e-3
+                raw_vmin = rvmin if raw_vmin is None else raw_vmin
+                raw_vmax = rvmax if raw_vmax is None else raw_vmax
+        # Row 2 symmetric TwoSlopeNorm around 0 using global abs
+        if comp_norm is None:
+            if comp_global_abs is not None:
+                comp_abs = float(comp_global_abs)
+            else:
+                cmins = []
+                cmaxs = []
+                for idx in selected_indices:
+                    if not (0 <= idx < len(compensated)):
+                        continue
+                    fc = compensated[idx]
+                    if flip_row12:
+                        fc = np.flipud(fc)
+                    fc = crop_sensor(fc)
+                    cmins.append(float(np.nanmin(fc)))
+                    cmaxs.append(float(np.nanmax(fc)))
+                if cmins and cmaxs:
+                    lo = min(cmins); hi = max(cmaxs)
+                    comp_abs = max(abs(lo), abs(hi))
+                else:
+                    comp_abs = 1.0
+            if comp_abs <= 0.0:
+                comp_abs = 1.0
+            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
+            comp_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
     # Draw row 1/2
     for row, frames, cmap in [(0, originals, raw_cmap), (1, compensated, comp_cmap)]:
         for ci, meta in enumerate(columns, start=0):
@@ -241,7 +314,13 @@ def render_spectral_grid(
             if sens_crop is not None:
                 y0, y1, x0, x1 = sens_crop
                 frame = frame[y0:y1, x0:x1]
-            ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12)
+            if row == 0:
+                ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12, vmin=raw_vmin, vmax=raw_vmax)
+            else:
+                if comp_norm is not None:
+                    ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12, norm=comp_norm)
+                else:
+                    ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12)
             ax.axis("off")
     # Draw row 3/4 from file paths (already cropped/rotated externally)
     for row, paths in [(2, diff_paths), (3, ref_paths)]:
@@ -291,7 +370,7 @@ def render_spectral_grid(
         scale = 1.0 / np.maximum(XYZ[:, 1:2], 1e-6)
         rgb = xyz_to_srgb(XYZ * scale)
         bar_img = np.tile(rgb[None, :, :], (int(bar_px), 1, 1))
-        ax_bar = fig.add_subplot(gs[4, 1:])
+        ax_bar = fig.add_subplot(gs[4, 1:(-1 if add_row12_colorbars else None)])
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
         # Configure ticks: one tick per kept column, centered under each column
         total_w = bar_img.shape[1]
@@ -326,6 +405,50 @@ def render_spectral_grid(
     if save_png:
         fig.savefig(f"{out_stem}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+    # If requested, add colorbars for rows 1–2 at the far right
+    if add_row12_colorbars:
+        # Row 1 colorbar (Original)
+        cax1 = fig.add_subplot(gs[0, -1])
+        if raw_vmin is None or raw_vmax is None:
+            # Fallback to per-row global based on currently drawn frames
+            # Use Normalize with a safe default if missing
+            rvmin = raw_vmin if raw_vmin is not None else 0.0
+            rvmax = raw_vmax if raw_vmax is not None else 1.0
+            sm1 = plt.cm.ScalarMappable(norm=Normalize(vmin=rvmin, vmax=rvmax), cmap=raw_cmap)
+        else:
+            sm1 = plt.cm.ScalarMappable(norm=Normalize(vmin=raw_vmin, vmax=raw_vmax), cmap=raw_cmap)
+        sm1.set_array([])
+        cb1 = fig.colorbar(sm1, cax=cax1)
+        cb1.ax.set_ylabel("Raw counts", rotation=90)
+        # Row 2 colorbar (Comp.)
+        cax2 = fig.add_subplot(gs[1, -1])
+        if comp_norm is None:
+            # Build a symmetric norm from the selected frames
+            # (fallback if unified scales not provided)
+            cmins = []
+            cmaxs = []
+            for idx in [int(m["index"]) for m in columns]:
+                if not (0 <= idx < len(compensated)):
+                    continue
+                fr = compensated[idx]
+                if flip_row12:
+                    fr = np.flipud(fr)
+                if sens_crop is not None:
+                    y0, y1, x0, x1 = sens_crop; fr = fr[y0:y1, x0:x1]
+                cmins.append(float(np.nanmin(fr)))
+                cmaxs.append(float(np.nanmax(fr)))
+            if cmins and cmaxs:
+                lo = min(cmins); hi = max(cmaxs); comp_abs_fb = max(abs(lo), abs(hi))
+            else:
+                comp_abs_fb = 1.0
+            comp_norm_fb = TwoSlopeNorm(vmin=-comp_abs_fb, vcenter=0.0, vmax=comp_abs_fb)
+            sm2 = plt.cm.ScalarMappable(norm=comp_norm_fb, cmap=comp_cmap)
+        else:
+            sm2 = plt.cm.ScalarMappable(norm=comp_norm, cmap=comp_cmap)
+        sm2.set_array([])
+        cb2 = fig.colorbar(sm2, cax=cax2)
+        cb2.ax.set_ylabel("Comp. Δ (a.u.)", rotation=90)
 
     # Save used/selected frames similar to cropped pipeline
     def save_frame_png(path: Path, data: np.ndarray, cmap: Colormap, vmin: float | None = None, vmax: float | None = None) -> None:
@@ -597,6 +720,12 @@ def main() -> None:
         bar_wl_max=(float(args.bar_wl_max) if args.bar_wl_max is not None else None),
         image_aspect12=str(args.image_aspect12),
         image_aspect34=str(args.image_aspect34),
+        unify_row12_scales=bool(getattr(args, 'unified_row12_scales', False)),
+        raw_global_vmin=(float(args.raw_global_vmin) if args.raw_global_vmin is not None else None),
+        raw_global_vmax=(float(args.raw_global_vmax) if args.raw_global_vmax is not None else None),
+        comp_global_abs=(float(args.comp_global_abs) if args.comp_global_abs is not None else None),
+        add_row12_colorbars=(not bool(args.no_row12_colorbars)),
+        cbar_ratio=float(args.cbar_ratio),
     )
 
     # Save weights summary (mirrors all-in-one)
