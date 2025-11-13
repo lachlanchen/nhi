@@ -508,7 +508,7 @@ def render_spectral_grid(
             sm12 = plt.cm.ScalarMappable(norm=comp_norm_final, cmap=comp_cmap)
             sm12.set_array([])
             cb12 = fig.colorbar(sm12, cax=cax12)
-            cb12.ax.set_ylabel("Comp. Δ (a.u.)", rotation=90)
+            cb12.ax.set_ylabel("", rotation=90)
             cb12.outline.set_visible(True); cb12.outline.set_linewidth(0.8)
             cb12.ax.tick_params(labelsize=8, width=0.6, length=3)
             # Align colorbar to rows 0–1 image bounds
@@ -534,7 +534,7 @@ def render_spectral_grid(
             sm2 = plt.cm.ScalarMappable(norm=(comp_norm if comp_norm is not None else Normalize(vmin=-1.0, vmax=1.0)), cmap=comp_cmap)
             sm2.set_array([])
             cb2 = fig.colorbar(sm2, cax=cax2)
-            cb2.ax.set_ylabel("Comp. Δ (a.u.)", rotation=90)
+            cb2.ax.set_ylabel("", rotation=90)
             cb2.outline.set_visible(True); cb2.outline.set_linewidth(0.8)
             cb2.ax.tick_params(labelsize=8, width=0.6, length=3)
 
@@ -565,7 +565,7 @@ def render_spectral_grid(
         sm34 = plt.cm.ScalarMappable(norm=Normalize(vmin=emin, vmax=emax), cmap=ext_cmap)
         sm34.set_array([])
         cb34 = fig.colorbar(sm34, cax=cax34)
-        cb34.ax.set_ylabel("External Intensity", rotation=90)
+        cb34.ax.set_ylabel("", rotation=90)
         cb34.outline.set_visible(True); cb34.outline.set_linewidth(0.8)
         cb34.ax.tick_params(labelsize=8, width=0.6, length=3)
         # Align colorbar to rows 2–3 image bounds
