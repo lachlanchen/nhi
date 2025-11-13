@@ -463,12 +463,11 @@ def render_spectral_grid(
                 if idx == row_idx:
                     pos = lbl_ax.get_position()
                     lbl_ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
-        # Align spectrum bar just below row 3 block with small margin
+        # Align spectrum bar below row 4 with desired gap
         if ax_bar_ref is not None and row_axes[3]:
             row4_bottom = min(ax.get_position().y0 for ax in row_axes[3])
             pos = ax_bar_ref.get_position()
-            margin = max(0.005, target_gap * 0.5)
-            new_top = row4_bottom - margin
+            new_top = row4_bottom - target_gap
             new_height = pos.height
             new_y0 = max(0.0, new_top - new_height)
             ax_bar_ref.set_position([pos.x0, new_y0, pos.width, new_height])
