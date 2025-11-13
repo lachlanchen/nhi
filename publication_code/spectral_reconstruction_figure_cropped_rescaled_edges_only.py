@@ -373,25 +373,6 @@ def render_spectral_grid(
             ax.axis("off")
             row_axes[row].append(ax)
 
-    # Force inter-row gap to rgap (normalized figure units) by shifting rows 1..3
-    try:
-        block_tops = [max(ax.get_position().y1 for ax in row_axes[r]) if row_axes[r] else None for r in range(4)]
-        block_bottoms = [min(ax.get_position().y0 for ax in row_axes[r]) if row_axes[r] else None for r in range(4)]
-        for r in range(1, 4):
-            if block_tops[r-1] is None or block_bottoms[r] is None:
-                continue
-            target_bottom = block_tops[r-1] + rgap
-            delta = target_bottom - block_bottoms[r]
-            if abs(delta) > 1e-6:
-                for ax in row_axes[r]:
-                    pos = ax.get_position()
-                    ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
-                # update cached bounds
-                block_tops[r] = (block_tops[r] + delta) if block_tops[r] is not None else None
-                block_bottoms[r] = (block_bottoms[r] + delta) if block_bottoms[r] is not None else None
-    except Exception:
-        pass
-
     # Gradient bar with wavelength ticks under the bar
     # Determine bar wavelength range: prefer override, else from selected columns' nm, else guess from ref paths
     wl_min = bar_wl_min
