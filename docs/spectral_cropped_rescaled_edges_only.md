@@ -9,6 +9,15 @@ Overview
   - Tight control of row/column gaps
   - Correct frame selection for each row
 
+Quick Presets
+- No‑flip, equal aspect for all rows (consistent pixel aspect):
+  - Skip both `--flip-row12` and `--flip-row34`.
+  - Pass `--image-aspect12 equal --image-aspect34 equal`.
+  - Typical spacing: `--col-gap 0.045 --row-gap 0.045`.
+- No‑flip, tighter external rows (pack gradient/reference):
+  - `--image-aspect12 equal --image-aspect34 auto`.
+  - Use smaller `--row-gap` (e.g., 0.006) if needed.
+
 Essential Flags
 - Input
   - `--segment` Scan NPZ (e.g., `.../Scan_1_Forward_events.npz`)
