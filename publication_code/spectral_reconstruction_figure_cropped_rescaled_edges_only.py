@@ -437,6 +437,26 @@ def render_spectral_grid(
 
     # Defer saving until after colorbars are added
 
+    # Enforce requested row gap by shifting rows (after layout)
+    try:
+        fig.canvas.draw()
+        target_gap = max(0.0, rgap)
+        for row_idx in range(1, 4):
+            prev_axes = row_axes[row_idx - 1]
+            cur_axes = row_axes[row_idx]
+            if not prev_axes or not cur_axes:
+                continue
+            prev_bottom = min(ax.get_position().y0 for ax in prev_axes)
+            cur_top = max(ax.get_position().y1 for ax in cur_axes)
+            desired_top = prev_bottom - target_gap
+            delta = desired_top - cur_top
+            if abs(delta) > 1e-6:
+                for ax in cur_axes:
+                    pos = ax.get_position()
+                    ax.set_position([pos.x0, pos.y0 + delta, pos.width, pos.height])
+    except Exception:
+        pass
+
     # If requested, add colorbars for rows 1–2 at the far right
     if add_row12_colorbars and col_bar is not None:
         if row12_shared_cbar:
