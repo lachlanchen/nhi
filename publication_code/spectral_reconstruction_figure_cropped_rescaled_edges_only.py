@@ -259,6 +259,12 @@ def render_spectral_grid(
         width_ratios=width_ratios,
         height_ratios=[1.0, 1.0, 1.0, 1.0, max(0.02, float(bar_px) / 80.0)],
     )
+    # Reinforce spacing in case backend ignores GridSpec hspace/wspace
+    try:
+        gs.update(hspace=rgap, wspace=gap)
+        fig.subplots_adjust(hspace=rgap, wspace=gap)
+    except Exception:
+        pass
     # Track per-row image axes for precise colorbar alignment later
     row_axes = [[], [], [], []]
     def label_column(r: int, text: str) -> None:
