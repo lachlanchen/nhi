@@ -232,8 +232,10 @@ def render_spectral_grid(
     fig = plt.figure(figsize=(1.2 * num_cols + 0.6, 5.2))
     gap = float(col_gap)
     rgap = float(row_gap) if (row_gap is not None) else max(0.01, 0.35 * gap)
-    total_cols = num_cols + 1 + (1 if add_row12_colorbars else 0)
-    width_ratios = [0.22] + [1] * num_cols + ([cbar_ratio] if add_row12_colorbars else [])
+    # Reserve two narrow columns (raw + comp) when colorbars enabled
+    cbar_cols = 2 if add_row12_colorbars else 0
+    total_cols = num_cols + 1 + cbar_cols
+    width_ratios = [0.22] + [1] * num_cols + ([cbar_ratio] * cbar_cols)
     gs = fig.add_gridspec(
         5,
         total_cols,
@@ -370,7 +372,11 @@ def render_spectral_grid(
         scale = 1.0 / np.maximum(XYZ[:, 1:2], 1e-6)
         rgb = xyz_to_srgb(XYZ * scale)
         bar_img = np.tile(rgb[None, :, :], (int(bar_px), 1, 1))
-        ax_bar = fig.add_subplot(gs[4, 1:(-1 if add_row12_colorbars else None)])
+        # If colorbar columns present, exclude the last two columns from the bar
+        if add_row12_colorbars:
+            ax_bar = fig.add_subplot(gs[4, 1:-2])
+        else:
+            ax_bar = fig.add_subplot(gs[4, 1:])
         ax_bar.imshow(bar_img, origin="lower", aspect="auto")
         # Configure ticks: one tick per kept column, centered under each column
         total_w = bar_img.shape[1]
@@ -408,8 +414,9 @@ def render_spectral_grid(
 
     # If requested, add colorbars for rows 1–2 at the far right
     if add_row12_colorbars:
-        # Row 1 colorbar (Original)
-        cax1 = fig.add_subplot(gs[0, -1])
+        # Tall colorbars spanning rows 0 and 1
+        # Row 1 colorbar (Original) in the first cbar column
+        cax1 = fig.add_subplot(gs[0:2, -2])
         if raw_vmin is None or raw_vmax is None:
             # Fallback to per-row global based on currently drawn frames
             # Use Normalize with a safe default if missing
@@ -421,8 +428,8 @@ def render_spectral_grid(
         sm1.set_array([])
         cb1 = fig.colorbar(sm1, cax=cax1)
         cb1.ax.set_ylabel("Raw counts", rotation=90)
-        # Row 2 colorbar (Comp.)
-        cax2 = fig.add_subplot(gs[1, -1])
+        # Row 2 colorbar (Comp.) in the second cbar column
+        cax2 = fig.add_subplot(gs[0:2, -1])
         if comp_norm is None:
             # Build a symmetric norm from the selected frames
             # (fallback if unified scales not provided)
