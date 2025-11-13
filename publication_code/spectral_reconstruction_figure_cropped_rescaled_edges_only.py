@@ -435,6 +435,9 @@ def render_spectral_grid(
         sm1.set_array([])
         cb1 = fig.colorbar(sm1, cax=cax1)
         cb1.ax.set_ylabel("Raw counts", rotation=90)
+        cb1.outline.set_visible(True)
+        cb1.outline.set_linewidth(0.8)
+        cb1.ax.tick_params(labelsize=8, width=0.6, length=3)
         # Row 2 colorbar (Comp.) in the next cbar column
         cax2 = fig.add_subplot(gs[0:2, base_cbar_col])
         if comp_norm is None:
@@ -463,6 +466,9 @@ def render_spectral_grid(
         sm2.set_array([])
         cb2 = fig.colorbar(sm2, cax=cax2)
         cb2.ax.set_ylabel("Comp. Δ (a.u.)", rotation=90)
+        cb2.outline.set_visible(True)
+        cb2.outline.set_linewidth(0.8)
+        cb2.ax.tick_params(labelsize=8, width=0.6, length=3)
 
     # Optional colorbar for rows 3–4 (external images): use intensity scale
     if add_row34_colorbar:
@@ -492,6 +498,9 @@ def render_spectral_grid(
         sm3.set_array([])
         cb3 = fig.colorbar(sm3, cax=cax3)
         cb3.ax.set_ylabel("External Intensity", rotation=90)
+        cb3.outline.set_visible(True)
+        cb3.outline.set_linewidth(0.8)
+        cb3.ax.tick_params(labelsize=8, width=0.6, length=3)
 
     # Save used/selected frames similar to cropped pipeline
     def save_frame_png(path: Path, data: np.ndarray, cmap: Colormap, vmin: float | None = None, vmax: float | None = None) -> None:
