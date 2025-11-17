@@ -45,14 +45,14 @@ This document provides supplementary methods, implementation notes, and addition
 % Simple section helper matching main style
 \newcommand{\olsection}[1]{\par\noindent\textbf{#1.} }
 
-\olsection{Additional Methods}
-The procedures below mirror the methodology detailed in the main letter.
-We briefly summarize details that complement the main text:
-\begin{itemize}
-  \item Scan segmentation uses the activity auto-correlation and auto-convolution peaks to determine the one-way period and pre/post regions.
-  \item Multi-window compensation fits linear boundary surfaces per window and optimizes spatial variance within fixed temporal bins to undo temporal shear.
-  \item Spectral displays use 50~ms cumulative bins unless otherwise noted; background subtraction and light smoothing may be applied for visibility.
-\end{itemize}
+% \olsection{Additional Methods}
+% The procedures below mirror the methodology detailed in the main letter.
+% We briefly summarize details that complement the main text:
+% \begin{itemize}
+%   \item Scan segmentation uses the activity auto-correlation and auto-convolution peaks to determine the one-way period and pre/post regions.
+%   \item Multi-window compensation fits linear boundary surfaces per window and optimizes spatial variance within fixed temporal bins to undo temporal shear.
+%   \item Spectral displays use 50~ms cumulative bins unless otherwise noted; background subtraction and light smoothing may be applied for visibility.
+% \end{itemize}
 
 \olsection{Event-trigger probability model}
 Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
@@ -84,6 +84,19 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 
 This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
+\olsection{Time--wavelength auto-alignment details}
+The background trace $b(t)$ is sampled at $\Delta t{=}5$~ms and normalised by its pre/post plateaus, $\tilde b(t)=\frac{b(t)-\mu_{\mathrm{pre}}}{\mu_{\mathrm{post}}-\mu_{\mathrm{pre}}}$. The active interval $[t_0,t_1]$ is located from the rising and falling edge quantiles of the smoothed $\tilde b(t)$: $t_0$ is the first crossing of a lower edge level, and $t_1$ is the last crossing of the corresponding upper edge level, locking the start and tail plateaus. For ground-truth spectra $\{g_i(\lambda)\}_{i=1}^M$ with active intervals $[\lambda_{0,i},\lambda_{1,i}]$, we fit an affine map
+\[
+  \lambda(t)=\alpha t+\beta,\quad 
+  \alpha=\frac{\bar\lambda_1-\bar\lambda_0}{t_1-t_0},\;
+  \beta=\bar\lambda_0-\alpha t_0,
+\]
+where $\bar\lambda_0,\bar\lambda_1$ are mean boundaries. The transformed series $\tilde b_\lambda(\lambda)=\tilde b\big((\lambda-\beta)/\alpha\big)$ is amplitude-aligned to the mean ground-truth $\bar g(\lambda)$ via a least-squares affine fit,
+\[
+  (a^*,c^*)=\arg\min_{a,c}\sum_j[\bar g(\lambda_j)-a\,\tilde b_\lambda(\lambda_j)-c]^2,
+\]
+with closed form $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\mathbf{y}$ for $X=[\tilde b_\lambda\;\mathbf{1}]$, $\mathbf{y}=\bar g$.
+
 % \olsection{Supplementary Figure S1}
 % Figure~\ref{fig:s1} shows the aligned background (event-derived) against a spectrometer curve, formatted as in the main text.
 
@@ -94,14 +107,14 @@ This probabilistic link between event statistics and intensity gradients underpi
 %   \label{fig:s1}
 % \end{figure}
 
-\olsection{Segment Fusion Performance}
-We compare reconstruction noise across three fusion settings using a single dataset (\texttt{angle\_20\_sanqin\_2835\_20250925\_184638}) and 50~ms temporal bins:
-\begin{itemize}
-  \item Forward only (F): first forward segment.
-  \item Forward+Backward (F+B): first forward plus one backward (time-reversed, polarity-flipped).
-  \item Three cycles (3~F+B): up to six segments (F1,B2,F3,B4,F5,B6).
-\end{itemize}
-Learned parameters $(a,b)$ from the first forward segment are reused for all segments. For backward segments we reverse time ($t' = t_{\min}+t_{\max}-t$) and negate polarity (mapping 0/1 to $1{-}p$, or simply $-p$ in $\{-1,1\}$ form). Fused frames are averaged per-bin across segments, then background-subtracted prior to metric computation.
+% \olsection{Segment Fusion Performance}
+% We compare reconstruction noise across three fusion settings using a single dataset (\texttt{angle\_20\_sanqin\_2835\_20250925\_184638}) and 50~ms temporal bins:
+% \begin{itemize}
+%   \item Forward only (F): first forward segment.
+%   \item Forward+Backward (F+B): first forward plus one backward (time-reversed, polarity-flipped).
+%   \item Three cycles (3~F+B): up to six segments (F1,B2,F3,B4,F5,B6).
+% \end{itemize}
+% Learned parameters $(a,b)$ from the first forward segment are reused for all segments. For backward segments we reverse time ($t' = t_{\min}+t_{\max}-t$) and negate polarity (mapping 0/1 to $1{-}p$, or simply $-p$ in $\{-1,1\}$ form). Fused frames are averaged per-bin across segments, then background-subtracted prior to metric computation.
 
 % Figure~\ref{fig:s2} shows the first 20 bins for each scenario. Table~\ref{tab:fusion_metrics} reports spatial standard deviation (STD) and median absolute deviation (MAD) averaged over bins.
 

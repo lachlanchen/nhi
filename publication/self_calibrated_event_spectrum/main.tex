@@ -261,17 +261,13 @@ A one-dimensional background trace $b(t)$ is computed from polarity-weighted, fa
 \begin{equation}
   \tilde b(t)=\frac{b(t)-\mu_{\mathrm{pre}}}{\mu_{\mathrm{post}}-\mu_{\mathrm{pre}}},\quad t\in[0,T],
 \end{equation}
-the active scan interval $[t_0,t_1]$ is identified from the largest slope changes in the smoothed $\tilde b(t)$. For ground-truth spectra $\{g_i(\lambda)\}_{i=1}^M$ with active intervals $[\lambda_{0,i},\lambda_{1,i}]$, the time-to-wavelength mapping is given by the affine model
+the active scan interval $[t_0,t_1]$ is identified from rising and falling edge quantiles of the smoothed $\tilde b(t)$ (details in Supplementary Material). For ground-truth spectra $\{g_i(\lambda)\}_{i=1}^M$ with active intervals $[\lambda_{0,i},\lambda_{1,i}]$, the time-to-wavelength mapping is given by the affine model
 \begin{equation}
   \lambda(t)=\alpha t+\beta,\quad 
   \alpha=\frac{\bar\lambda_1-\bar\lambda_0}{t_1-t_0},\;
   \beta=\bar\lambda_0-\alpha t_0,
 \end{equation}
-where $\bar\lambda_0$ and $\bar\lambda_1$ are the mean boundary wavelengths across curves. The transformed series $\tilde b_\lambda(\lambda)=\tilde b\big((\lambda-\beta)/\alpha\big)$ is then amplitude-aligned to the mean ground-truth $\bar g(\lambda)=M^{-1}\sum_i \tilde g_i(\lambda)$ by a least-squares affine fit,
-\begin{equation}
-  (a^*,c^*)=\arg\min_{a,c}\sum_j[\bar g(\lambda_j)-a\,\tilde b_\lambda(\lambda_j)-c]^2,
-\end{equation}
-with closed-form solution $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\mathbf{y}$, $X=[\tilde b_\lambda\;\mathbf{1}]$, $\mathbf{y}=\bar g$.
+where $\bar\lambda_0$ and $\bar\lambda_1$ are the mean boundary wavelengths across curves. The transformed series $\tilde b_\lambda(\lambda)=\tilde b\big((\lambda-\beta)/\alpha\big)$ is then amplitude-aligned to the mean ground-truth $\bar g(\lambda)=M^{-1}\sum_i \tilde g_i(\lambda)$ by a least-squares affine fit (derivation in the supplement).
 
 Figure~\ref{fig:figure5} shows the background alignment result, where the event-derived wavelength mapping agrees closely with the spectrometer reference curve.
 
