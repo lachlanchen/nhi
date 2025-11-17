@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator, FuncFormatter
+from matplotlib.ticker import MaxNLocator
 from matplotlib.transforms import Bbox
 import numpy as np
 import torch
@@ -161,7 +161,7 @@ def plot_cloud(
     colors = {"pos": "#ffbb78", "neg": "#aec7e8"}
     ax.scatter(
         x[pos],
-        time_scale * t_ms[pos],
+        t_ms[pos],
         y[pos],
         c=colors["pos"],
         s=0.1,
@@ -171,7 +171,7 @@ def plot_cloud(
     )
     ax.scatter(
         x[neg],
-        time_scale * t_ms[neg],
+        t_ms[neg],
         y[neg],
         c=colors["neg"],
         s=0.1,
@@ -188,7 +188,7 @@ def plot_cloud(
     pad_t = 0.02 * (t_max - t_min + 1e-6)
     ax.set_xlim(x_min - pad_x, x_max + pad_x)
     ax.set_zlim(y_min - pad_y, y_max + pad_y)
-    ax.set_ylim(time_scale * (t_min - pad_t), time_scale * (t_max + pad_t))
+    ax.set_ylim((t_min - pad_t), (t_max + pad_t))
 
     ax.set_xlabel("X (px)", labelpad=1)
     ax.set_ylabel("Time (ms)", labelpad=1)
@@ -211,8 +211,6 @@ def plot_cloud(
     ax.tick_params(axis="both", which="major", labelsize=8, pad=2)
     ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
-    # Show true milliseconds on ticks despite stretching with time_scale
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{v/s:.0f}"))
 
     # Optional overlay plane at a given time (Y axis)
     if overlay_img is not None and overlay_time_ms is not None:
@@ -226,7 +224,7 @@ def plot_cloud(
         s = max(1, int(overlay_stride))
         Xg_s = Xg[::s, ::s]
         Zg_s = Zg[::s, ::s]
-        Yg_s = np.full_like(Xg_s, time_scale * overlay_time_ms)
+        Yg_s = np.full_like(Xg_s, overlay_time_ms)
         img_s = img[::s, ::s].astype(np.float32)
         vmin = float(np.percentile(img_s, 1.0))
         vmax = float(np.percentile(img_s, 99.0))
