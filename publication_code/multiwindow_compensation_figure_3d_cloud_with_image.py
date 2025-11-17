@@ -156,6 +156,8 @@ def plot_cloud(
     overlay_stride: int = 6,
     overlay_flipud: bool = False,
     overlay_span: str = "axis",
+    draw_events: bool = True,
+    draw_overlay: bool = True,
     view_elev: float = 18.0,
     view_azim: float = -30.0,
 ):
@@ -246,30 +248,32 @@ def plot_cloud(
         except Exception:
             pass
 
-    # Draw points first, then overlay plane so markers don't cover it
-    ax.scatter(
-        x[pos],
-        time_scale * t_ms[pos],
-        y[pos],
-        c=colors["pos"],
-        s=0.1,
-        alpha=0.55,
-        marker=".",
-        rasterized=True,
-        depthshade=False,
-    )
-    ax.scatter(
-        x[neg],
-        time_scale * t_ms[neg],
-        y[neg],
-        c=colors["neg"],
-        s=0.1,
-        alpha=0.55,
-        marker=".",
-        rasterized=True,
-        depthshade=False,
-    )
-    _draw_overlay()
+    # Draw points first, then overlay plane so markers don't cover it (if requested)
+    if draw_events:
+        ax.scatter(
+            x[pos],
+            time_scale * t_ms[pos],
+            y[pos],
+            c=colors["pos"],
+            s=0.1,
+            alpha=0.55,
+            marker=".",
+            rasterized=True,
+            depthshade=False,
+        )
+        ax.scatter(
+            x[neg],
+            time_scale * t_ms[neg],
+            y[neg],
+            c=colors["neg"],
+            s=0.1,
+            alpha=0.55,
+            marker=".",
+            rasterized=True,
+            depthshade=False,
+        )
+    if draw_overlay:
+        _draw_overlay()
 
 
 def main():
@@ -300,6 +304,13 @@ def main():
     ap.add_argument("--view-azim", type=float, default=-30.0, help="3D view azimuth (default: -30)")
     ap.add_argument("--overlay-span", choices=["axis", "events"], default="axis",
                     help="Span overlay plane across current axis limits (axis) or event extents (events). Default: axis")
+    ap.add_argument(
+        "--save-modes",
+        nargs="+",
+        default=["combined", "events-only", "image-only"],
+        choices=["combined", "events-only", "image-only"],
+        help="Which outputs to save per panel: combined (events+image), events-only, image-only. Default: all",
+    )
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -348,58 +359,100 @@ def main():
         else:
             print("[warn] no time-binned NPZ found; skipping overlay")
 
-    # Save panels separately to avoid overflow
-    fig1 = plt.figure(figsize=(4.4, 3.3))
-    ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
-    plot_cloud(
-        ax1,
-        xs,
-        ys,
-        ts_ms,
-        ps,
-        "",
-        args.time_scale,
-        overlay_img=overlay_before,
-        overlay_time_ms=overlay_t_ms,
-        overlay_cmap=args.overlay_cmap,
-        overlay_alpha=args.overlay_alpha,
-        overlay_stride=args.overlay_stride,
-        overlay_flipud=False,
-        overlay_span=args.overlay_span,
-        view_elev=args.view_elev,
-        view_azim=args.view_azim,
-    )
-    fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
-    _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
-    plt.close(fig1)
+    # Helper: render and save per mode
+    def render_and_save(panel_tag: str, xe, ye, te_ms, pe, overlay_img_local):
+        # Events-only
+        if "events-only" in args.save_modes:
+            fig = plt.figure(figsize=(4.4, 3.3))
+            ax = fig.add_subplot(1, 1, 1, projection="3d")
+            plot_cloud(
+                ax,
+                xe,
+                ye,
+                te_ms,
+                pe,
+                "",
+                args.time_scale,
+                overlay_img=None,
+                overlay_time_ms=None,
+                overlay_cmap=args.overlay_cmap,
+                overlay_alpha=args.overlay_alpha,
+                overlay_stride=args.overlay_stride,
+                overlay_flipud=args.overlay_flipud,
+                overlay_span=args.overlay_span,
+                draw_events=True,
+                draw_overlay=False,
+                view_elev=args.view_elev,
+                view_azim=args.view_azim,
+            )
+            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+            _save_tight_3d(fig, ax, out_dir / f"event_cloud_only_{panel_tag}.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+            _save_tight_3d(fig, ax, out_dir / f"event_cloud_only_{panel_tag}.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
+            plt.close(fig)
 
-    fig2 = plt.figure(figsize=(4.4, 3.3))
-    ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
-    plot_cloud(
-        ax2,
-        xs_w,
-        ys_w,
-        ts_w_ms,
-        ps_w,
-        "",
-        args.time_scale,
-        overlay_img=overlay_after,
-        overlay_time_ms=overlay_t_ms,
-        overlay_cmap=args.overlay_cmap,
-        overlay_alpha=args.overlay_alpha,
-        overlay_stride=args.overlay_stride,
-        overlay_flipud=False,
-        overlay_span=args.overlay_span,
-        view_elev=args.view_elev,
-        view_azim=args.view_azim,
-    )
-    fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
-    _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
-    _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
-    plt.close(fig2)
+        # Image-only
+        if "image-only" in args.save_modes and overlay_img_local is not None and overlay_t_ms is not None:
+            fig = plt.figure(figsize=(4.4, 3.3))
+            ax = fig.add_subplot(1, 1, 1, projection="3d")
+            plot_cloud(
+                ax,
+                xe,
+                ye,
+                te_ms,
+                pe,
+                "",
+                args.time_scale,
+                overlay_img=overlay_img_local,
+                overlay_time_ms=overlay_t_ms,
+                overlay_cmap=args.overlay_cmap,
+                overlay_alpha=1.0 if args.overlay_alpha >= 1.0 else args.overlay_alpha,
+                overlay_stride=args.overlay_stride,
+                overlay_flipud=args.overlay_flipud,
+                overlay_span=args.overlay_span,
+                draw_events=False,
+                draw_overlay=True,
+                view_elev=args.view_elev,
+                view_azim=args.view_azim,
+            )
+            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+            _save_tight_3d(fig, ax, out_dir / f"image_only_{panel_tag}.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+            _save_tight_3d(fig, ax, out_dir / f"image_only_{panel_tag}.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
+            plt.close(fig)
 
-    print(f"Saved 3D clouds to {out_dir}")
+        # Combined (events + image)
+        if "combined" in args.save_modes:
+            fig = plt.figure(figsize=(4.4, 3.3))
+            ax = fig.add_subplot(1, 1, 1, projection="3d")
+            plot_cloud(
+                ax,
+                xe,
+                ye,
+                te_ms,
+                pe,
+                "",
+                args.time_scale,
+                overlay_img=overlay_img_local,
+                overlay_time_ms=overlay_t_ms,
+                overlay_cmap=args.overlay_cmap,
+                overlay_alpha=args.overlay_alpha,
+                overlay_stride=args.overlay_stride,
+                overlay_flipud=args.overlay_flipud,
+                overlay_span=args.overlay_span,
+                draw_events=True,
+                draw_overlay=True,
+                view_elev=args.view_elev,
+                view_azim=args.view_azim,
+            )
+            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+            _save_tight_3d(fig, ax, out_dir / f"event_cloud_{panel_tag}.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+            _save_tight_3d(fig, ax, out_dir / f"event_cloud_{panel_tag}.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
+            plt.close(fig)
+
+    # Render before/after according to save-modes
+    render_and_save("before", xs, ys, ts_ms, ps, overlay_before)
+    render_and_save("after", xs_w, ys_w, ts_w_ms, ps_w, overlay_after)
+
+    print(f"Saved 3D clouds to {out_dir} (modes: {', '.join(args.save_modes)})")
 
 
 def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pad_inches: float = 0.0, extra_pad: float = 0.01):
