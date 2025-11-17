@@ -157,7 +157,8 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
         return np.dot(orig_proj(), scale)
 
     ax.get_proj = short_proj
-    ax.tick_params(axis="both", which="major", labelsize=8)
+    ax.tick_params(axis="both", which="major", labelsize=8, pad=2)
+    ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
 
 
