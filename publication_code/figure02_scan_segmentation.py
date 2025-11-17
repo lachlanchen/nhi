@@ -196,14 +196,14 @@ def load_activity_from_raw(raw_path: Path, time_bin_us: int) -> Tuple[np.ndarray
 def setup_figure_style() -> None:
     plt.rcParams.update(
         {
-            "font.size": 13.5,
-            "axes.labelsize": 13.5,
-            "axes.titlesize": 13.5,
-            "axes.linewidth": 1.2,
+            "font.size": 11.7,
+            "axes.labelsize": 11.7,
+            "axes.titlesize": 11.7,
+            "axes.linewidth": 1.04,
             "xtick.direction": "out",
             "ytick.direction": "out",
-            "xtick.major.size": 4.5,
-            "ytick.major.size": 4.5,
+            "xtick.major.size": 3.9,
+            "ytick.major.size": 3.9,
             "legend.frameon": False,
         }
     )
@@ -263,7 +263,7 @@ def render_activity_figure(
     legend = ax.legend(
         handles=legend_handles,
         loc="upper left",
-        fontsize=12,
+        fontsize=10.4,
         frameon=True,
     )
     legend.get_frame().set_facecolor("white")
