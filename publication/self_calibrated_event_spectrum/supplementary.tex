@@ -84,6 +84,21 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 
 This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
+\olsection{Scan segmentation details}
+Events are binned at 1~ms to form the activity signal $a[n]$. The auto-correlation
+\[
+  R[k] = \sum_n a[n]\,a[n+k]
+\]
+is used to find the dominant round-trip period (largest off-centre peak). The reverse-correlation (auto-convolution) of $a[n]$ with its reversed copy $a_{\mathrm{rev}}[n]=a[N{-}1{-}n]$,
+\[
+  R_{\mathrm{rev}}[k] = \sum_n a[n]\,a_{\mathrm{rev}}[n],
+\]
+exposes the pre/post symmetry; the global peak lag of $R_{\mathrm{rev}}$ fixes the turnaround. Given the round-trip period $P$ and reverse-correlation lag $\ell$, the prelude and aftermath solve
+\[
+  \text{prelude} - \text{aftermath} = \ell,\qquad \text{prelude} + \text{aftermath} + 3P = N,
+\]
+yielding $\text{prelude} = (N-3P+\ell)/2$ and $\text{aftermath} = (N-3P-\ell)/2$ (clipped to nonnegative). The main scan spans the remaining $3P$ samples (three round trips, six one-way passes), and the one-way period is $P/2$. An iterative refinement re-estimates $P$ and $\ell$ on the updated window. These logic steps mirror the implementation in \texttt{segment\_robust\_fixed.py}.
+
 \olsection{Time--wavelength auto-alignment details}
 The background trace $b(t)$ is sampled at $\Delta t{=}5$~ms and normalised by its pre/post plateaus,
 \[
