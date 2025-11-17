@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Tuple
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import torch
 
@@ -142,9 +143,11 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     ax.set_ylabel("Y (px)")
     ax.set_zlabel("Time (ms)")
     ax.set_title(title)
-    # View oriented so the trajectory runs SW->NE
-    ax.view_init(elev=25, azim=35)
-    ax.set_box_aspect([1, 1, 0.8 * time_scale])
+    # View oriented so the trajectory runs SW->NE; lower elevation to declutter ticks
+    ax.view_init(elev=15, azim=55)
+    ax.set_box_aspect([1, 1, 0.6 * time_scale])
+    ax.tick_params(axis="both", which="major", labelsize=8)
+    ax.zaxis.set_major_locator(MaxNLocator(4))
 
 
 def main():
