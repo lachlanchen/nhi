@@ -207,8 +207,8 @@ def render_panel_a(segment_npz: Path, params: dict, sensor_w: int, sensor_h: int
     # No manual subplots_adjust to avoid clipping labels; constrained_layout handles spacing
     stem = f"multiwindow_events{suffix}.pdf"
     out_path = out_dir / stem
-    fig.savefig(out_path, dpi=400, bbox_inches="tight")
-    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight")
+    fig.savefig(out_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
     print(f"Saved: {out_path}")
 
@@ -336,8 +336,8 @@ def render_panel_b(segments_dir: Path, base: str, out_dir: Path, *,
     fig.tight_layout()
     stem = f"multiwindow_variance{suffix}.pdf"
     out_path = out_dir / stem
-    fig.savefig(out_path, dpi=400)
-    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300)
+    fig.savefig(out_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
     print(f"Saved: {out_path}")
 
@@ -411,8 +411,8 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
 
     stem = f"multiwindow_bin50ms{suffix}.pdf"
     out_path = out_dir / stem
-    fig.savefig(out_path, dpi=400)
-    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300)
+    fig.savefig(out_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight", pad_inches=0.01)
     plt.close(fig)
     print(f"Saved: {out_path}")
 
