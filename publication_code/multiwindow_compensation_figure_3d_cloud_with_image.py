@@ -188,14 +188,14 @@ def main():
     out_dir = args.output_dir / f"multiwindow_compensation_figure_3d_cloud_with_image_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    fig = plt.figure(figsize=(10, 4))
+    fig = plt.figure(figsize=(9.0, 3.6))
     ax1 = fig.add_subplot(1, 2, 1, projection="3d")
     ax2 = fig.add_subplot(1, 2, 2, projection="3d")
     plot_cloud(ax1, xs, ys, ts_ms, ps, "Before compensation", args.time_scale)
     plot_cloud(ax2, xs_w, ys_w, ts_w_ms, ps_w, "After compensation", args.time_scale)
-    fig.tight_layout()
-    fig.savefig(out_dir / "event_cloud_before_after.pdf", dpi=400, bbox_inches="tight", pad_inches=0.01)
-    fig.savefig(out_dir / "event_cloud_before_after.png", dpi=300, bbox_inches="tight", pad_inches=0.01)
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.08, wspace=0.04)
+    fig.savefig(out_dir / "event_cloud_before_after.pdf", dpi=400, bbox_inches="tight", pad_inches=0)
+    fig.savefig(out_dir / "event_cloud_before_after.png", dpi=300, bbox_inches="tight", pad_inches=0)
     plt.close(fig)
 
     print(f"Saved 3D clouds to {out_dir}")
