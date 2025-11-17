@@ -236,8 +236,8 @@ def render_activity_figure(
             boundary_times.append(time_s[idx])
     boundary_times.append(time_s[min(results["scan_end"], len(time_s) - 1)])
 
-    forward_line = Line2D([], [], color="#1f77b4", linestyle="--", linewidth=1.1, label="Forward boundary")
-    backward_line = Line2D([], [], color="#d94801", linestyle="--", linewidth=1.1, label="Backward boundary")
+    forward_line = Line2D([], [], color="#1f77b4", linestyle="--", linewidth=1.1, label="Forward")
+    backward_line = Line2D([], [], color="#d94801", linestyle="--", linewidth=1.1, label="Backward")
 
     for i, t_boundary in enumerate(boundary_times[:-1]):
         color = "#1f77b4" if i % 2 == 0 else "#d94801"
