@@ -261,7 +261,9 @@ def main():
     ap.add_argument("--overlay-alpha", type=float, default=0.75, help="Overlay plane alpha (default: 0.75)")
     ap.add_argument("--overlay-cmap", type=str, default="magma", help="Overlay colormap (default: magma)")
     ap.add_argument("--overlay-stride", type=int, default=6, help="Downsample stride for overlay plane (default: 6)")
-    ap.add_argument("--overlay-time-ms", type=float, default=None, help="Override plane position in milliseconds (if set, ignores bin-index position)")
+    # Alias: --plot-image-time for readability in figure scripts
+    ap.add_argument("--overlay-time-ms", "--plot-image-time", dest="overlay_time_ms", type=float, default=None,
+                    help="Place the image plane at this time (ms). Useful to show a bin image at a different visual time.")
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
     args = ap.parse_args()
 
