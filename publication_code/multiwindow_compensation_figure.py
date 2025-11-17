@@ -428,8 +428,8 @@ def main() -> None:
     parser.add_argument("--sensor_height", type=int, default=720)
     parser.add_argument("--variance_mode", choices=["npz", "recompute"], default="recompute",
                         help="Source for panel (b) variance: 'npz' uses saved time_binned_frames; 'recompute' rebuilds from full events")
-    parser.add_argument("--var_bin_us", type=int, default=5000,
-                        help="Bin width in microseconds for variance when variance_mode=recompute (default: 5000us = 5ms)")
+    parser.add_argument("--var_bin_us", type=int, default=50000,
+                        help="Bin width in microseconds for variance when variance_mode=recompute (default: 50000us = 50ms)")
     parser.add_argument("--var_ylim", type=float, default=None, help="Upper y-limit for panel (b) variance (e.g., 1.0)")
     parser.add_argument("--sample", type=float, default=0.05, help="Event sampling fraction for panel (a)")
     parser.add_argument("--output_dir", type=Path, default=Path(__file__).resolve().parent / "figures")
