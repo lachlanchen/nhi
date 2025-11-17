@@ -131,6 +131,9 @@ def plot_cloud(
     overlay_span: str = "axis",
     overlay_flipud: bool = False,
     overlay_stride: int = 8,
+    fixed_xlim: Optional[Tuple[float, float]] = None,
+    fixed_ylim: Optional[Tuple[float, float]] = None,
+    fixed_zlim: Optional[Tuple[float, float]] = None,
 ):
     pos = p > 0
     neg = p <= 0
@@ -162,9 +165,12 @@ def plot_cloud(
     pad_x = 0.02 * (x_max - x_min + 1)
     pad_y = 0.02 * (y_max - y_min + 1)
     pad_t = 0.02 * (t_max - t_min + 1e-6)
-    ax.set_xlim(x_min - pad_x, x_max + pad_x)
-    ax.set_zlim(y_min - pad_y, y_max + pad_y)
-    ax.set_ylim(time_scale * (t_min - pad_t), time_scale * (t_max + pad_t))
+    xlo, xhi = (x_min - pad_x, x_max + pad_x) if fixed_xlim is None else fixed_xlim
+    zlo, zhi = (y_min - pad_y, y_max + pad_y) if fixed_zlim is None else fixed_zlim
+    ylo, yhi = (time_scale * (t_min - pad_t), time_scale * (t_max + pad_t)) if fixed_ylim is None else fixed_ylim
+    ax.set_xlim(xlo, xhi)
+    ax.set_zlim(zlo, zhi)
+    ax.set_ylim(ylo, yhi)
 
     ax.set_xlabel("X (px)", labelpad=1)
     ax.set_ylabel("Time (ms)", labelpad=1)
@@ -241,6 +247,8 @@ def main():
     ap.add_argument("--overlay-span", choices=["axis", "events"], default="axis", help="Map image over axis or event extents")
     ap.add_argument("--overlay-flipud", action="store_true", help="Flip overlay vertically to match event Y")
     ap.add_argument("--overlay-stride", type=int, default=8, help="Downsample factor for overlay plane to keep PDF lightweight (default 8)")
+    ap.add_argument("--lock-time-axis", action="store_true", default=True, help="Use identical time axis limits for before/after panels")
+    ap.add_argument("--lock-spatial-axis", action="store_true", default=True, help="Use identical X/Z limits for before/after panels")
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -277,6 +285,23 @@ def main():
     if (ov_before is not None or ov_after is not None):
         ov_t_ms = args.overlay_time_ms if args.overlay_time_ms is not None else 50.0
 
+    # Compute fixed axes if requested
+    fixed_xlim = fixed_zlim = fixed_ylim = None
+    if args.lock_spatial_axis:
+        x_min = float(min(xs.min(), xs_w.min()))
+        x_max = float(max(xs.max(), xs_w.max()))
+        y_min = float(min(ys.min(), ys_w.min()))
+        y_max = float(max(ys.max(), ys_w.max()))
+        pad_x = 0.02 * (x_max - x_min + 1)
+        pad_y = 0.02 * (y_max - y_min + 1)
+        fixed_xlim = (x_min - pad_x, x_max + pad_x)
+        fixed_zlim = (y_min - pad_y, y_max + pad_y)
+    if args.lock_time_axis:
+        tmin = float(min(ts_ms.min(), ts_w_ms.min()))
+        tmax = float(max(ts_ms.max(), ts_w_ms.max()))
+        pad_t = 0.02 * (tmax - tmin + 1e-6)
+        fixed_ylim = (args.time_scale * (tmin - pad_t), args.time_scale * (tmax + pad_t))
+
     # Save panels separately to avoid overflow
     fig1 = plt.figure(figsize=(4.4, 3.3))
     ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
@@ -294,6 +319,9 @@ def main():
         overlay_span=args.overlay_span,
         overlay_flipud=args.overlay_flipud,
         overlay_stride=args.overlay_stride,
+        fixed_xlim=fixed_xlim,
+        fixed_ylim=fixed_ylim,
+        fixed_zlim=fixed_zlim,
     )
     fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
@@ -316,6 +344,9 @@ def main():
         overlay_span=args.overlay_span,
         overlay_flipud=args.overlay_flipud,
         overlay_stride=args.overlay_stride,
+        fixed_xlim=fixed_xlim,
+        fixed_ylim=fixed_ylim,
+        fixed_zlim=fixed_zlim,
     )
     fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
