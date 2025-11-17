@@ -141,25 +141,32 @@ which drives event emission when the logarithmic intensity crosses the sensor th
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(a)};
     \end{scope}
   \end{tikzpicture}\\[-5pt]
-  % Figure 3(b): Variance vs time (50 ms bins)
+  % Figure 3(b): 3D event cloud before compensation (tight-cropped)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3b) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_b_variance.pdf}};
-      {\includegraphics[width=0.8\linewidth]{figures/multiwindow_variance_blank.pdf}};
+      {\includegraphics[width=0.8\linewidth]{figures/event_cloud_before.pdf}};
     \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(b)};
     \end{scope}
   \end{tikzpicture}\\[-5pt]
-  % Figure 3(c): Single 50 ms bin comparison (original vs compensated)
+  % Figure 3(c): 3D event cloud after compensation (tight-cropped)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3c) at (0,0)
+      {\includegraphics[width=0.8\linewidth]{figures/event_cloud_after.pdf}};
+    \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(c)};
+    \end{scope}
+  \end{tikzpicture}\\[-5pt]
+  % Figure 3(d): Single 50 ms bin comparison (original vs compensated)
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (img3d) at (0,0)
       % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
       {\includegraphics[width=0.8\linewidth]{figures/multiwindow_bin50ms_sanqin.pdf}};
-    \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 0.900) {(c)};
+    \begin{scope}[x={(img3d.south east)}, y={(img3d.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 0.900) {(d)};
     \end{scope}
   \end{tikzpicture}\\[-20pt]
-  \caption{Multi-window compensation diagnostics. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) Variance per 50~ms bin over time (original vs. compensate). (c) Example 50~ms bin comparing original and compensate frames.}
+  \caption{Multi-window compensation diagnostics. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) 3D event cloud before compensation, tight-cropped to remove whitespace. (c) 3D event cloud after compensation showing the straightened motion plane. (d) Example 50~ms bin comparing original and compensated frames.}
   \label{fig:warp}
 \end{figure}
 
