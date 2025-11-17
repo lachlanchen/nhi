@@ -4,7 +4,7 @@
 \IfFileExists{siunitx.sty}{%
   \usepackage{siunitx}
   \sisetup{range-phrase = --, range-units = single}
-  \sisetup{per-mode = symbol}%
+  \sisetup{per-mode = symbol}
 }{%
   \newcommand{\sisetup}[1]{}
   \newcommand{\SI}[2]{\ensuremath{##1\,##2}}
@@ -26,11 +26,11 @@
 
 % \title{Self-synchronized event-driven transmission hyperspectral imaging with multi-window scanning compensation}
 \title{Self-Calibrated Neuromorphic Hyperspectral Sensing}
-\author{Rongzhou Chen}
-\author{Chutian Wang}
-\author{Yuqing Cao}
+\author[]{Rongzhou Chen}
+\author[]{Chutian Wang}
+\author[]{Yuqing Cao}
 \author[*]{Edmund Y. Lam}
-\affil{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong SAR, China}
+\affil[]{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong, China}
 \affil[*]{elam@eee.hku.hk}
 \dates{\today}
 \ociscodes{Multispectral and hyperspectral imaging; Instrumentation, measurement, and metrology; Image reconstruction techniques; Computational imaging}
@@ -79,13 +79,17 @@ The system operates in transmission across the visible band (\SIrange{420}{700}{
 \end{figure}
 % \endgroup
 
-\begin{figure*}[t]
-  \centering
-  % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
-\includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan.pdf}
-  \caption{Spectral reconstruction across a single forward scan. The view spans 175--775~ms (\(\approx 390\) to 660~nm). Columns sample five 50~ms bins centred near 389, 456, 523, 590, and 657~nm. Rows (top to bottom): original cumulative events, multi-window compensated accumulation, 20~nm wavelength-gradient slices from the reference hyperspectral camera, and the 300~s reference exposure.}
-  \label{fig:spectrum}
-\end{figure*}
+% \begin{figure*}[t]
+%   \centering
+%   % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
+% \includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan_rotated_cropped_400_700.pdf}
+%   \caption{
+%   % Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin.
+%    % (top: original; bottom: compensated with 3$\times$3$\times$3 smoothing and background subtraction). 
+%    Spectral reconstruction across a single forward scan. The view spans 175--775~ms (\(\approx 390\) to 660~nm). Columns sample five 50~ms bins centred near 389, 456, 523, 590, and 657~nm. Rows (top to bottom): original cumulative events, multi-window compensated accumulation, 20~nm wavelength-gradient slices from the reference hyperspectral camera, and the 300~s reference exposure.
+%    }
+%   \label{fig:spectrum}
+% \end{figure*}
 
 \olsection{System architecture and sensing model}
 Figure~\ref{fig:overview} sketches the optical layout. A broadband LED source passes through a slit and diffraction grating before illuminating the specimen. The transmitted light is collected by a microscope and relayed through a 4$f$ system onto a hybrid detection plane comprising an event camera and a frame camera. The motor executes repeated forward/backward scans, but its speed is neither constant nor calibrated.
@@ -105,23 +109,24 @@ which drives event emission when the logarithmic intensity crosses the sensor th
 \begin{figure}[t]
   \centering
   \begin{tikzpicture}
-    \node[anchor=south west, inner sep=0] (f2a) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_activity.pdf}};
-      {\includegraphics[width=0.8\linewidth]{figures/figure02_activity.pdf}};
-    \begin{scope}[x={(f2a.south east)}, y={(f2a.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.0, 1.05) {(a)};
-    \end{scope}
-  \end{tikzpicture}\\[-5pt]
-  \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (f2b) at (0,0)
       % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_correlation.pdf}};
       {\includegraphics[width=0.8\linewidth]{figures/figure02_correlation.pdf}};
     \begin{scope}[x={(f2b.south east)}, y={(f2b.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.0, 1.05) {(a)};
+    \end{scope}
+  \end{tikzpicture}\\[-10pt]
+  % \vspace{-10pt}
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (f2a) at (0,0)
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_activity.pdf}};
+      {\includegraphics[width=0.8\linewidth]{figures/figure02_activity.pdf}};
+    \begin{scope}[x={(f2a.south east)}, y={(f2a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.0, 1.05) {(b)};
     \end{scope}
-  \end{tikzpicture}
-  \vspace{-3pt}
-  \caption{Self-synchronized scan segmentation. (a) Event counts over the full recording with pre- and post-scan shading and alternating forward and backward boundaries. (b) Auto-correlation and auto-convolution of the event activity signal; the red and blue marker indicates the peak used to determine the period, start and end of scanning.}
+  \end{tikzpicture}\\[-10pt]
+  % \vspace{-10pt}
+  \caption{Self-synchronized scan segmentation. (a) Auto-correlation and auto-convolution of the event activity signal; the red and blue marker indicates the peak used to determine the period, start and end of scanning. (b) Event counts over the full recording with pre- and post-scan shading and alternating forward and backward boundaries. }
   \label{fig:segmentation}
 \end{figure}
 
@@ -135,7 +140,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(a)};
     \end{scope}
-  \end{tikzpicture}\\[1pt]
+  \end{tikzpicture}\\[-5pt]
   % Figure 3(b): Variance vs time (50 ms bins)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3b) at (0,0)
@@ -144,16 +149,16 @@ which drives event emission when the logarithmic intensity crosses the sensor th
     \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(b)};
     \end{scope}
-  \end{tikzpicture}\\[1pt]
+  \end{tikzpicture}\\[-5pt]
   % Figure 3(c): Single 50 ms bin comparison (original vs compensated)
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3c) at (0,0)
       % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
       {\includegraphics[width=0.8\linewidth]{figures/multiwindow_bin50ms_sanqin.pdf}};
     \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(c)};
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 0.900) {(c)};
     \end{scope}
-  \end{tikzpicture}
+  \end{tikzpicture}\\[-20pt]
   \caption{Multi-window compensation diagnostics. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) Variance per 50~ms bin over time (original vs. compensate). (c) Example 50~ms bin comparing original and compensate frames.}
   \label{fig:warp}
 \end{figure}
@@ -169,34 +174,17 @@ which drives event emission when the logarithmic intensity crosses the sensor th
 %   \label{fig:spectrum}
 % \end{figure*}
 
-\olsection{Event-trigger probability model}
-Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
-\begin{equation}
-  \nabla I = \nabla I_{\text{true}} + \eta,\qquad \eta \sim \mathcal{N}(0,\sigma^2).
-  \label{eq:gradient_noise}
-\end{equation}
-The probability of a positive event equals the likelihood that the noise-perturbed gradient exceeds the threshold,
-\begin{equation}
-  P(\text{event}) = P(\eta > \theta - \nabla I_{\text{true}}) = \tfrac12\!\left[1 - \operatorname{erf}\!\left(\frac{\theta - \nabla I_{\text{true}}}{\sqrt{2}\sigma}\right)\right],
-  \label{eq:trigger_probability}
-\end{equation}
-with an analogous form for negative events around $-\theta$. Approximating the error function by a logistic curve yields the computationally convenient sigmoid expression
-\begin{equation}
-  P(\text{event}) \approx \sigma\!\left(\frac{\nabla I_{\text{true}} - \theta}{\sigma'}\right),\qquad \sigma' \approx \frac{2\sqrt{2}}{\sqrt{\pi}}\sigma,
-  \label{eq:sigmoid_probability}
-\end{equation}
-where $\sigma(\cdot)$ denotes the logistic sigmoid. Within a temporal bin of duration $\Delta t$ the expected event count relates directly to this probability,
-\begin{equation}
-  \langle N_{\text{evt}}\rangle = \lambda\,P(\text{event})\,\Delta t,
-  \label{eq:expected_events}
-\end{equation}
-with $\lambda$ the effective sampling rate per pixel. Averaging events over repeated scans gives the empirical mean $\bar{N}_{\text{evt}}$, which can be inverted via the logit function $\sigma^{-1}$ to estimate the true gradient:
-\begin{equation}
-  \nabla I_{\text{est}} = \theta + \sigma'\,\sigma^{-1}\!\left(\frac{\bar{N}_{\text{evt}}}{\lambda\,\Delta t}\right).
-  \label{eq:gradient_estimate}
-\end{equation}
-
-This probabilistic link between event statistics and intensity gradients underpins our reconstruction strategy. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. The next section leverage these statistics to segment scans and correct the residual temporal shear before building the spectral cube.
+\begin{figure*}[t]
+  \centering
+  % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
+\includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan_rotated_cropped_400_700.pdf}\\[-0pt]
+  \caption{
+  % Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin.
+   % (top: original; bottom: compensated with 3$\times$3$\times$3 smoothing and background subtraction). 
+   Spectral reconstruction across a single forward scan. The view spans 175--775~ms (\(\approx 390\) to 660~nm). Columns sample five 50~ms bins centred near 389, 456, 523, 590, and 657~nm. Rows (top to bottom): original cumulative events, multi-window compensated accumulation, 20~nm wavelength-gradient slices from the reference hyperspectral camera, and the 300~s reference exposure.
+   }
+  \label{fig:spectrum}
+\end{figure*}
 
 \olsection{Self-synchronized scan segmentation}
 We first convert the event timestamps into an activity signal $a[n]$ (the number of events per 1~ms bin). The peak of auto-correlation
@@ -253,8 +241,8 @@ where $\{\tilde{a}_i,\tilde{b}_i\}$ are trainable slopes optimized by minimizing
 where $\mu_k = (HW)^{-1}\sum_{x,y}\mathsf{E}_k(x,y;\theta)$ and $\lambda_{\mathrm{sm}}$ controls the smoothness strength. Minimizing $\mathcal{L}(\theta)$ by gradient descent aligns temporal windows, suppresses acceleration-induced shear, and yields sharper spectral reconstructions than a single-plane warp.
 
 Figure~\ref{fig:warp} summarizes the effects of the proposed multi-window compensation of one scanning segment. 
-Panel~(a) illustrates how the learned boundary surfaces align the event distribution in both spatial–temporal projections, effectively capturing the nonuniform scanning motion. 
-The fitted slopes span \(a \in\) \SIrange{-1.74}{5.50}{\micro\second\per\pixel} and \(b \in\) \SIrange{-79.82}{-75.67}{\micro\second\per\pixel}, representing the lateral and vertical time-per-pixel coefficients of the multi-window model.
+Panel~(a) illustrates how the learned boundary surfaces align the event distribution in both spatial--temporal projections, effectively capturing the nonuniform scanning motion. 
+The fitted slopes span from  \SI{-1.74}{\micro\second\per\pixel} to \SI{5.50}{\micro\second\per\pixel} for \(a\), and from \SI{-79.82}{\micro\second\per\pixel} to \SI{-75.67}{\micro\second\per\pixel} for \(b\), , representing the lateral and vertical time-per-pixel coefficients of the multi-window model.
 Panel~(b) shows that the temporal variance within each 50~ms bin decreases after compensation, indicating improved temporal coherence across the field of view. 
 Panel~(c) compares representative cumulative event frames before and after correction, where the removal of diagonal blur patterns confirms that the time-warp model successfully restores the spatial integrity of each spectral slice.
 
@@ -262,8 +250,9 @@ Panel~(c) compares representative cumulative event frames before and after corre
   \centering
   % Single aligned overlay (Background vs Groundtruth)
   % \includegraphics[width=\columnwidth]{../../publication_code/figures/figure04_allinone_20251103_214813/figure04_rescaled_bg_gt_third_only.png}
-  \includegraphics[width=\columnwidth]{figures/figure04_rescaled_bg_gt_third_only.pdf}
-  \caption{Aligned background mapped to wavelength using the auto-alignment compared against a single spectrometer curve. }
+  \includegraphics[width=\columnwidth]{figures/figure04_edges_only_third.pdf}\\[-10pt]
+  \caption{Aligned background mapped to wavelength using the auto-alignment (\SIrange{400}{700}{\nano\meter} $\approx$ \SIrange{236}{821}{\milli\second} in
+  the background timeline) compared against a single spectrometer curve. }
   \label{fig:figure5}
 \end{figure}
 
@@ -291,7 +280,7 @@ Figure~\ref{fig:figure5} shows the background alignment result, where the event-
 After compensation, events are cumulated along $t'$ into quasi-static frames $\mathsf{E}_k(x,y)$, with each cumulative window advanced by a \SI{5}{\milli\second} temporal step, and polarity-weighted counts integrated to recover relative spectra. Figure~\ref{fig:spectrum} illustrates the reconstructed spectral sequence across a single forward scan, showing the temporal evolution of wavelength-dependent features derived from the event stream.
 Table~\ref{tab:acquisition_comparison} summarizes the acquisition time and cost differences between the proposed event-driven system and a conventional frame-based hyperspectral camera. 
 Under the same illumination condition, our event-driven system completes a full spectral scan within \SIrange{150}{1100}{\milli\second}, whereas the reference hyperspectral camera requires approximately \SI{300}{\second} for an equivalent acquisition. 
-All structural components of our prototype are 3D printed using an Ultimaker~3S printer, while the optical and mechanical parts include a diffraction grating priced at about \SI{1.3}{\USD} and a motor–controller set costing approximately \SI{32.5}{\USD}. The total material cost of the complete event hyperspectral system is therefore below \SI{35}{\USD}. 
+All structural components of our prototype are 3D printed using an Ultimaker~3S printer, while the optical and mechanical parts include a diffraction grating priced at about \SI{1.3}{\USD} and a motor--controller set costing approximately \SI{32.5}{\USD}. The total material cost of the complete event hyperspectral system is therefore below \SI{35}{\USD}. 
 In addition to the drastic reduction in acquisition time and cost, the asynchronous sensing architecture offers high dynamic range and resilience to illumination fluctuations, maintaining reliable performance even in low-light environments where the frame-based camera exhibits noise saturation and motion blur. 
 These results highlight the efficiency and practicality of self-synchronized, event-based hyperspectral imaging for compact and adaptive optical platforms.
 
@@ -303,7 +292,7 @@ These results highlight the efficiency and practicality of self-synchronized, ev
 \hline
 \textbf{Parameter} & \textbf{Ours} & \textbf{Reference camera} \\
 \hline
-Acquisition time & \SIrange{150}{1100}{\milli\second} per scan & \SI{300}{\second} per scan \\
+Acquisition time & $\sim$\SI{1100}{\milli\second} per scan & \SI{300}{\second} per scan \\
 Approx.\ price & $\sim$\SI{3000}{\USD} & \SI{14000}{\USD} \\
 \hline
 \end{tabular}
@@ -331,38 +320,6 @@ Data underlying the results presented in this paper are available from the corre
 \end{backmatter}
 
 
-\begin{thebibliography}{10}
-
-\bibitem{hagen2013review}
-N.~Hagen and M.~W. Kudenov, Opt. Eng. \textbf{52}, 090901 (2013).
-
-\bibitem{yeh2011selfcal}
-C.-K. Yeh and V.~J. Tsai, ``Self-calibrated direct geo-referencing of airborne pushbroom hyperspectral images,'' in \emph{2011 IEEE International Geoscience and Remote Sensing Symposium} (IEEE, 2011), pp.~2881--2883.
-
-\bibitem{alhourani2023linescan}
-A.~Al-Hourani, S.~Balendhran, S.~Walia, and T.~Hourani, Remote Sens. \textbf{15}, 2787 (2023).
-
-\bibitem{gallego2020event}
-G.~Gallego, T.~Delbr\"uck, G.~Orchard, \emph{et al.}, IEEE Trans. Pattern Anal. Mach. Intell. \textbf{44}, 154 (2022).
-
-\bibitem{ge2025event}
-Z.~Ge, C.~Wang, J.~Huang, and E.~Y. Lam, Opt. Lett. \textbf{50}, 1496 (2025).
-
-\bibitem{zhang2024neuromorphic}
-P.~Zhang, S.~Zhu, C.~Wang, \emph{et al.}, IEEE Trans. Circuits Syst. Video Technol. (2024).
-
-\bibitem{reinbacher2016manifold}
-G.~Reinbacher, C.~Munda, and T.~Pock, IEEE Conf. Comput. Vis. Pattern Recognit. Workshops (2016).
-
-\bibitem{bardow2016simultaneous}
-P.~Bardow, A.~J. Davison, and S.~Leutenegger, ``Simultaneous optical flow and intensity estimation from an event camera,'' in \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)} (IEEE, 2016), pp.~884--892.
-
-\bibitem{mitrokhin2018mobility}
-A.~Mitrokhin, C.~Ferm\"uller, C.~Parameshwara, and Y.~Aloimonos, ``Event-based moving object detection and tracking,'' in \emph{2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)} (IEEE, 2018), pp.~1--9.
-
-\bibitem{wang2025angle}
-C.~Wang, S.~Zhu, P.~Zhang, \emph{et al.}, Laser \& Photonics Rev. \textbf{19}, 2400647 (2025).
-
-\end{thebibliography}
+\bibliography{ref}
 
 \end{document}

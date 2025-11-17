@@ -3,8 +3,26 @@
 \setboolean{shortarticle}{true}
 
 % Keep typography and packages consistent with the main Optica letter
-\usepackage{siunitx}
-\sisetup{range-phrase = --, range-units = single}
+\IfFileExists{siunitx.sty}{%
+  \usepackage{siunitx}
+  \sisetup{range-phrase = --, range-units = single}
+  \sisetup{per-mode = symbol}
+}{%
+  \newcommand{\sisetup}[1]{}
+  \newcommand{\SI}[2]{\ensuremath{##1\,##2}}
+  \newcommand{\SIrange}[3]{\ensuremath{##1\text{--}##2\,##3}}
+  \newcommand{\DeclareSIUnit}[2]{}
+}
+\providecommand{\nano}{\ensuremath{\mathrm{n}}}
+\providecommand{\micro}{\ensuremath{\mu}}
+\providecommand{\milli}{\ensuremath{\mathrm{m}}}
+\providecommand{\second}{\ensuremath{\mathrm{s}}}
+\providecommand{\meter}{\ensuremath{\mathrm{m}}}
+\providecommand{\per}{\ensuremath{\,/\,}}
+\providecommand{\pixel}{\ensuremath{\mathrm{px}}}
+\providecommand{\USD}{\ensuremath{\mathrm{USD}}}
+\DeclareSIUnit{\pixel}{px}
+\DeclareSIUnit{\USD}{USD}
 \usepackage{xcolor}
 
 \title{Supplementary Material: Self-Calibrated Neuromorphic Hyperspectral Sensing}
@@ -28,12 +46,43 @@ This document provides supplementary methods, implementation notes, and addition
 \newcommand{\olsection}[1]{\par\noindent\textbf{#1.} }
 
 \olsection{Additional Methods}
+The procedures below mirror the methodology detailed in the main letter.
 We briefly summarize details that complement the main text:
 \begin{itemize}
   \item Scan segmentation uses the activity auto-correlation and auto-convolution peaks to determine the one-way period and pre/post regions.
   \item Multi-window compensation fits linear boundary surfaces per window and optimizes spatial variance within fixed temporal bins to undo temporal shear.
   \item Spectral displays use 50~ms cumulative bins unless otherwise noted; background subtraction and light smoothing may be applied for visibility.
 \end{itemize}
+
+\olsection{Event-trigger probability model}
+Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
+\begin{equation}
+  \nabla I = \nabla I_{\text{true}} + \eta,\qquad \eta \sim \mathcal{N}(0,\sigma^2).
+  \label{eq:gradient_noise}
+\end{equation}
+
+The probability of a positive event equals the likelihood that the noise-perturbed gradient exceeds the threshold,
+\begin{equation}
+  P(\text{event}) = P(\eta > \theta - \nabla I_{\text{true}}) = \tfrac12\!\left[1 - \operatorname{erf}\!\left(\frac{\theta - \nabla I_{\text{true}}}{\sqrt{2}\sigma}\right)\right],
+  \label{eq:trigger_probability}
+\end{equation}
+with an analogous form for negative events around $-\theta$. Approximating the error function by a logistic curve yields the computationally convenient sigmoid expression
+\begin{equation}
+  P(\text{event}) \approx \sigma\!\left(\frac{\nabla I_{\text{true}} - \theta}{\sigma'}\right),\qquad \sigma' \approx \frac{2\sqrt{2}}{\sqrt{\pi}}\sigma,
+  \label{eq:sigmoid_probability}
+\end{equation}
+where $\sigma(\cdot)$ denotes the logistic sigmoid. Within a temporal bin of duration $\Delta t$ the expected event count relates directly to this probability,
+\begin{equation}
+  \langle N_{\text{evt}}\rangle = \lambda\,P(\text{event})\,\Delta t,
+  \label{eq:expected_events}
+\end{equation}
+with $\lambda$ the effective sampling rate per pixel. Averaging events over repeated scans gives the empirical mean $\bar{N}_{\text{evt}}$, which can be inverted via the logit function $\sigma^{-1}$ to estimate the true gradient:
+\begin{equation}
+  \nabla I_{\text{est}} = \theta + \sigma'\,\sigma^{-1}\!\left(\frac{\bar{N}_{\text{evt}}}{\lambda\,\Delta t}\right).
+  \label{eq:gradient_estimate}
+\end{equation}
+
+This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
 \olsection{Supplementary Figure S1}
 Figure~\ref{fig:s1} shows the aligned background (event-derived) against a spectrometer curve, formatted as in the main text.
