@@ -343,7 +343,7 @@ def render_correlation_figure(
     # Annotate reverse-corr blue peak with its lag value
     # No text callout for reverse peak (keep blue dot only)
 
-    legend = ax.legend(loc="upper left", fontsize=8, frameon=True)
+    legend = ax.legend(loc="upper left", fontsize=10.4, frameon=True)
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
