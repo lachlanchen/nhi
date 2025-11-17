@@ -22,7 +22,7 @@ import datetime
 import random
 import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -77,6 +77,30 @@ def load_events(segment_npz: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray, 
     return x, y, t, p
 
 
+def find_timebin_npz(segment_npz: Path) -> Optional[Path]:
+    """Locate the trainer-saved time-binned NPZ next to the segment.
+
+    Looks in `<segment_dir>/time_binned_frames/` for
+    `Scan_*_chunked_processing_all_time_bins_data_*.npz` and returns the newest.
+    """
+    seg_dir = segment_npz.parent
+    tb_dir = seg_dir / "time_binned_frames"
+    if not tb_dir.exists():
+        return None
+    base = segment_npz.stem
+    patterns = [
+        f"{base}_chunked_processing_all_time_bins_data_*.npz",
+        f"{base}*all_time_bins_data*.npz",
+        "*_all_time_bins_data_*.npz",
+    ]
+    cands = []
+    for pat in patterns:
+        cands.extend(sorted(tb_dir.glob(pat)))
+    if not cands:
+        return None
+    return max(cands, key=lambda p: p.stat().st_mtime)
+
+
 def compensate_times(
     x: np.ndarray, y: np.ndarray, t: np.ndarray, params: dict, chunk_size: int = 500000
 ) -> np.ndarray:
@@ -116,7 +140,22 @@ def sample_events(x, y, t, p, fraction: float, max_points: int = 400_000):
     return x[idx], y[idx], t[idx], p[idx]
 
 
-def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
+def plot_cloud(
+    ax,
+    x,
+    y,
+    t_ms,
+    p,
+    title: str,
+    time_scale: float,
+    *,
+    overlay_img: Optional[np.ndarray] = None,
+    overlay_time_ms: Optional[float] = None,
+    overlay_cmap: str = "magma",
+    overlay_alpha: float = 0.75,
+    overlay_stride: int = 6,
+    overlay_flipud: bool = False,
+):
     pos = p > 0
     neg = p <= 0
     colors = {"pos": "#ffbb78", "neg": "#aec7e8"}
@@ -173,6 +212,41 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
 
+    # Optional overlay plane at a given time (Y axis)
+    if overlay_img is not None and overlay_time_ms is not None:
+        img = overlay_img
+        if overlay_flipud:
+            img = np.flipud(img)
+        H, W = img.shape[:2]
+        xs = np.linspace(0, W - 1, W)
+        zs = np.linspace(0, H - 1, H)
+        Xg, Zg = np.meshgrid(xs, zs)
+        s = max(1, int(overlay_stride))
+        Xg_s = Xg[::s, ::s]
+        Zg_s = Zg[::s, ::s]
+        Yg_s = np.full_like(Xg_s, time_scale * overlay_time_ms)
+        img_s = img[::s, ::s].astype(np.float32)
+        vmin = float(np.percentile(img_s, 1.0))
+        vmax = float(np.percentile(img_s, 99.0))
+        if np.isclose(vmin, vmax):
+            vmin = float(np.min(img_s))
+            vmax = float(np.max(img_s) + 1e-6)
+        norm = np.clip((img_s - vmin) / (vmax - vmin + 1e-12), 0.0, 1.0)
+        cmap = plt.get_cmap(overlay_cmap)
+        facecolors = cmap(norm)
+        facecolors[..., -1] = overlay_alpha
+        ax.plot_surface(
+            Xg_s,
+            Yg_s,
+            Zg_s,
+            rstride=1,
+            cstride=1,
+            facecolors=facecolors,
+            shade=False,
+            linewidth=0,
+            antialiased=False,
+        )
+
 
 def main():
     ap = argparse.ArgumentParser(description="3D event clouds before/after compensation")
@@ -180,6 +254,13 @@ def main():
     ap.add_argument("--sample", type=float, default=0.02, help="Fraction of events to plot (default: 0.02)")
     ap.add_argument("--time-scale", type=float, default=1.5, help="Stretch factor for time axis (default: 1.5)")
     ap.add_argument("--chunk-size", type=int, default=400000, help="Chunk size for compensation (default: 400000)")
+    # Overlay options
+    ap.add_argument("--overlay", action="store_true", help="Overlay a time-bin image plane onto the 3D cloud")
+    ap.add_argument("--overlay-bin-index", type=int, default=18, help="Time-bin index to overlay (default: 18)")
+    ap.add_argument("--overlay-bin-us", type=int, default=50000, help="Bin width in microseconds (default: 50000 = 50ms)")
+    ap.add_argument("--overlay-alpha", type=float, default=0.75, help="Overlay plane alpha (default: 0.75)")
+    ap.add_argument("--overlay-cmap", type=str, default="magma", help="Overlay colormap (default: magma)")
+    ap.add_argument("--overlay-stride", type=int, default=6, help="Downsample stride for overlay plane (default: 6)")
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
     args = ap.parse_args()
 
@@ -200,10 +281,43 @@ def main():
     out_dir = args.output_dir / f"multiwindow_compensation_figure_3d_cloud_with_image_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Prepare optional overlay planes
+    overlay_before = None
+    overlay_after = None
+    overlay_t_ms: Optional[float] = None
+    if args.overlay:
+        tb_npz = find_timebin_npz(args.segment_npz)
+        if tb_npz is not None:
+            with np.load(tb_npz, allow_pickle=False) as d:
+                ob_key = f"original_bin_{args.overlay_bin_index}"
+                cb_key = f"compensated_bin_{args.overlay_bin_index}"
+                if ob_key in d and cb_key in d:
+                    overlay_before = d[ob_key]
+                    overlay_after = d[cb_key]
+                    overlay_t_ms = (args.overlay_bin_index + 0.5) * (args.overlay_bin_us / 1000.0)
+                else:
+                    print(f"[warn] overlay bin keys not found in {tb_npz}: {ob_key}, {cb_key}")
+        else:
+            print("[warn] no time-binned NPZ found; skipping overlay")
+
     # Save panels separately to avoid overflow
     fig1 = plt.figure(figsize=(4.4, 3.3))
     ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
-    plot_cloud(ax1, xs, ys, ts_ms, ps, "", args.time_scale)
+    plot_cloud(
+        ax1,
+        xs,
+        ys,
+        ts_ms,
+        ps,
+        "",
+        args.time_scale,
+        overlay_img=overlay_before,
+        overlay_time_ms=overlay_t_ms,
+        overlay_cmap=args.overlay_cmap,
+        overlay_alpha=args.overlay_alpha,
+        overlay_stride=args.overlay_stride,
+        overlay_flipud=False,
+    )
     fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
@@ -211,7 +325,21 @@ def main():
 
     fig2 = plt.figure(figsize=(4.4, 3.3))
     ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
-    plot_cloud(ax2, xs_w, ys_w, ts_w_ms, ps_w, "", args.time_scale)
+    plot_cloud(
+        ax2,
+        xs_w,
+        ys_w,
+        ts_w_ms,
+        ps_w,
+        "",
+        args.time_scale,
+        overlay_img=overlay_after,
+        overlay_time_ms=overlay_t_ms,
+        overlay_cmap=args.overlay_cmap,
+        overlay_alpha=args.overlay_alpha,
+        overlay_stride=args.overlay_stride,
+        overlay_flipud=False,
+    )
     fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
