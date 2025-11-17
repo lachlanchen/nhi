@@ -139,13 +139,24 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
         marker=".",
         rasterized=True,
     )
-    ax.set_xlabel("X (px)")
-    ax.set_ylabel("Time (ms)")
-    ax.set_zlabel("Y (px)")
+    # Tight axis limits with small margins to reduce whitespace
+    x_min, x_max = float(x.min()), float(x.max())
+    y_min, y_max = float(y.min()), float(y.max())
+    t_min, t_max = float(t_ms.min()), float(t_ms.max())
+    pad_x = 0.02 * (x_max - x_min + 1)
+    pad_y = 0.02 * (y_max - y_min + 1)
+    pad_t = 0.02 * (t_max - t_min + 1e-6)
+    ax.set_xlim(x_min - pad_x, x_max + pad_x)
+    ax.set_zlim(y_min - pad_y, y_max + pad_y)
+    ax.set_ylim(time_scale * (t_min - pad_t), time_scale * (t_max + pad_t))
+
+    ax.set_xlabel("X (px)", labelpad=1)
+    ax.set_ylabel("Time (ms)", labelpad=1)
+    ax.set_zlabel("Y (px)", labelpad=1)
     ax.set_title(title, pad=2)
     # View with time on Y, spatial on X/Z; gentle perspective from front-left
     ax.view_init(elev=25, azim=-35)
-    ax.set_box_aspect([1, 1.0 * time_scale, 1])
+    ax.set_box_aspect([1, 0.9 * time_scale, 1])
     # Stretch time dimension (Y) similar to legacy EVK visualizer
     x_scale, y_scale, z_scale = 1.0, 1.6, 1.0
     scale = np.diag([x_scale, y_scale, z_scale, 1.0])
