@@ -26,16 +26,16 @@
 \usepackage{xcolor}
 
 \title{Supplementary Material: Self-Calibrated Neuromorphic Hyperspectral Sensing}
-\author{Rongzhou Chen}
-\author{Chutian Wang}
-\author{Yuqing Cao}
+\author[]{Rongzhou Chen}
+\author[]{Chutian Wang}
+\author[]{Yuqing Cao}
 \author[*]{Edmund Y. Lam}
-\affil{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong SAR, China}
+\affil[]{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong SAR, China}
 \affil[*]{elam@eee.hku.hk}
 \dates{\today}
 
 \begin{abstract}
-This document provides supplementary methods, implementation notes, and additional figures supporting the main manuscript titled ``Self-Calibrated Neuromorphic Hyperspectral Sensing.'' It follows the Optica journal letter template and reuses the same notation and plotting conventions.
+This document provides supplementary methods, implementation notes, and additional figures supporting the main manuscript titled ``Self-Calibrated Neuromorphic Hyperspectral Sensing.'' 
 \end{abstract}
 
 \begin{document}
@@ -84,15 +84,15 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 
 This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
-\olsection{Supplementary Figure S1}
-Figure~\ref{fig:s1} shows the aligned background (event-derived) against a spectrometer curve, formatted as in the main text.
+% \olsection{Supplementary Figure S1}
+% Figure~\ref{fig:s1} shows the aligned background (event-derived) against a spectrometer curve, formatted as in the main text.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/figure04_rescaled_bg_gt_third_only.pdf}
-  \caption{Supplementary Figure S1: Background mapped to wavelength (blue) overlaid with Light SPD (orange). Legend placed inside, consistent with Fig.~5 styling.}
-  \label{fig:s1}
-\end{figure}
+% \begin{figure}[t]
+%   \centering
+%   \includegraphics[width=\columnwidth]{figures/figure04_rescaled_bg_gt_third_only.pdf}
+%   \caption{Background mapped to wavelength (blue) overlaid with Light SPD (orange). Legend placed inside, consistent with Fig.~5 styling.}
+%   \label{fig:s1}
+% \end{figure}
 
 \olsection{Segment Fusion Performance}
 We compare reconstruction noise across three fusion settings using a single dataset (\texttt{angle\_20\_sanqin\_2835\_20250925\_184638}) and 50~ms temporal bins:
@@ -103,53 +103,53 @@ We compare reconstruction noise across three fusion settings using a single data
 \end{itemize}
 Learned parameters $(a,b)$ from the first forward segment are reused for all segments. For backward segments we reverse time ($t' = t_{\min}+t_{\max}-t$) and negate polarity (mapping 0/1 to $1{-}p$, or simply $-p$ in $\{-1,1\}$ form). Fused frames are averaged per-bin across segments, then background-subtracted prior to metric computation.
 
-Figure~\ref{fig:s2} shows the first 20 bins for each scenario. Table~\ref{tab:fusion_metrics} reports spatial standard deviation (STD) and median absolute deviation (MAD) averaged over bins.
+% Figure~\ref{fig:s2} shows the first 20 bins for each scenario. Table~\ref{tab:fusion_metrics} reports spatial standard deviation (STD) and median absolute deviation (MAD) averaged over bins.
 
-\begin{figure*}[t]
-  \centering
-  % Local copies for stable LaTeX inclusion
-  \includegraphics[width=0.96\textwidth]{figures_sm/forward_only_montage.pdf}\\[-2pt]
-  \includegraphics[width=0.96\textwidth]{figures_sm/f_plus_b_montage.pdf}\\[-2pt]
-  \includegraphics[width=0.96\textwidth]{figures_sm/three_cycles_f_plus_b_montage.pdf}
-  \caption{Supplementary Figure S2: First 20 binned frames (50~ms each). Top: Forward only; Middle: Forward+Backward; Bottom: Three F+B cycles.}
-  \label{fig:s2}
-\end{figure*}
+% \begin{figure*}[t]
+%   \centering
+%   % Local copies for stable LaTeX inclusion
+%   \includegraphics[width=0.96\textwidth]{figures_sm/forward_only_montage.pdf}\\[-2pt]
+%   \includegraphics[width=0.96\textwidth]{figures_sm/f_plus_b_montage.pdf}\\[-2pt]
+%   \includegraphics[width=0.96\textwidth]{figures_sm/three_cycles_f_plus_b_montage.pdf}
+%   \caption{Supplementary Figure S2: First 20 binned frames (50~ms each). Top: Forward only; Middle: Forward+Backward; Bottom: Three F+B cycles.}
+%   \label{fig:s2}
+% \end{figure*}
 
-\begin{table}[t]
-\centering
-\caption{Average spatial noise per scenario (50~ms bins).}
-\label{tab:fusion_metrics}
-\begin{tabular}{lcc}
-\hline
-\textbf{Scenario} & \textbf{STD} & \textbf{MAD} \\
-\hline
-Forward only & 0.4322 & 0.0000 \\
-F + B & 0.3301 & 0.1235 \\
-3\,$\times$\,(F + B) & 0.2403 & 0.1166 \\
-\hline
-\end{tabular}
-\end{table}
+% \begin{table}[t]
+% \centering
+% \caption{Average spatial noise per scenario (50~ms bins).}
+% \label{tab:fusion_metrics}
+% \begin{tabular}{lcc}
+% \hline
+% \textbf{Scenario} & \textbf{STD} & \textbf{MAD} \\
+% \hline
+% Forward only & 0.4322 & 0.0000 \\
+% F + B & 0.3301 & 0.1235 \\
+% 3\,$\times$\,(F + B) & 0.2403 & 0.1166 \\
+% \hline
+% \end{tabular}
+% \end{table}
 
-\olsection{Reproducibility: Segment Fusion}
-The following command generates the figures and metrics above:
-\begin{itemize}
-  \item \texttt{python publication\_code/compare\_segment\_fusion.py \\
-    --dataset scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638 \\
-    --bin-width-us 50000 --sensor-width 1280 --sensor-height 720 \\
-    --save-png --save-pdf}
-\end{itemize}
+% \olsection{Reproducibility: Segment Fusion}
+% The following command generates the figures and metrics above:
+% \begin{itemize}
+%   \item \texttt{python publication\_code/compare\_segment\_fusion.py \\
+%     --dataset scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638 \\
+%     --bin-width-us 50000 --sensor-width 1280 --sensor-height 720 \\
+%     --save-png --save-pdf}
+% \end{itemize}
 
-\olsection{Reproducibility Notes}
-The following commands (run in the \texttt{nhi\_test} environment) regenerate the figures referenced here:
-\begin{itemize}
-  \item Figure 4 grid and overlay:
-\texttt{python publication\_code/figure04\_rescaled\_allinone.py \\
-  --segment scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638/angle\_20\_sanqin\_2835\_event\_20250925\_184638\_segments/Scan\_1\_Forward\_events.npz \\
-  --gt-dir groundtruth\_spectrum\_2835 \\
-  --gt-frames-dir hyperspectral\_data\_sanqin\_gt/test300\_roi\_square\_frames\_matched \\
-  --bin-width-us 50000 --start-bin 3 --end-bin 15 --show-wavelength \\
-  --add-gt-row --bar-height-ratio 0.06 --bar-px 4 --save-png}
-\end{itemize}
+% \olsection{Reproducibility Notes}
+% The following commands (run in the \texttt{nhi\_test} environment) regenerate the figures referenced here:
+% \begin{itemize}
+%   \item Figure 4 grid and overlay:
+% \texttt{python publication\_code/figure04\_rescaled\_allinone.py \\
+%   --segment scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638/angle\_20\_sanqin\_2835\_event\_20250925\_184638\_segments/Scan\_1\_Forward\_events.npz \\
+%   --gt-dir groundtruth\_spectrum\_2835 \\
+%   --gt-frames-dir hyperspectral\_data\_sanqin\_gt/test300\_roi\_square\_frames\_matched \\
+%   --bin-width-us 50000 --start-bin 3 --end-bin 15 --show-wavelength \\
+%   --add-gt-row --bar-height-ratio 0.06 --bar-px 4 --save-png}
+% \end{itemize}
 
 \bibliography{ref}
 
