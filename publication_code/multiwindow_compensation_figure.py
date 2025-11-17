@@ -32,14 +32,14 @@ import matplotlib.patheffects as pe
 def setup_style() -> None:
     plt.rcParams.update(
         {
-            "font.size": 9,
-            "axes.labelsize": 9,
-            "axes.titlesize": 9,
-            "axes.linewidth": 0.8,
+            "font.size": 11.7,
+            "axes.labelsize": 11.7,
+            "axes.titlesize": 11.7,
+            "axes.linewidth": 1.04,
             "xtick.direction": "out",
             "ytick.direction": "out",
-            "xtick.major.size": 3,
-            "ytick.major.size": 3,
+            "xtick.major.size": 3.9,
+            "ytick.major.size": 3.9,
             "legend.frameon": True,
         }
     )
