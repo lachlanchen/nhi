@@ -77,30 +77,6 @@ def load_events(segment_npz: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray, 
     return x, y, t, p
 
 
-def find_timebin_npz(segment_npz: Path) -> Optional[Path]:
-    """Locate the trainer-saved time-binned NPZ next to the segment.
-
-    Looks in `<segment_dir>/time_binned_frames/` for
-    `Scan_*_chunked_processing_all_time_bins_data_*.npz` and returns the newest.
-    """
-    seg_dir = segment_npz.parent
-    tb_dir = seg_dir / "time_binned_frames"
-    if not tb_dir.exists():
-        return None
-    base = segment_npz.stem
-    patterns = [
-        f"{base}_chunked_processing_all_time_bins_data_*.npz",
-        f"{base}*all_time_bins_data*.npz",
-        "*_all_time_bins_data_*.npz",
-    ]
-    cands = []
-    for pat in patterns:
-        cands.extend(sorted(tb_dir.glob(pat)))
-    if not cands:
-        return None
-    return max(cands, key=lambda p: p.stat().st_mtime)
-
-
 def compensate_times(
     x: np.ndarray, y: np.ndarray, t: np.ndarray, params: dict, chunk_size: int = 500000
 ) -> np.ndarray:
@@ -151,20 +127,35 @@ def plot_cloud(
     *,
     overlay_img: Optional[np.ndarray] = None,
     overlay_time_ms: Optional[float] = None,
-    overlay_cmap: str = "magma",
-    overlay_alpha: float = 0.75,
-    overlay_stride: int = 6,
-    overlay_flipud: bool = False,
+    overlay_alpha: float = 0.85,
     overlay_span: str = "axis",
-    draw_events: bool = True,
-    draw_overlay: bool = True,
-    view_elev: float = 18.0,
-    view_azim: float = -30.0,
+    overlay_flipud: bool = False,
+    overlay_stride: int = 8,
 ):
     pos = p > 0
     neg = p <= 0
     colors = {"pos": "#ffbb78", "neg": "#aec7e8"}
-    # Compute tight extents first (so overlay can span full X/Z area)
+    ax.scatter(
+        x[pos],
+        time_scale * t_ms[pos],
+        y[pos],
+        c=colors["pos"],
+        s=0.1,
+        alpha=0.6,
+        marker=".",
+        rasterized=True,
+    )
+    ax.scatter(
+        x[neg],
+        time_scale * t_ms[neg],
+        y[neg],
+        c=colors["neg"],
+        s=0.1,
+        alpha=0.6,
+        marker=".",
+        rasterized=True,
+    )
+    # Tight axis limits with small margins to reduce whitespace
     x_min, x_max = float(x.min()), float(x.max())
     y_min, y_max = float(y.min()), float(y.max())
     t_min, t_max = float(t_ms.min()), float(t_ms.max())
@@ -179,8 +170,8 @@ def plot_cloud(
     ax.set_ylabel("Time (ms)", labelpad=1)
     ax.set_zlabel("Y (px)", labelpad=1)
     ax.set_title(title, pad=2)
-    # View with time on Y, spatial on X/Z; match no-image defaults
-    ax.view_init(elev=view_elev, azim=view_azim)
+    # View with time on Y, spatial on X/Z; gentle perspective from front-left
+    ax.view_init(elev=25, azim=-35)
     ax.set_box_aspect([1, 0.9 * time_scale, 1])
     # Stretch time dimension (Y) similar to legacy EVK visualizer
     x_scale, y_scale, z_scale = 1.0, 1.6, 1.0
@@ -197,120 +188,59 @@ def plot_cloud(
     ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
 
-    # Helper to draw overlay plane (called after points so plane is on top)
-    def _draw_overlay():
-        if overlay_img is None or overlay_time_ms is None:
-            return
+    # Optional overlay plane of an image at a fixed time (in ms)
+    if overlay_img is not None and overlay_time_ms is not None:
         img = overlay_img
         if overlay_flipud:
             img = np.flipud(img)
         H, W = img.shape[:2]
-        # Map image extents
-        if overlay_span == 'events':
-            # Event extents (no pad)
-            x0, x1 = float(x_min), float(x_max)
-            z0, z1 = float(y_min), float(y_max)
+        # Extents either from axis limits (keeps crop) or event extents
+        if overlay_span == "events":
+            x0, x1 = float(x.min()), float(x.max())
+            z0, z1 = float(y.min()), float(y.max())
         else:
-            # Current axis limits (includes small pad)
             x0, x1 = ax.get_xlim()
             z0, z1 = ax.get_zlim()
-        xs = np.linspace(x0, x1, W)
-        zs = np.linspace(z0, z1, H)
-        Xg, Zg = np.meshgrid(xs, zs)
         s = max(1, int(overlay_stride))
-        Xg_s = Xg[::s, ::s]
-        Zg_s = Zg[::s, ::s]
-        Yg_s = np.full_like(Xg_s, time_scale * overlay_time_ms)
-        img_s = img[::s, ::s].astype(np.float32)
-        vmin = float(np.percentile(img_s, 1.0))
-        vmax = float(np.percentile(img_s, 99.0))
-        if np.isclose(vmin, vmax):
-            vmin = float(np.min(img_s))
-            vmax = float(np.max(img_s) + 1e-6)
-        norm = np.clip((img_s - vmin) / (vmax - vmin + 1e-12), 0.0, 1.0)
-        cmap = plt.get_cmap(overlay_cmap)
-        facecolors = cmap(norm)
-        facecolors[..., -1] = overlay_alpha
-        surf = ax.plot_surface(
-            Xg_s,
-            Yg_s,
-            Zg_s,
-            rstride=1,
-            cstride=1,
-            facecolors=facecolors,
-            shade=False,
-            linewidth=0,
-            antialiased=False,
-        )
-        # Prefer back-to-front sorting so plane appears above markers
+        xs = np.linspace(x0, x1, W)[::s]
+        zs = np.linspace(z0, z1, H)[::s]
+        Xg, Zg = np.meshgrid(xs, zs)
+        Yg = np.full_like(Xg, time_scale * overlay_time_ms)
+        # Build facecolors
+        fc = img.astype(np.float32)[::s, ::s, ...] if img.ndim == 3 else img.astype(np.float32)[::s, ::s]
+        if fc.max() > 1.0:
+            fc = fc / 255.0
+        if fc.ndim == 2:
+            # grayscale: map to RGBA magma
+            cm = plt.get_cmap("magma")
+            fc = cm((fc - fc.min()) / (fc.max() - fc.min() + 1e-12))
+        if fc.shape[-1] == 3:
+            alpha = np.full(fc.shape[:2] + (1,), overlay_alpha, dtype=fc.dtype)
+            fc = np.concatenate([fc, alpha], axis=-1)
+        else:
+            fc[..., -1] = fc[..., -1] * overlay_alpha
+        surf = ax.plot_surface(Xg, Yg, Zg, rstride=1, cstride=1, facecolors=fc, shade=False, linewidth=0, antialiased=False)
         try:
-            surf.set_zsort('max')
+            surf.set_rasterized(True)
         except Exception:
             pass
 
-    # Draw points first, then overlay plane so markers don't cover it (if requested)
-    if draw_events:
-        ax.scatter(
-            x[pos],
-            time_scale * t_ms[pos],
-            y[pos],
-            c=colors["pos"],
-            s=0.1,
-            alpha=0.55,
-            marker=".",
-            rasterized=True,
-            depthshade=False,
-        )
-        ax.scatter(
-            x[neg],
-            time_scale * t_ms[neg],
-            y[neg],
-            c=colors["neg"],
-            s=0.1,
-            alpha=0.55,
-            marker=".",
-            rasterized=True,
-            depthshade=False,
-        )
-    if draw_overlay:
-        _draw_overlay()
-
 
 def main():
-    ap = argparse.ArgumentParser(description="3D event clouds before/after compensation")
+    ap = argparse.ArgumentParser(description="3D event clouds before/after compensation (optional image overlay)")
     ap.add_argument("segment_npz", type=Path, help="Path to Scan_*_events.npz")
     ap.add_argument("--sample", type=float, default=0.02, help="Fraction of events to plot (default: 0.02)")
     ap.add_argument("--time-scale", type=float, default=1.5, help="Stretch factor for time axis (default: 1.5)")
     ap.add_argument("--chunk-size", type=int, default=400000, help="Chunk size for compensation (default: 400000)")
-    # Overlay options
-    ap.add_argument("--overlay", action="store_true", help="Overlay a time-bin image plane onto the 3D cloud")
-    ap.add_argument("--overlay-from-segment", type=Path, default=None,
-                    help="Optional: path to a different Scan_*_events.npz whose time_binned_frames will supply the overlay image")
-    ap.add_argument("--overlay-bins-npz", type=Path, default=None,
-                    help="Optional: direct path to a *_all_time_bins_data_*.npz to supply the overlay image (takes precedence)")
-    ap.add_argument("--overlay-bin-index", type=int, default=18, help="Time-bin index to overlay (default: 18)")
-    ap.add_argument("--overlay-bin-us", type=int, default=50000, help="Bin width in microseconds (default: 50000 = 50ms)")
-    ap.add_argument("--overlay-alpha", type=float, default=0.75, help="Overlay plane alpha (default: 0.75)")
-    ap.add_argument("--overlay-cmap", type=str, default="magma", help="Overlay colormap (default: magma)")
-    ap.add_argument("--overlay-stride", type=int, default=6, help="Downsample stride for overlay plane (default: 6)")
-    ap.add_argument("--overlay-flipud", action="store_true", help="Flip overlay image vertically to match event Y")
-    # Alias: --plot-image-time for readability in figure scripts
-    ap.add_argument("--overlay-time-ms", "--plot-image-time", dest="overlay_time_ms", type=float, default=None,
-                    help="Place the image plane at this time (ms). Useful to show a bin image at a different visual time.")
-    ap.add_argument("--overlay-time-offset-ms", type=float, default=0.0,
-                    help="Optional small offset added to the overlay plane time (ms) to reduce visual occlusion.")
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
-    ap.add_argument("--view-elev", type=float, default=18.0, help="3D view elevation (default: 18)")
-    ap.add_argument("--view-azim", type=float, default=-30.0, help="3D view azimuth (default: -30)")
-    ap.add_argument("--overlay-span", choices=["axis", "events"], default="axis",
-                    help="Span overlay plane across current axis limits (axis) or event extents (events). Default: axis")
-    ap.add_argument(
-        "--save-modes",
-        nargs="+",
-        default=["combined", "events-only", "image-only"],
-        choices=["combined", "events-only", "image-only"],
-        help="Which outputs to save per panel: combined (events+image), events-only, image-only. Default: all",
-    )
+    # Overlay options (using prepared plain images)
+    ap.add_argument("--overlay-image-before", type=Path, default=None, help="PNG/JPG to overlay on BEFORE cloud")
+    ap.add_argument("--overlay-image-after", type=Path, default=None, help="PNG/JPG to overlay on AFTER cloud")
+    ap.add_argument("--overlay-time-ms", type=float, default=None, help="Time (ms) to place overlay plane (e.g., 50)")
+    ap.add_argument("--overlay-alpha", type=float, default=1.0, help="Overlay plane alpha (default 1.0)")
+    ap.add_argument("--overlay-span", choices=["axis", "events"], default="axis", help="Map image over axis or event extents")
+    ap.add_argument("--overlay-flipud", action="store_true", help="Flip overlay vertically to match event Y")
+    ap.add_argument("--overlay-stride", type=int, default=8, help="Downsample factor for overlay plane to keep PDF lightweight (default 8)")
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -330,129 +260,69 @@ def main():
     out_dir = args.output_dir / f"multiwindow_compensation_figure_3d_cloud_with_image_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Prepare optional overlay planes
-    overlay_before = None
-    overlay_after = None
-    overlay_t_ms: Optional[float] = None
-    if args.overlay:
-        tb_npz: Optional[Path]
-        if args.overlay_bins_npz is not None:
-            tb_npz = args.overlay_bins_npz
-        elif args.overlay_from_segment is not None:
-            tb_npz = find_timebin_npz(args.overlay_from_segment)
-        else:
-            tb_npz = find_timebin_npz(args.segment_npz)
-        if tb_npz is not None:
-            with np.load(tb_npz, allow_pickle=False) as d:
-                ob_key = f"original_bin_{args.overlay_bin_index}"
-                cb_key = f"compensated_bin_{args.overlay_bin_index}"
-                if ob_key in d and cb_key in d:
-                    overlay_before = d[ob_key]
-                    overlay_after = d[cb_key]
-                    if args.overlay_time_ms is not None:
-                        overlay_t_ms = float(args.overlay_time_ms)
-                    else:
-                        overlay_t_ms = (args.overlay_bin_index + 0.5) * (args.overlay_bin_us / 1000.0)
-                    overlay_t_ms = overlay_t_ms + float(args.overlay_time_offset_ms)
-                else:
-                    print(f"[warn] overlay bin keys not found in {tb_npz}: {ob_key}, {cb_key}")
-        else:
-            print("[warn] no time-binned NPZ found; skipping overlay")
+    # Load overlay images if provided
+    def _read_img(pth: Optional[Path]):
+        if pth is None:
+            return None
+        import matplotlib.image as mpimg
+        if not pth.exists():
+            print(f"[warn] overlay image not found: {pth}")
+            return None
+        img = mpimg.imread(pth)
+        return img
 
-    # Helper: render and save per mode
-    def render_and_save(panel_tag: str, xe, ye, te_ms, pe, overlay_img_local):
-        # Events-only
-        if "events-only" in args.save_modes:
-            fig = plt.figure(figsize=(4.4, 3.3))
-            ax = fig.add_subplot(1, 1, 1, projection="3d")
-            plot_cloud(
-                ax,
-                xe,
-                ye,
-                te_ms,
-                pe,
-                "",
-                args.time_scale,
-                overlay_img=None,
-                overlay_time_ms=None,
-                overlay_cmap=args.overlay_cmap,
-                overlay_alpha=args.overlay_alpha,
-                overlay_stride=args.overlay_stride,
-                overlay_flipud=args.overlay_flipud,
-                overlay_span=args.overlay_span,
-                draw_events=True,
-                draw_overlay=False,
-                view_elev=args.view_elev,
-                view_azim=args.view_azim,
-            )
-            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-            _save_tight_3d(fig, ax, out_dir / f"event_cloud_only_{panel_tag}.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
-            _save_tight_3d(fig, ax, out_dir / f"event_cloud_only_{panel_tag}.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
-            plt.close(fig)
+    ov_before = _read_img(args.overlay_image_before)
+    ov_after = _read_img(args.overlay_image_after)
+    ov_t_ms: Optional[float] = None
+    if (ov_before is not None or ov_after is not None):
+        ov_t_ms = args.overlay_time_ms if args.overlay_time_ms is not None else 50.0
 
-        # Image-only
-        if "image-only" in args.save_modes and overlay_img_local is not None and overlay_t_ms is not None:
-            fig = plt.figure(figsize=(4.4, 3.3))
-            ax = fig.add_subplot(1, 1, 1, projection="3d")
-            plot_cloud(
-                ax,
-                xe,
-                ye,
-                te_ms,
-                pe,
-                "",
-                args.time_scale,
-                overlay_img=overlay_img_local,
-                overlay_time_ms=overlay_t_ms,
-                overlay_cmap=args.overlay_cmap,
-                overlay_alpha=1.0 if args.overlay_alpha >= 1.0 else args.overlay_alpha,
-                overlay_stride=args.overlay_stride,
-                overlay_flipud=args.overlay_flipud,
-                overlay_span=args.overlay_span,
-                draw_events=False,
-                draw_overlay=True,
-                view_elev=args.view_elev,
-                view_azim=args.view_azim,
-            )
-            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-            _save_tight_3d(fig, ax, out_dir / f"image_only_{panel_tag}.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
-            _save_tight_3d(fig, ax, out_dir / f"image_only_{panel_tag}.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
-            plt.close(fig)
+    # Save panels separately to avoid overflow
+    fig1 = plt.figure(figsize=(4.4, 3.3))
+    ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
+    plot_cloud(
+        ax1,
+        xs,
+        ys,
+        ts_ms,
+        ps,
+        "",
+        args.time_scale,
+        overlay_img=ov_before,
+        overlay_time_ms=ov_t_ms,
+        overlay_alpha=args.overlay_alpha,
+        overlay_span=args.overlay_span,
+        overlay_flipud=args.overlay_flipud,
+        overlay_stride=args.overlay_stride,
+    )
+    fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+    _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
+    plt.close(fig1)
 
-        # Combined (events + image)
-        if "combined" in args.save_modes:
-            fig = plt.figure(figsize=(4.4, 3.3))
-            ax = fig.add_subplot(1, 1, 1, projection="3d")
-            plot_cloud(
-                ax,
-                xe,
-                ye,
-                te_ms,
-                pe,
-                "",
-                args.time_scale,
-                overlay_img=overlay_img_local,
-                overlay_time_ms=overlay_t_ms,
-                overlay_cmap=args.overlay_cmap,
-                overlay_alpha=args.overlay_alpha,
-                overlay_stride=args.overlay_stride,
-                overlay_flipud=args.overlay_flipud,
-                overlay_span=args.overlay_span,
-                draw_events=True,
-                draw_overlay=True,
-                view_elev=args.view_elev,
-                view_azim=args.view_azim,
-            )
-            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-            _save_tight_3d(fig, ax, out_dir / f"event_cloud_{panel_tag}.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
-            _save_tight_3d(fig, ax, out_dir / f"event_cloud_{panel_tag}.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
-            plt.close(fig)
+    fig2 = plt.figure(figsize=(4.4, 3.3))
+    ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
+    plot_cloud(
+        ax2,
+        xs_w,
+        ys_w,
+        ts_w_ms,
+        ps_w,
+        "",
+        args.time_scale,
+        overlay_img=ov_after,
+        overlay_time_ms=ov_t_ms,
+        overlay_alpha=args.overlay_alpha,
+        overlay_span=args.overlay_span,
+        overlay_flipud=args.overlay_flipud,
+        overlay_stride=args.overlay_stride,
+    )
+    fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+    _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
+    plt.close(fig2)
 
-    # Render before/after according to save-modes
-    render_and_save("before", xs, ys, ts_ms, ps, overlay_before)
-    render_and_save("after", xs_w, ys_w, ts_w_ms, ps_w, overlay_after)
-
-    print(f"Saved 3D clouds to {out_dir} (modes: {', '.join(args.save_modes)})")
+    print(f"Saved 3D clouds to {out_dir}")
 
 
 def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pad_inches: float = 0.0, extra_pad: float = 0.01):
