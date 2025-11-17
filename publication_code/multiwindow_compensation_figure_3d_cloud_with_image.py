@@ -155,6 +155,7 @@ def plot_cloud(
     overlay_alpha: float = 0.75,
     overlay_stride: int = 6,
     overlay_flipud: bool = False,
+    overlay_span: str = "axis",
     view_elev: float = 18.0,
     view_azim: float = -30.0,
 ):
@@ -200,9 +201,15 @@ def plot_cloud(
         if overlay_flipud:
             img = np.flipud(img)
         H, W = img.shape[:2]
-        # Map image to span event extents (no padding) so it fills the cloud footprint
-        x0, x1 = float(x_min), float(x_max)
-        z0, z1 = float(y_min), float(y_max)
+        # Map image extents
+        if overlay_span == 'events':
+            # Event extents (no pad)
+            x0, x1 = float(x_min), float(x_max)
+            z0, z1 = float(y_min), float(y_max)
+        else:
+            # Current axis limits (includes small pad) — safer for consistent cropping
+            x0, x1 = ax.get_xlim()
+            z0, z1 = ax.get_zlim()
         xs = np.linspace(x0, x1, W)
         zs = np.linspace(z0, z1, H)
         Xg, Zg = np.meshgrid(xs, zs)
@@ -283,6 +290,8 @@ def main():
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
     ap.add_argument("--view-elev", type=float, default=18.0, help="3D view elevation (default: 18)")
     ap.add_argument("--view-azim", type=float, default=-30.0, help="3D view azimuth (default: -30)")
+    ap.add_argument("--overlay-span", choices=["axis", "events"], default="axis",
+                    help="Span overlay plane across current axis limits (axis) or event extents (events). Default: axis")
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -342,6 +351,7 @@ def main():
         overlay_alpha=args.overlay_alpha,
         overlay_stride=args.overlay_stride,
         overlay_flipud=False,
+        overlay_span=args.overlay_span,
         view_elev=args.view_elev,
         view_azim=args.view_azim,
     )
@@ -366,6 +376,7 @@ def main():
         overlay_alpha=args.overlay_alpha,
         overlay_stride=args.overlay_stride,
         overlay_flipud=False,
+        overlay_span=args.overlay_span,
         view_elev=args.view_elev,
         view_azim=args.view_azim,
     )
