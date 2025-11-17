@@ -369,6 +369,27 @@ def save_panel_c_separates(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax
     _one(comp, f"Compensated – Bin {idx}", f"multiwindow_bin50ms_compensated{suffix}.pdf")
 
 
+def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: float, out_dir: Path, suffix: str) -> None:
+    """Save plain images (no title, ticks, axes, or colorbar)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # PNG via imsave (no axes)
+    import matplotlib.pyplot as plt
+    png_o = out_dir / f"multiwindow_bin50ms_original_plain{suffix}.png"
+    png_c = out_dir / f"multiwindow_bin50ms_compensated_plain{suffix}.png"
+    plt.imsave(png_o, orig, cmap="magma", vmin=vmin, vmax=vmax)
+    plt.imsave(png_c, comp, cmap="magma", vmin=vmin, vmax=vmax)
+    # PDF: embed raster without axes
+    def _pdf(img: np.ndarray, stem: str):
+        f = plt.figure(figsize=(6, 3))
+        ax = f.add_subplot(1, 1, 1)
+        ax.imshow(img, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+        ax.axis("off")
+        f.savefig(out_dir / stem, dpi=300, bbox_inches="tight", pad_inches=0.0)
+        plt.close(f)
+    _pdf(orig, f"multiwindow_bin50ms_original_plain{suffix}.pdf")
+    _pdf(comp, f"multiwindow_bin50ms_compensated_plain{suffix}.pdf")
+
+
 def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "best", suffix: str = "") -> None:
     # Use the aggregated 50 ms bin NPZ for clean single-bin images
     _, allbins_path = find_timebin_csv_and_npz(segments_dir, base)
@@ -444,6 +465,8 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     print(f"Saved: {out_path}")
     # Also save separate single panels using same vmin/vmax
     save_panel_c_separates(orig, comp, vmin, vmax, idx, out_dir, suffix)
+    # And save plain images without titles/ticks/colorbar
+    save_panel_c_plain(orig, comp, vmin, vmax, out_dir, suffix)
 
 
 def main() -> None:
