@@ -277,6 +277,10 @@ def main():
     ap.add_argument("--chunk-size", type=int, default=400000, help="Chunk size for compensation (default: 400000)")
     # Overlay options
     ap.add_argument("--overlay", action="store_true", help="Overlay a time-bin image plane onto the 3D cloud")
+    ap.add_argument("--overlay-from-segment", type=Path, default=None,
+                    help="Optional: path to a different Scan_*_events.npz whose time_binned_frames will supply the overlay image")
+    ap.add_argument("--overlay-bins-npz", type=Path, default=None,
+                    help="Optional: direct path to a *_all_time_bins_data_*.npz to supply the overlay image (takes precedence)")
     ap.add_argument("--overlay-bin-index", type=int, default=18, help="Time-bin index to overlay (default: 18)")
     ap.add_argument("--overlay-bin-us", type=int, default=50000, help="Bin width in microseconds (default: 50000 = 50ms)")
     ap.add_argument("--overlay-alpha", type=float, default=0.75, help="Overlay plane alpha (default: 0.75)")
@@ -316,7 +320,13 @@ def main():
     overlay_after = None
     overlay_t_ms: Optional[float] = None
     if args.overlay:
-        tb_npz = find_timebin_npz(args.segment_npz)
+        tb_npz: Optional[Path]
+        if args.overlay_bins_npz is not None:
+            tb_npz = args.overlay_bins_npz
+        elif args.overlay_from_segment is not None:
+            tb_npz = find_timebin_npz(args.overlay_from_segment)
+        else:
+            tb_npz = find_timebin_npz(args.segment_npz)
         if tb_npz is not None:
             with np.load(tb_npz, allow_pickle=False) as d:
                 ob_key = f"original_bin_{args.overlay_bin_index}"
