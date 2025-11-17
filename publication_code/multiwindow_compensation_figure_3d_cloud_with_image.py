@@ -200,9 +200,9 @@ def plot_cloud(
         if overlay_flipud:
             img = np.flipud(img)
         H, W = img.shape[:2]
-        # Map image to span full currently visible X/Z extents
-        x0, x1 = ax.get_xlim()
-        z0, z1 = ax.get_zlim()
+        # Map image to span event extents (no padding) so it fills the cloud footprint
+        x0, x1 = float(x_min), float(x_max)
+        z0, z1 = float(y_min), float(y_max)
         xs = np.linspace(x0, x1, W)
         zs = np.linspace(z0, z1, H)
         Xg, Zg = np.meshgrid(xs, zs)
@@ -220,7 +220,7 @@ def plot_cloud(
         cmap = plt.get_cmap(overlay_cmap)
         facecolors = cmap(norm)
         facecolors[..., -1] = overlay_alpha
-        ax.plot_surface(
+        surf = ax.plot_surface(
             Xg_s,
             Yg_s,
             Zg_s,
@@ -231,6 +231,11 @@ def plot_cloud(
             linewidth=0,
             antialiased=False,
         )
+        # Prefer front-to-back sorting to keep plane visually behind points
+        try:
+            surf.set_zsort('min')
+        except Exception:
+            pass
 
     # Now draw the event points on top for clarity
     ax.scatter(
@@ -273,6 +278,8 @@ def main():
     # Alias: --plot-image-time for readability in figure scripts
     ap.add_argument("--overlay-time-ms", "--plot-image-time", dest="overlay_time_ms", type=float, default=None,
                     help="Place the image plane at this time (ms). Useful to show a bin image at a different visual time.")
+    ap.add_argument("--overlay-time-offset-ms", type=float, default=0.0,
+                    help="Optional small offset added to the overlay plane time (ms) to reduce visual occlusion.")
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
     ap.add_argument("--view-elev", type=float, default=18.0, help="3D view elevation (default: 18)")
     ap.add_argument("--view-azim", type=float, default=-30.0, help="3D view azimuth (default: -30)")
@@ -312,6 +319,7 @@ def main():
                         overlay_t_ms = float(args.overlay_time_ms)
                     else:
                         overlay_t_ms = (args.overlay_bin_index + 0.5) * (args.overlay_bin_us / 1000.0)
+                    overlay_t_ms = overlay_t_ms + float(args.overlay_time_offset_ms)
                 else:
                     print(f"[warn] overlay bin keys not found in {tb_npz}: {ob_key}, {cb_key}")
         else:
