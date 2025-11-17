@@ -236,6 +236,7 @@ def render_activity_figure(
             boundary_times.append(time_s[idx])
     boundary_times.append(time_s[min(results["scan_end"], len(time_s) - 1)])
 
+    activity_line = Line2D([], [], color="#08306b", linewidth=1.1, label="Activity", marker=None)
     forward_line = Line2D([], [], color="#1f77b4", linestyle="--", linewidth=1.1, label="Forward", marker=None)
     backward_line = Line2D([], [], color="#d94801", linestyle="--", linewidth=1.1, label="Backward", marker=None)
 
@@ -257,6 +258,7 @@ def render_activity_figure(
         mpatches.Patch(color="#fdd0a2", alpha=0.32, label="Pre-scan"),
         mpatches.Patch(color="#9ecae1", alpha=0.18, label="Scanning"),
         mpatches.Patch(color="#d9d9d9", alpha=0.32, label="Post-scan"),
+        activity_line,
         forward_line,
         backward_line,
     ]
