@@ -261,6 +261,7 @@ def main():
     ap.add_argument("--overlay-alpha", type=float, default=0.75, help="Overlay plane alpha (default: 0.75)")
     ap.add_argument("--overlay-cmap", type=str, default="magma", help="Overlay colormap (default: magma)")
     ap.add_argument("--overlay-stride", type=int, default=6, help="Downsample stride for overlay plane (default: 6)")
+    ap.add_argument("--overlay-time-ms", type=float, default=None, help="Override plane position in milliseconds (if set, ignores bin-index position)")
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
     args = ap.parse_args()
 
@@ -294,7 +295,10 @@ def main():
                 if ob_key in d and cb_key in d:
                     overlay_before = d[ob_key]
                     overlay_after = d[cb_key]
-                    overlay_t_ms = (args.overlay_bin_index + 0.5) * (args.overlay_bin_us / 1000.0)
+                    if args.overlay_time_ms is not None:
+                        overlay_t_ms = float(args.overlay_time_ms)
+                    else:
+                        overlay_t_ms = (args.overlay_bin_index + 0.5) * (args.overlay_bin_us / 1000.0)
                 else:
                     print(f"[warn] overlay bin keys not found in {tb_npz}: {ob_key}, {cb_key}")
         else:
