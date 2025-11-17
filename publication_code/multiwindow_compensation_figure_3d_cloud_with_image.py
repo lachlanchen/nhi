@@ -155,31 +155,13 @@ def plot_cloud(
     overlay_alpha: float = 0.75,
     overlay_stride: int = 6,
     overlay_flipud: bool = False,
+    view_elev: float = 18.0,
+    view_azim: float = -30.0,
 ):
     pos = p > 0
     neg = p <= 0
     colors = {"pos": "#ffbb78", "neg": "#aec7e8"}
-    ax.scatter(
-        x[pos],
-        t_ms[pos],
-        y[pos],
-        c=colors["pos"],
-        s=0.1,
-        alpha=0.6,
-        marker=".",
-        rasterized=True,
-    )
-    ax.scatter(
-        x[neg],
-        t_ms[neg],
-        y[neg],
-        c=colors["neg"],
-        s=0.1,
-        alpha=0.6,
-        marker=".",
-        rasterized=True,
-    )
-    # Tight axis limits with small margins to reduce whitespace
+    # Compute tight extents first (so overlay can span full X/Z area)
     x_min, x_max = float(x.min()), float(x.max())
     y_min, y_max = float(y.min()), float(y.max())
     t_min, t_max = float(t_ms.min()), float(t_ms.max())
@@ -194,8 +176,8 @@ def plot_cloud(
     ax.set_ylabel("Time (ms)", labelpad=1)
     ax.set_zlabel("Y (px)", labelpad=1)
     ax.set_title(title, pad=2)
-    # View with time on Y, spatial on X/Z; gentle perspective from front-left
-    ax.view_init(elev=25, azim=-35)
+    # View with time on Y, spatial on X/Z; tuned to show plane clearly
+    ax.view_init(elev=view_elev, azim=view_azim)
     ax.set_box_aspect([1, 0.9 * time_scale, 1])
     # Stretch time dimension (Y) similar to legacy EVK visualizer
     x_scale, y_scale, z_scale = 1.0, 1.6, 1.0
@@ -218,8 +200,11 @@ def plot_cloud(
         if overlay_flipud:
             img = np.flipud(img)
         H, W = img.shape[:2]
-        xs = np.linspace(0, W - 1, W)
-        zs = np.linspace(0, H - 1, H)
+        # Map image to span full currently visible X/Z extents
+        x0, x1 = ax.get_xlim()
+        z0, z1 = ax.get_zlim()
+        xs = np.linspace(x0, x1, W)
+        zs = np.linspace(z0, z1, H)
         Xg, Zg = np.meshgrid(xs, zs)
         s = max(1, int(overlay_stride))
         Xg_s = Xg[::s, ::s]
@@ -247,6 +232,30 @@ def plot_cloud(
             antialiased=False,
         )
 
+    # Now draw the event points on top for clarity
+    ax.scatter(
+        x[pos],
+        t_ms[pos],
+        y[pos],
+        c=colors["pos"],
+        s=0.1,
+        alpha=0.55,
+        marker=".",
+        rasterized=True,
+        depthshade=False,
+    )
+    ax.scatter(
+        x[neg],
+        t_ms[neg],
+        y[neg],
+        c=colors["neg"],
+        s=0.1,
+        alpha=0.55,
+        marker=".",
+        rasterized=True,
+        depthshade=False,
+    )
+
 
 def main():
     ap = argparse.ArgumentParser(description="3D event clouds before/after compensation")
@@ -265,6 +274,8 @@ def main():
     ap.add_argument("--overlay-time-ms", "--plot-image-time", dest="overlay_time_ms", type=float, default=None,
                     help="Place the image plane at this time (ms). Useful to show a bin image at a different visual time.")
     ap.add_argument("--output-dir", type=Path, default=Path("publication_code/figures"), help="Output directory")
+    ap.add_argument("--view-elev", type=float, default=18.0, help="3D view elevation (default: 18)")
+    ap.add_argument("--view-azim", type=float, default=-30.0, help="3D view azimuth (default: -30)")
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -323,6 +334,8 @@ def main():
         overlay_alpha=args.overlay_alpha,
         overlay_stride=args.overlay_stride,
         overlay_flipud=False,
+        view_elev=args.view_elev,
+        view_azim=args.view_azim,
     )
     fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
@@ -345,6 +358,8 @@ def main():
         overlay_alpha=args.overlay_alpha,
         overlay_stride=args.overlay_stride,
         overlay_flipud=False,
+        view_elev=args.view_elev,
+        view_azim=args.view_azim,
     )
     fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
