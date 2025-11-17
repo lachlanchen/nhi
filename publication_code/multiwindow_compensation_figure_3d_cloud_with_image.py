@@ -200,18 +200,18 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Save panels separately to avoid overflow
-    fig1 = plt.figure(figsize=(4.1, 3.4))
+    fig1 = plt.figure(figsize=(4.4, 3.3))
     ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
     plot_cloud(ax1, xs, ys, ts_ms, ps, "", args.time_scale)
-    fig1.subplots_adjust(left=0.01, right=0.99, top=0.92, bottom=0.05)
+    fig1.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.04)
     fig1.savefig(out_dir / "event_cloud_before.pdf", dpi=400, bbox_inches="tight", pad_inches=0.0)
     fig1.savefig(out_dir / "event_cloud_before.png", dpi=300, bbox_inches="tight", pad_inches=0.0)
     plt.close(fig1)
 
-    fig2 = plt.figure(figsize=(4.1, 3.4))
+    fig2 = plt.figure(figsize=(4.4, 3.3))
     ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
     plot_cloud(ax2, xs_w, ys_w, ts_w_ms, ps_w, "", args.time_scale)
-    fig2.subplots_adjust(left=0.01, right=0.99, top=0.92, bottom=0.05)
+    fig2.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.04)
     fig2.savefig(out_dir / "event_cloud_after.pdf", dpi=400, bbox_inches="tight", pad_inches=0.0)
     fig2.savefig(out_dir / "event_cloud_after.png", dpi=300, bbox_inches="tight", pad_inches=0.0)
     plt.close(fig2)
