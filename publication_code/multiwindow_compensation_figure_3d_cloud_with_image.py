@@ -121,8 +121,8 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     colors = {"pos": "#ffbb78", "neg": "#aec7e8"}
     ax.scatter(
         x[pos],
-        y[pos],
         time_scale * t_ms[pos],
+        y[pos],
         c=colors["pos"],
         s=0.1,
         alpha=0.6,
@@ -131,8 +131,8 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     )
     ax.scatter(
         x[neg],
-        y[neg],
         time_scale * t_ms[neg],
+        y[neg],
         c=colors["neg"],
         s=0.1,
         alpha=0.6,
@@ -140,14 +140,14 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
         rasterized=True,
     )
     ax.set_xlabel("X (px)")
-    ax.set_ylabel("Y (px)")
-    ax.set_zlabel("Time (ms)")
+    ax.set_ylabel("Time (ms)")
+    ax.set_zlabel("Y (px)")
     ax.set_title(title)
-    # View oriented so time (z) points toward the upper-right; tilt to reduce vertical stacking
-    ax.view_init(elev=20, azim=-120)
-    ax.set_box_aspect([1, 1, 0.6 * time_scale])
+    # View with time on Y, spatial on X/Z; tilt to see all three axes
+    ax.view_init(elev=15, azim=-60)
+    ax.set_box_aspect([1, 0.6 * time_scale, 1])
     ax.tick_params(axis="both", which="major", labelsize=8)
-    ax.zaxis.set_major_locator(MaxNLocator(4))
+    ax.yaxis.set_major_locator(MaxNLocator(4))
 
 
 def main():
