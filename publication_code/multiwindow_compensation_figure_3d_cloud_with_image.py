@@ -188,15 +188,20 @@ def main():
     out_dir = args.output_dir / f"multiwindow_compensation_figure_3d_cloud_with_image_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    fig = plt.figure(figsize=(9.0, 3.6))
-    ax1 = fig.add_subplot(1, 2, 1, projection="3d")
-    ax2 = fig.add_subplot(1, 2, 2, projection="3d")
-    plot_cloud(ax1, xs, ys, ts_ms, ps, "Before compensation", args.time_scale)
-    plot_cloud(ax2, xs_w, ys_w, ts_w_ms, ps_w, "After compensation", args.time_scale)
-    fig.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.08, wspace=0.04)
-    fig.savefig(out_dir / "event_cloud_before_after.pdf", dpi=400, bbox_inches="tight", pad_inches=0)
-    fig.savefig(out_dir / "event_cloud_before_after.png", dpi=300, bbox_inches="tight", pad_inches=0)
-    plt.close(fig)
+    # Save panels separately to avoid overflow
+    fig1 = plt.figure(figsize=(4.3, 3.8))
+    ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
+    plot_cloud(ax1, xs, ys, ts_ms, ps, "", args.time_scale)
+    fig1.savefig(out_dir / "event_cloud_before.pdf", dpi=400, bbox_inches="tight", pad_inches=0)
+    fig1.savefig(out_dir / "event_cloud_before.png", dpi=300, bbox_inches="tight", pad_inches=0)
+    plt.close(fig1)
+
+    fig2 = plt.figure(figsize=(4.3, 3.8))
+    ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
+    plot_cloud(ax2, xs_w, ys_w, ts_w_ms, ps_w, "", args.time_scale)
+    fig2.savefig(out_dir / "event_cloud_after.pdf", dpi=400, bbox_inches="tight", pad_inches=0)
+    fig2.savefig(out_dir / "event_cloud_after.png", dpi=300, bbox_inches="tight", pad_inches=0)
+    plt.close(fig2)
 
     print(f"Saved 3D clouds to {out_dir}")
 
