@@ -86,3 +86,17 @@ This document records the primary data, derived artifacts, and commands used to 
 Notes
 - Keep large outputs untracked. Timestamped Figure 4 folders contain all rendered panels and provenance (e.g., `gt_selected_frames/`).
 - Use the exact `nhi_test` interpreter path above for RAW/Metavision workflows.
+
+## 3D Event Clouds — Before/After Compensation (Supplementary)
+- Script: `publication_code/multiwindow_compensation_figure_3d_cloud_with_image.py`
+- Input: `Scan_*_events.npz` (learned params auto‑detected next to it)
+- Command example:
+  ```bash
+  ~/miniconda3/envs/nhi_test/bin/python publication_code/multiwindow_compensation_figure_3d_cloud_with_image.py \
+    scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184747/angle_20_blank_2835_event_20250925_184747_segments/Scan_1_Forward_events.npz \
+    --sample 0.02 --time-scale 1.5 --output-dir publication_code/figures
+  ```
+- Outputs: timestamped folder `publication_code/figures/multiwindow_compensation_figure_3d_cloud_with_image_<timestamp>/`
+  - `event_cloud_before.{pdf,png}`, `event_cloud_after.{pdf,png}`
+- Export details: PDFs are tightly cropped using `pdfcrop` to remove excess whitespace while preserving labels.
+  See `docs/3d_event_cloud_export.md` for options and troubleshooting.

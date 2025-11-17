@@ -26,6 +26,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+from matplotlib.transforms import Bbox
 import numpy as np
 import torch
 
@@ -203,20 +204,47 @@ def main():
     fig1 = plt.figure(figsize=(4.4, 3.3))
     ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
     plot_cloud(ax1, xs, ys, ts_ms, ps, "", args.time_scale)
-    fig1.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.04)
-    fig1.savefig(out_dir / "event_cloud_before.pdf", dpi=400, bbox_inches="tight", pad_inches=0.0)
-    fig1.savefig(out_dir / "event_cloud_before.png", dpi=300, bbox_inches="tight", pad_inches=0.0)
+    fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+    _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig1)
 
     fig2 = plt.figure(figsize=(4.4, 3.3))
     ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
     plot_cloud(ax2, xs_w, ys_w, ts_w_ms, ps_w, "", args.time_scale)
-    fig2.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.04)
-    fig2.savefig(out_dir / "event_cloud_after.pdf", dpi=400, bbox_inches="tight", pad_inches=0.0)
-    fig2.savefig(out_dir / "event_cloud_after.png", dpi=300, bbox_inches="tight", pad_inches=0.0)
+    fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
+    _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig2)
 
     print(f"Saved 3D clouds to {out_dir}")
+
+
+def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pad_inches: float = 0.0, extra_pad: float = 0.01):
+    """Save a 3D axes figure tightly cropped.
+
+    For reliability across backends (and to avoid pathological bbox from 3D),
+    save with bbox_inches='tight' then post-crop PDFs with `pdfcrop`.
+    PNGs are saved with bbox_inches='tight'.
+    """
+    ext = path.suffix.lower()
+    if ext == ".pdf":
+        tmp = path.with_suffix(".uncropped.pdf")
+        fig.savefig(tmp, dpi=dpi, bbox_inches="tight", pad_inches=pad_inches)
+        # Post-crop using pdfcrop (present with TeX Live). Keep a tiny margin to avoid clipping.
+        import shutil, subprocess
+        pdfcrop = shutil.which("pdfcrop")
+        if pdfcrop is not None:
+            try:
+                subprocess.run([pdfcrop, "--margins", "1", str(tmp), str(path)], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                tmp.unlink(missing_ok=True)
+            except Exception:
+                # If cropping fails, fall back to the uncropped file
+                tmp.rename(path)
+        else:
+            tmp.rename(path)
+    else:
+        fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=pad_inches)
 
 
 if __name__ == "__main__":
