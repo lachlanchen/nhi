@@ -142,7 +142,7 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     ax.set_xlabel("X (px)")
     ax.set_ylabel("Time (ms)")
     ax.set_zlabel("Y (px)")
-    ax.set_title(title)
+    ax.set_title(title, pad=2)
     # View with time on Y, spatial on X/Z; gentle perspective from front-left
     ax.view_init(elev=25, azim=-35)
     ax.set_box_aspect([1, 1.0 * time_scale, 1])
