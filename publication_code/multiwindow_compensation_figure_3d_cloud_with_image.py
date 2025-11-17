@@ -145,7 +145,18 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     ax.set_title(title)
     # View with time on Y, spatial on X/Z; tilt to see all three axes
     ax.view_init(elev=15, azim=-60)
-    ax.set_box_aspect([1, 0.6 * time_scale, 1])
+    ax.set_box_aspect([1, 0.8 * time_scale, 1])
+    # Stretch time dimension (Y) similar to legacy EVK visualizer
+    x_scale, y_scale, z_scale = 1.0, 1.6, 1.0
+    scale = np.diag([x_scale, y_scale, z_scale, 1.0])
+    scale = scale / scale.max()
+    scale[3, 3] = 1.0
+    orig_proj = ax.get_proj
+
+    def short_proj():
+        return np.dot(orig_proj(), scale)
+
+    ax.get_proj = short_proj
     ax.tick_params(axis="both", which="major", labelsize=8)
     ax.yaxis.set_major_locator(MaxNLocator(4))
 
