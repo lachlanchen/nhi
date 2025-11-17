@@ -195,8 +195,10 @@ def plot_cloud(
     ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
 
-    # Optional overlay plane at a given time (Y axis)
-    if overlay_img is not None and overlay_time_ms is not None:
+    # Helper to draw overlay plane (called after points so plane is on top)
+    def _draw_overlay():
+        if overlay_img is None or overlay_time_ms is None:
+            return
         img = overlay_img
         if overlay_flipud:
             img = np.flipud(img)
@@ -207,7 +209,7 @@ def plot_cloud(
             x0, x1 = float(x_min), float(x_max)
             z0, z1 = float(y_min), float(y_max)
         else:
-            # Current axis limits (includes small pad) — safer for consistent cropping
+            # Current axis limits (includes small pad)
             x0, x1 = ax.get_xlim()
             z0, z1 = ax.get_zlim()
         xs = np.linspace(x0, x1, W)
@@ -238,13 +240,13 @@ def plot_cloud(
             linewidth=0,
             antialiased=False,
         )
-        # Prefer front-to-back sorting to keep plane visually behind points
+        # Prefer back-to-front sorting so plane appears above markers
         try:
-            surf.set_zsort('min')
+            surf.set_zsort('max')
         except Exception:
             pass
 
-    # Now draw the event points on top for clarity
+    # Draw points first, then overlay plane so markers don't cover it
     ax.scatter(
         x[pos],
         time_scale * t_ms[pos],
@@ -267,6 +269,7 @@ def plot_cloud(
         rasterized=True,
         depthshade=False,
     )
+    _draw_overlay()
 
 
 def main():
@@ -286,6 +289,7 @@ def main():
     ap.add_argument("--overlay-alpha", type=float, default=0.75, help="Overlay plane alpha (default: 0.75)")
     ap.add_argument("--overlay-cmap", type=str, default="magma", help="Overlay colormap (default: magma)")
     ap.add_argument("--overlay-stride", type=int, default=6, help="Downsample stride for overlay plane (default: 6)")
+    ap.add_argument("--overlay-flipud", action="store_true", help="Flip overlay image vertically to match event Y")
     # Alias: --plot-image-time for readability in figure scripts
     ap.add_argument("--overlay-time-ms", "--plot-image-time", dest="overlay_time_ms", type=float, default=None,
                     help="Place the image plane at this time (ms). Useful to show a bin image at a different visual time.")
