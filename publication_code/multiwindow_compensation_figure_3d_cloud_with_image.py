@@ -143,8 +143,8 @@ def plot_cloud(ax, x, y, t_ms, p, title: str, time_scale: float):
     ax.set_ylabel("Y (px)")
     ax.set_zlabel("Time (ms)")
     ax.set_title(title)
-    # View oriented so the trajectory runs SW->NE; lower elevation to declutter ticks
-    ax.view_init(elev=15, azim=55)
+    # View oriented so time (z) points toward the upper-right; tilt to reduce vertical stacking
+    ax.view_init(elev=20, azim=-120)
     ax.set_box_aspect([1, 1, 0.6 * time_scale])
     ax.tick_params(axis="both", which="major", labelsize=8)
     ax.zaxis.set_major_locator(MaxNLocator(4))
