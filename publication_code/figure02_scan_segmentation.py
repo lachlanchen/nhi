@@ -272,7 +272,7 @@ def render_activity_figure(
     fig.tight_layout()
 
     pdf_path = output_dir / "figure02_activity.pdf"
-    fig.savefig(pdf_path, dpi=400)
+    fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
         fig.savefig(output_dir / "figure02_activity.png", dpi=400)
     plt.close(fig)
@@ -350,7 +350,7 @@ def render_correlation_figure(
     fig.tight_layout()
 
     pdf_path = output_dir / "figure02_correlation.pdf"
-    fig.savefig(pdf_path, dpi=400)
+    fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
         fig.savefig(output_dir / "figure02_correlation.png", dpi=400)
     plt.close(fig)
@@ -417,7 +417,7 @@ def render_duration_figure(
         fontsize=9,
     )
     pdf_path = output_dir / "figure02_duration.pdf"
-    fig.savefig(pdf_path, dpi=400)
+    fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
         fig.savefig(output_dir / "figure02_duration.png", dpi=400)
     plt.close(fig)
@@ -471,7 +471,7 @@ def render_eventrate_figure(
         fontsize=9,
     )
     pdf_path = output_dir / "figure02_eventrate.pdf"
-    fig.savefig(pdf_path, dpi=400)
+    fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
         fig.savefig(output_dir / "figure02_eventrate.png", dpi=400)
     plt.close(fig)
