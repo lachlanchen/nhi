@@ -1001,3 +1001,5 @@ if __name__ == "__main__":
         diff_global_den = 0.5 * (abs(diff_global_min) + abs(diff_global_max))
         if diff_global_den <= 1e-9:
             diff_global_den = 1.0
+    else:
+        diff_global_den = None
