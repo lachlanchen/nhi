@@ -143,7 +143,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
         at (-0.05, 1.050) {(a)};
       % Discrete polarity legend (−1 blue, +1 orange)
-      \def\lx{0.70}\def\ly{0.92}\def\lw{0.08}\def\lh{0.03}
+      \def\lx{0.90}\def\ly{0.98}\def\lw{0.08}\def\lh{0.03}
       \draw[fill=evtNeg, draw=black, line width=0.2pt] (\lx,\ly) rectangle ++(\lw,\lh);
       \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+\lw+0.01, \ly+0.5*\lh) {$-1$};
       \draw[fill=evtPos, draw=black, line width=0.2pt] (\lx,\ly-0.05) rectangle ++(\lw,\lh);
@@ -180,7 +180,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
         \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
           at (-0.05, 1.12) {(d)};
         % Continuous color bar (coolwarm-like) inside panel (d)
-        \def\xb{0.92}\def\yb{0.10}\def\wb{0.035}\def\hb{0.80}
+        \def\xb{1.05}\def\yb{0.10}\def\wb{0.035}\def\hb{0.80}
         \shade[bottom color=blue, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
         \shade[bottom color=white, top color=red]  (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
         \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb) {$-1$};
