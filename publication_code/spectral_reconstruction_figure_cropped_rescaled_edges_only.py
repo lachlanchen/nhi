@@ -358,26 +358,9 @@ def render_spectral_grid(
                 if raw_abs_q95 <= 1e-9:
                     raw_abs_q95 = None
         # Row 2 symmetric TwoSlopeNorm around 0 using global 95th abs
-        if comp_norm is None:
-            if comp_global_abs is not None:
-                comp_abs = float(comp_global_abs)
-            else:
-                # 95th |value| across selected comp frames (robust scale)
-                if not comp_abs_list:
-                    for idx in selected_indices:
-                        if not (0 <= idx < len(compensated)):
-                            continue
-                        fc = compensated[idx]
-                        if flip_row12:
-                            fc = np.flipud(fc)
-                        fc = crop_sensor(fc)
-                        comp_abs_list.append(float(np.percentile(np.abs(fc), 95)))
-                if comp_abs_list:
-                    comp_abs_q95 = float(np.median(np.array(comp_abs_list, dtype=np.float32)))
-                comp_abs = comp_abs_q95 if comp_abs_q95 is not None else None
-            if comp_abs is None:
-                cmins = []
-                cmaxs = []
+        if comp_abs_list or comp_abs_q95 is None:
+            comp_abs_list = comp_abs_list or []
+            if not comp_abs_list:
                 for idx in selected_indices:
                     if not (0 <= idx < len(compensated)):
                         continue
@@ -385,37 +368,15 @@ def render_spectral_grid(
                     if flip_row12:
                         fc = np.flipud(fc)
                     fc = crop_sensor(fc)
-                    cmins.append(float(np.nanmin(fc)))
-                    cmaxs.append(float(np.nanmax(fc)))
-                if cmins and cmaxs:
-                    lo = min(cmins); hi = max(cmaxs)
-                    comp_abs = max(abs(lo), abs(hi))
-                else:
-                    comp_abs = 1.0
-            if comp_abs <= 0.0:
-                comp_abs = 1.0
-            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
-            comp_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
+                    comp_abs_list.append(float(np.percentile(np.abs(fc), 95)))
+            if comp_abs_list:
+                comp_abs_q95 = float(np.median(np.array(comp_abs_list, dtype=np.float32)))
+                if comp_abs_q95 <= 1e-9:
+                    comp_abs_q95 = None
     # Shared norm for the single colorbar path (all rows share the same TwoSlopeNorm)
-    if single_colorbar:
-        if comp_global_abs is not None:
-            comp_abs = float(comp_global_abs)
-            if comp_abs <= 0.0:
-                comp_abs = 1.0
-            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
-            shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
-        elif comp_abs_q95 is not None:
-            comp_abs = float(comp_abs_q95)
-            if comp_abs <= 0.0:
-                comp_abs = 1.0
-            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
-            shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
-        elif comp_norm is not None:
-            shared_norm = comp_norm
-        elif raw_vmin is not None and raw_vmax is not None:
-            comp_abs = max(abs(float(raw_vmin)), abs(float(raw_vmax)), 1e-3)
-            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
-            shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
+    from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
+    shared_norm = _TwoSlopeNorm(vmin=-1.0, vcenter=0.0, vmax=1.0)
+    comp_norm = shared_norm
     # Draw row 1/2
     for row, frames, cmap in [(0, originals, raw_cmap), (1, compensated, comp_cmap)]:
         for ci, meta in enumerate(columns, start=0):
@@ -429,27 +390,17 @@ def render_spectral_grid(
                 frame = frame[y0:y1, x0:x1]
             if row == 0 and raw_abs_q95 is not None and raw_abs_q95 > 0:
                 frame = frame / raw_abs_q95
-                # If no explicit raw limits were provided, default to symmetric about 0
-                if raw_global_vmin is None and raw_global_vmax is None:
-                    raw_vmin = -1.0
-                    raw_vmax = 1.0
-            if single_colorbar:
-                # Force shared colormap/norm across all rows
+            if row == 1 and comp_abs_q95 is not None and comp_abs_q95 > 0:
+                frame = frame / comp_abs_q95
+            if single_colorbar or row12_shared_cbar:
                 ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12, norm=shared_norm)
-            elif row12_shared_cbar:
-                # Force both rows to use comp colormap and shared norm
-                if comp_norm is not None:
-                    ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12, norm=comp_norm)
-                else:
-                    ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12)
             else:
                 if row == 0:
-                    ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12, vmin=raw_vmin, vmax=raw_vmax)
+                    vmin_use = raw_vmin if raw_vmin is not None else -1.0
+                    vmax_use = raw_vmax if raw_vmax is not None else 1.0
+                    ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12, vmin=vmin_use, vmax=vmax_use)
                 else:
-                    if comp_norm is not None:
-                        ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12, norm=comp_norm)
-                    else:
-                        ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12)
+                    ax.imshow(frame, cmap=cmap, origin="lower", aspect=image_aspect12, norm=shared_norm)
             ax.axis("off")
             # record axis for later colorbar alignment
             row_axes[row].append(ax)
@@ -487,10 +438,7 @@ def render_spectral_grid(
                     img_scalar = img.astype(np.float32)
                 if diff_global_den is not None:
                     img_scalar = img_scalar / diff_global_den
-                if single_colorbar:
-                    ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
-                else:
-                    ax.imshow(img_scalar, origin="lower", aspect=image_aspect34)
+                ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=comp_cmap if single_colorbar else row34_cmap_name or "gray", norm=shared_norm)
             else:
                 if img.ndim == 3 and img.shape[2] >= 3:
                     lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
