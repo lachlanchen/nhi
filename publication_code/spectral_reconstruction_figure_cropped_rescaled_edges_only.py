@@ -430,7 +430,7 @@ def render_spectral_grid(
                         img = np.load(path)["frame"]
                     except Exception:
                         img = None
-                if img is None:
+                if img is None and path.suffix.lower() != ".npz":
                     try:
                         img = plt.imread(path)
                     except Exception:
