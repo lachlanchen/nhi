@@ -181,8 +181,8 @@ which drives event emission when the logarithmic intensity crosses the sensor th
           at (-0.05, 1.12) {(d)};
         % Continuous color bar (coolwarm-like) inside panel (d)
         \def\xb{1.05}\def\yb{0.10}\def\wb{0.035}\def\hb{0.80}
-        \shade[bottom color=blue, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
-        \shade[bottom color=white, top color=red]  (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
+        \shade[bottom color=evtNeg, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
+        \shade[bottom color=white, top color=evtPos]  (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
         \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb) {$-1$};
         \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb+0.5*\hb) {$0$};
         \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb+\hb) {$1$};
