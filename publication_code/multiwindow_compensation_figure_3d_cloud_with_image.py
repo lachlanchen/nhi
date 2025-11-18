@@ -361,7 +361,7 @@ def main():
         box_color=(1.0, 0.0, 0.0, 0.7),
     )
     # Keep a small margin so axis labels stay visible after tight saving
-    fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
+    fig1.subplots_adjust(left=0.06, right=0.98, top=0.98, bottom=0.06)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig1)
@@ -388,7 +388,7 @@ def main():
         overlay_box=True,
         box_color=(0.0, 0.6, 0.0, 0.7),
     )
-    fig2.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
+    fig2.subplots_adjust(left=0.06, right=0.98, top=0.98, bottom=0.06)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig2)
@@ -396,7 +396,7 @@ def main():
     print(f"Saved 3D clouds to {out_dir}")
 
 
-def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pad_inches: float = 0.0, extra_pad: float = 0.01):
+def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pad_inches: float = 0.02, extra_pad: float = 0.01):
     """Save a 3D axes figure tightly cropped.
 
     For reliability across backends (and to avoid pathological bbox from 3D),
@@ -406,13 +406,20 @@ def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pa
     ext = path.suffix.lower()
     if ext == ".pdf":
         tmp = path.with_suffix(".uncropped.pdf")
-        fig.savefig(tmp, dpi=dpi, bbox_inches="tight", pad_inches=pad_inches)
-        # Post-crop using pdfcrop (present with TeX Live). Keep a tiny margin to avoid clipping.
+        # IMPORTANT: do NOT use bbox_inches="tight" for 3D; it can clip labels.
+        fig.savefig(tmp, dpi=dpi)
+        # Post-crop using pdfcrop (present with TeX Live) with a modest margin so labels are not cut.
         import shutil, subprocess
+
         pdfcrop = shutil.which("pdfcrop")
         if pdfcrop is not None:
             try:
-                subprocess.run([pdfcrop, "--margins", "1", str(tmp), str(path)], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(
+                    [pdfcrop, "--margins", "6", str(tmp), str(path)],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
                 tmp.unlink(missing_ok=True)
             except Exception:
                 # If cropping fails, fall back to the uncropped file
