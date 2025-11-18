@@ -213,18 +213,19 @@ def plot_cloud(
         # X ticks
         xticks = np.linspace(xlo, xhi, 5)
         ax.set_xticks(xticks)
-        ax.set_xticklabels([f"{int(round(v))}" for v in xticks])
+        ax.set_xticklabels([f"{max(0, int(round(v)))}" for v in xticks])
         # Z (sensor Y) ticks
         zticks = np.linspace(zlo, zhi, 4)
         ax.set_zticks(zticks)
-        ax.set_zticklabels([f"{int(round(v))}" for v in zticks])
+        ax.set_zticklabels([f"{max(0, int(round(v)))}" for v in zticks])
         # Time ticks (set in axis coordinates then format to true ms)
         t0 = max(0.0, (ylo / time_scale))
         t1 = (yhi / time_scale)
-        yticks_ms = np.linspace(t0, t1, 4)
+        # Force start at 0 to avoid negative labels
+        yticks_ms = np.linspace(0.0, t1, 4)
         yticks_axis = time_scale * yticks_ms
         ax.set_yticks(yticks_axis)
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{int(round(v/s))}"))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{max(0, int(round(v/s)))}"))
     except Exception:
         # Fallback: limit tick count if manual setting fails
         ax.xaxis.set_major_locator(MaxNLocator(4))
@@ -359,7 +360,9 @@ def main():
         tmin = float(min(ts_ms.min(), ts_w_ms.min()))
         tmax = float(max(ts_ms.max(), ts_w_ms.max()))
         pad_t = 0.02 * (tmax - tmin + 1e-6)
-        fixed_ylim = (args.time_scale * (tmin - pad_t), args.time_scale * (tmax + pad_t))
+        ylo_fixed = max(0.0, args.time_scale * (tmin - pad_t))
+        yhi_fixed = args.time_scale * (tmax + pad_t)
+        fixed_ylim = (ylo_fixed, yhi_fixed)
 
     # Save panels separately to avoid overflow
     fig1 = plt.figure(figsize=(4.4, 3.3))
