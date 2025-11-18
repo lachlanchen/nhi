@@ -143,7 +143,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
         at (-0.05, 1.050) {(a)};
       % Discrete polarity legend using dot handles (−1 light blue, +1 orange)
-      \def\lx{0.70}\def\ly{0.92}\def\rr{0.014}
+      \def\lx{0.90}\def\ly{0.95}\def\rr{0.014}
       \filldraw[fill=evtNeg, draw=black, line width=0.2pt] (\lx,\ly) circle (\rr);
       \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+0.03, \ly) {$-1$};
       \filldraw[fill=evtPos, draw=black, line width=0.2pt] (\lx,\ly-0.06) circle (\rr);
@@ -162,7 +162,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   \end{tikzpicture}\\[-4pt]
 
   % (c,d) 50 ms accumulations, side-by-side, with external color bar to the right of (d)
-  \begin{minipage}[t]{0.465\linewidth}
+  \begin{minipage}[t]{0.45\linewidth}
     \begin{tikzpicture}
       \node[anchor=south west, inner sep=0] (img3c) at (0,0)
         {\includegraphics[width=\linewidth]{figures/overlay_image_before_plain.pdf}};
@@ -172,7 +172,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
       \end{scope}
     \end{tikzpicture}
   \end{minipage}\hspace{0.012\linewidth}
-  \begin{minipage}[t]{0.465\linewidth}
+  \begin{minipage}[t]{0.45\linewidth}
     \begin{tikzpicture}
       \node[anchor=south west, inner sep=0] (img3d) at (0,0)
         {\includegraphics[width=\linewidth]{figures/overlay_image_after_plain.pdf}};
@@ -182,16 +182,20 @@ which drives event emission when the logarithmic intensity crosses the sensor th
       \end{scope}
     \end{tikzpicture}
   \end{minipage}\hspace{0.012\linewidth}
-  % External color bar to the right of (d): light blue -> white -> orange
+  % External color bar to the right of (d): light blue -> white -> orange.
+  % Anchor bar height to panel (d) via an invisible reference image.
   \begin{minipage}[t]{0.06\linewidth}
     \begin{tikzpicture}
-      \begin{scope}
-        \def\xb{0.10}\def\yb{0.06}\def\wb{0.35}\def\hb{0.88}
-        \shade[bottom color=evtNeg, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
-        \shade[bottom color=white, top color=evtPos] (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.02, \yb) {$-1$};
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.02, \yb+0.5*\hb) {$0$};
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.02, \yb+\hb) {$1$};
+      % Invisible reference to panel (d) height
+      \node[anchor=south west, inner sep=0, opacity=0] (imgDref) at (0,0)
+        {\includegraphics[width=\linewidth]{figures/overlay_image_after_plain.pdf}};
+      \begin{scope}[x={(imgDref.south east)}, y={(imgDref.north west)}]
+        \def\xb{0.10}\def\wb{0.30}
+        \shade[bottom color=evtNeg, top color=white] (\xb,0.02) rectangle (\xb+\wb, 0.51);
+        \shade[bottom color=white, top color=evtPos] (\xb,0.51) rectangle (\xb+\wb, 0.98);
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.03, 0.02) {$-1$};
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.03, 0.51) {$0$};
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.03, 0.98) {$1$};
       \end{scope}
     \end{tikzpicture}
   \end{minipage}\\[-2pt]
