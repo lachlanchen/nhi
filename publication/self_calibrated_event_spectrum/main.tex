@@ -162,6 +162,9 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   \end{tikzpicture}\\[-4pt]
 
   % (c,d) 50 ms accumulations, side-by-side, with external color bar to the right of (d)
+  % Measure panel (d) height to align the external color bar
+  \newlength{\panelDheight}%
+  \settoheight{\panelDheight}{\includegraphics[width=0.45\linewidth]{figures/overlay_image_after_plain.pdf}}%
   \begin{minipage}[t]{0.45\linewidth}
     \begin{tikzpicture}
       \node[anchor=south west, inner sep=0] (img3c) at (0,0)
@@ -186,19 +189,18 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   % Anchor bar height to panel (d) via an invisible reference image.
   \begin{minipage}[t]{0.06\linewidth}
     \begin{tikzpicture}
-      % Invisible reference to panel (d) height
-      \node[anchor=south west, inner sep=0, opacity=0] (imgDref) at (0,0)
-        {\includegraphics[width=\linewidth]{figures/overlay_image_after_plain.pdf}};
-      \begin{scope}[x={(imgDref.south east)}, y={(imgDref.north west)}]
-        % Normalize the local coordinate system to the full (d) panel
-        \path[use as bounding box] (0,0) rectangle (1,1);
-        \def\xb{0.15}\def\wb{0.25}
-        \shade[bottom color=evtNeg, top color=white] (\xb,0.02) rectangle (\xb+\wb, 0.98/2);
-        \shade[bottom color=white, top color=evtPos] (\xb,0.98/2) rectangle (\xb+\wb, 0.98);
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.03, 0.02) {$-1$};
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.03, 0.98/2) {$0$};
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.03, 0.98) {$1$};
-      \end{scope}
+      % Reserve the bar area height equal to panel (d)
+      \path[use as bounding box] (0,0) rectangle (0.06\linewidth, \panelDheight);
+      % Draw full-height bar with small margins
+      \def\xoff{0.012\linewidth}
+      \def\barw{0.035\linewidth}
+      \shade[bottom color=evtNeg, top color=white] (\xoff, 0.02\panelDheight)
+        rectangle (\xoff+\barw, 0.51\panelDheight);
+      \shade[bottom color=white, top color=evtPos] (\xoff, 0.51\panelDheight)
+        rectangle (\xoff+\barw, 0.98\panelDheight);
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\xoff+\barw+0.01, 0.02\panelDheight) {$-1$};
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\xoff+\barw+0.01, 0.51\panelDheight) {$0$};
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\xoff+\barw+0.01, 0.98\panelDheight) {$1$};
     \end{tikzpicture}
   \end{minipage}\\[-2pt]
 
