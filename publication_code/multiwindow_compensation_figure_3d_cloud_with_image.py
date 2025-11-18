@@ -167,7 +167,16 @@ def plot_cloud(
     pad_y = 0.02 * (y_max - y_min + 1)
     pad_t = 0.02 * (t_max - t_min + 1e-6)
     xlo, xhi = (x_min - pad_x, x_max + pad_x) if fixed_xlim is None else fixed_xlim
-    zlo, zhi = (y_min - pad_y, y_max + pad_y) if fixed_zlim is None else fixed_zlim
+    if fixed_zlim is None:
+        zlo, zhi = (y_min - pad_y, y_max + pad_y)
+        # Compress Z (sensor Y) span to reduce vertical footprint in the paper figure
+        z_scale = 0.5
+        z_c = 0.5 * (zlo + zhi)
+        z_span = (zhi - zlo) * z_scale
+        zlo = z_c - 0.5 * z_span
+        zhi = z_c + 0.5 * z_span
+    else:
+        zlo, zhi = fixed_zlim
     ylo, yhi = (time_scale * (t_min - pad_t), time_scale * (t_max + pad_t)) if fixed_ylim is None else fixed_ylim
     ax.set_xlim(xlo, xhi)
     ax.set_zlim(zlo, zhi)
