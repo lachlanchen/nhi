@@ -360,7 +360,8 @@ def main():
         overlay_box=True,
         box_color=(1.0, 0.0, 0.0, 0.7),
     )
-    fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    # Keep a small margin so axis labels stay visible after tight saving
+    fig1.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig1)
@@ -387,7 +388,7 @@ def main():
         overlay_box=True,
         box_color=(0.0, 0.6, 0.0, 0.7),
     )
-    fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    fig2.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig2)
