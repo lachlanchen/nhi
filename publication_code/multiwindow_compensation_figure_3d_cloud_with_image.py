@@ -24,11 +24,12 @@ import sys
 from pathlib import Path
 from typing import Tuple, Optional
 
+import numpy as np
+import torch
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, FuncFormatter
 from matplotlib.transforms import Bbox
-import numpy as np
-import torch
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -232,6 +233,26 @@ def plot_cloud(
             surf.set_rasterized(True)
         except Exception:
             pass
+        # Dashed wireframe box around the overlay plane
+        corners = [
+            (x0, time_scale * overlay_time_ms, z0),
+            (x1, time_scale * overlay_time_ms, z0),
+            (x1, time_scale * overlay_time_ms, z1),
+            (x0, time_scale * overlay_time_ms, z1),
+        ]
+        segs = [
+            [corners[0], corners[1]],
+            [corners[1], corners[2]],
+            [corners[2], corners[3]],
+            [corners[3], corners[0]],
+        ]
+        lc = Line3DCollection(
+            segs,
+            colors=[(0, 0, 0, 0.6)],
+            linewidths=0.8,
+            linestyles="dashed",
+        )
+        ax.add_collection3d(lc)
 
 
 def main():
