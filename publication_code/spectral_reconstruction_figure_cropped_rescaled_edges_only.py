@@ -104,6 +104,7 @@ def parse_args() -> argparse.Namespace:
     # Row 3–4 colorbar at right
     ap.add_argument("--row34-colorbar", action="store_true", help="Add a colorbar for rows 3–4 (external images)")
     ap.add_argument("--row34-cmap", type=str, default="gray", help="Colormap name for the rows 3–4 colorbar (intensity)")
+    ap.add_argument("--single-colorbar", action="store_true", help="Use one tall colorbar spanning rows 1–4; overrides individual row colorbars")
     # Shared sensor (rows 1–2) colorbar and mapping
     ap.add_argument("--row12-shared-cbar", action="store_true", help="Use a single shared colorbar for rows 1–2; applies comp colormap/norm to both")
     # Unified scaling for rows 1–2
@@ -228,6 +229,7 @@ def render_spectral_grid(
     cbar_ratio: float = 0.15,
     add_row34_colorbar: bool = False,
     row34_cmap_name: str = "gray",
+    single_colorbar: bool = False,
     row12_shared_cbar: bool = False,
 ) -> None:
     setup_style()
@@ -247,7 +249,7 @@ def render_spectral_grid(
     # Reserve a single narrow column for all colorbars on the far right
     width_ratios = [0.22] + [1] * num_cols
     col_bar = None
-    if add_row12_colorbars or add_row34_colorbar:
+    if add_row12_colorbars or add_row34_colorbar or single_colorbar:
         col_bar = len(width_ratios)
         width_ratios.append(cbar_ratio)
     total_cols = len(width_ratios)
@@ -379,7 +381,7 @@ def render_spectral_grid(
                     lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
                 else:
                     lum = img.astype(np.float32)
-                ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap="gray")
+                ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=row34_cmap_name or "gray")
             ax.axis("off")
             row_axes[row].append(ax)
 
@@ -482,8 +484,23 @@ def render_spectral_grid(
     except Exception:
         pass
 
-    # If requested, add colorbars for rows 1–2 at the far right
-    if add_row12_colorbars and col_bar is not None:
+    # If requested, add a single tall colorbar spanning rows 1–4
+    if single_colorbar and col_bar is not None:
+        cax_all = fig.add_subplot(gs[0:4, col_bar])
+        # Prefer comp_norm (symmetric around 0) if available; fall back to raw range
+        if comp_norm is not None:
+            sm_all = plt.cm.ScalarMappable(norm=comp_norm, cmap=comp_cmap)
+        else:
+            rvmin = raw_vmin if raw_vmin is not None else 0.0
+            rvmax = raw_vmax if raw_vmax is not None else 1.0
+            sm_all = plt.cm.ScalarMappable(norm=Normalize(vmin=rvmin, vmax=rvmax), cmap=comp_cmap)
+        sm_all.set_array([])
+        cb_all = fig.colorbar(sm_all, cax=cax_all)
+        cb_all.ax.set_ylabel("", rotation=90)
+        cb_all.outline.set_visible(True); cb_all.outline.set_linewidth(0.8)
+        cb_all.ax.tick_params(labelsize=8, width=0.6, length=3)
+    # Else, if requested, add colorbars for rows 1–2 at the far right
+    elif add_row12_colorbars and col_bar is not None:
         if row12_shared_cbar:
             # One tall shared bar spanning rows 0–1 using comp_norm
             cax12 = fig.add_subplot(gs[0:2, col_bar])
@@ -539,7 +556,7 @@ def render_spectral_grid(
             cb2.ax.tick_params(labelsize=8, width=0.6, length=3)
 
     # Optional colorbar for rows 3–4 (external images): use intensity scale
-    if add_row34_colorbar and col_bar is not None:
+    if (not single_colorbar) and add_row34_colorbar and col_bar is not None:
         # Compute global intensity min/max across selected external images
         emin, emax = None, None
         for idx in [int(m["index"]) for m in columns]:
@@ -863,6 +880,7 @@ def main() -> None:
         cbar_ratio=float(args.cbar_ratio),
         add_row34_colorbar=bool(getattr(args, 'row34_colorbar', False)),
         row34_cmap_name=str(getattr(args, 'row34_cmap', 'gray')),
+        single_colorbar=bool(getattr(args, 'single_colorbar', False)),
         column_step=max(1, int(getattr(args, 'column_step', 1))),
         row12_shared_cbar=bool(getattr(args, 'row12_shared_cbar', False)),
     )
