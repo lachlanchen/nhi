@@ -169,8 +169,8 @@ def plot_cloud(
     xlo, xhi = (x_min - pad_x, x_max + pad_x) if fixed_xlim is None else fixed_xlim
     if fixed_zlim is None:
         zlo, zhi = (y_min - pad_y, y_max + pad_y)
-        # Compress Z (sensor Y) span to reduce vertical footprint in the paper figure
-        z_scale = 0.5
+        # Compress Z (sensor Y) span more aggressively to tighten vertical footprint.
+        z_scale = 0.3
         z_c = 0.5 * (zlo + zhi)
         z_span = (zhi - zlo) * z_scale
         zlo = z_c - 0.5 * z_span
@@ -188,7 +188,7 @@ def plot_cloud(
     ax.set_title(title, pad=2)
     # View with time on Y, spatial on X/Z; gentle perspective from front-left
     ax.view_init(elev=25, azim=-35)
-    ax.set_box_aspect([1, 0.9 * time_scale, 1])
+    ax.set_box_aspect([1, 0.9 * time_scale, 0.6])
     # Stretch time dimension (Y) similar to legacy EVK visualizer
     x_scale, y_scale, z_scale = 1.0, 1.6, 1.0
     scale = np.diag([x_scale, y_scale, z_scale, 1.0])
@@ -203,6 +203,7 @@ def plot_cloud(
     ax.tick_params(axis="both", which="major", labelsize=8, pad=2)
     ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
+    ax.zaxis.set_major_locator(MaxNLocator(3))
     # Show true milliseconds on ticks even though we stretch by time_scale
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{v/s:.0f}"))
 
