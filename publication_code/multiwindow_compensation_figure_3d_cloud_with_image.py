@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, FuncFormatter
 from matplotlib.transforms import Bbox
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from matplotlib.patches import Rectangle
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -438,6 +439,15 @@ def main():
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig1)
+    # Also save a plain 2D overlay image with dashed box (BEFORE)
+    if ov_before is not None:
+        _save_plain_overlay_image(
+            ov_before,
+            color=(1.0, 0.0, 0.0, 0.9),
+            out_pdf=out_dir / "overlay_image_before_plain.pdf",
+            out_png=out_dir / "overlay_image_before_plain.png",
+            flipud=args.overlay_flipud,
+        )
 
     fig2 = plt.figure(figsize=(4.4, 3.3))
     ax2 = fig2.add_subplot(1, 1, 1, projection="3d")
@@ -470,6 +480,15 @@ def main():
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.png", dpi=300, pad_inches=0.0, extra_pad=0.01)
     plt.close(fig2)
+    # Also save a plain 2D overlay image with dashed box (AFTER)
+    if ov_after is not None:
+        _save_plain_overlay_image(
+            ov_after,
+            color=(0.0, 0.6, 0.0, 0.9),
+            out_pdf=out_dir / "overlay_image_after_plain.pdf",
+            out_png=out_dir / "overlay_image_after_plain.png",
+            flipud=args.overlay_flipud,
+        )
 
     print(f"Saved 3D clouds to {out_dir}")
 
@@ -507,6 +526,27 @@ def _save_tight_3d(fig: plt.Figure, ax: plt.Axes, path: Path, dpi: int = 300, pa
     else:
         fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=pad_inches)
 
+
+def _save_plain_overlay_image(img: np.ndarray, color: Tuple[float, float, float, float], out_pdf: Path, out_png: Path, flipud: bool = False):
+    """Save a plain 2D image with a dashed box around its border.
+
+    - No axes, ticks, or titles. Tight-cropped.
+    - Border color matches the 3D overlay box color.
+    """
+    if img is None:
+        return
+    im = np.flipud(img) if flipud else img
+    # Normalize to 0..1 if needed (matplotlib handles 0..255 arrays as well)
+    fig, ax = plt.subplots(figsize=(4.0, 3.0))
+    ax.imshow(im)
+    ax.axis('off')
+    H, W = im.shape[:2]
+    rect = Rectangle((0, 0), W, H, fill=False, linestyle='--', linewidth=1.0, edgecolor=color)
+    ax.add_patch(rect)
+    # Save
+    fig.savefig(out_pdf, dpi=400, bbox_inches='tight', pad_inches=0.0)
+    fig.savefig(out_png, dpi=300, bbox_inches='tight', pad_inches=0.0)
+    plt.close(fig)
 
 if __name__ == "__main__":
     main()
