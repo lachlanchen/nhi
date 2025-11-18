@@ -307,7 +307,7 @@ def plot_cloud(
             lc = Line3DCollection(
                 segs,
                 colors=[box_color],
-                linewidths=0.8,
+                linewidths=1.6,
                 linestyles="dashed",
             )
             ax.add_collection3d(lc)
@@ -541,7 +541,7 @@ def _save_plain_overlay_image(img: np.ndarray, color: Tuple[float, float, float,
     ax.imshow(im)
     ax.axis('off')
     H, W = im.shape[:2]
-    rect = Rectangle((0, 0), W, H, fill=False, linestyle='--', linewidth=1.0, edgecolor=color)
+    rect = Rectangle((0, 0), W, H, fill=False, linestyle='--', linewidth=1.8, edgecolor=color)
     ax.add_patch(rect)
     # Save
     fig.savefig(out_pdf, dpi=400, bbox_inches='tight', pad_inches=0.0)
