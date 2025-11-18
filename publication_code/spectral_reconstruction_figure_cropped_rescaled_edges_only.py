@@ -275,10 +275,8 @@ def render_spectral_grid(
         label_axes.append((r, ax))
     label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
 
-    # Precompute a global symmetric scale for Diff if available (use NPZ if present, else PNG).
-    diff_global_min = None
-    diff_global_max = None
-    diff_global_den = None
+    # Precompute a global median-abs scale for Diff (use NPZ if present, else PNG).
+    diff_abs_values: List[float] = []
     def _load_diff_scalar(path: Path) -> np.ndarray | None:
         if path is None or (not path.exists()):
             return None
@@ -307,11 +305,13 @@ def render_spectral_grid(
         arr = _load_diff_scalar(p)
         if arr is None:
             continue
-        vmin = float(np.nanmin(arr)); vmax = float(np.nanmax(arr))
-        diff_global_min = vmin if diff_global_min is None else min(diff_global_min, vmin)
-        diff_global_max = vmax if diff_global_max is None else max(diff_global_max, vmax)
-    if diff_global_min is not None and diff_global_max is not None:
-        diff_global_den = 0.5 * (abs(diff_global_min) + abs(diff_global_max))
+        # Collect absolute values for robust scale
+        vals = np.abs(arr).ravel()
+        if vals.size > 0:
+            diff_abs_values.append(float(np.median(vals)))
+    diff_global_den = None
+    if diff_abs_values:
+        diff_global_den = float(np.median(np.array(diff_abs_values, dtype=np.float32)))
         if diff_global_den <= 1e-9:
             diff_global_den = 1.0
 
