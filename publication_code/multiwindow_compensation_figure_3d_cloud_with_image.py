@@ -135,6 +135,8 @@ def plot_cloud(
     fixed_xlim: Optional[Tuple[float, float]] = None,
     fixed_ylim: Optional[Tuple[float, float]] = None,
     fixed_zlim: Optional[Tuple[float, float]] = None,
+    overlay_box: bool = False,
+    box_color: Tuple[float, float, float, float] = (0, 0, 0, 0.6),
 ):
     pos = p > 0
     neg = p <= 0
@@ -243,6 +245,26 @@ def plot_cloud(
             surf.set_rasterized(True)
         except Exception:
             pass
+        if overlay_box:
+            corners = [
+                (x0, time_scale * overlay_time_ms, z0),
+                (x1, time_scale * overlay_time_ms, z0),
+                (x1, time_scale * overlay_time_ms, z1),
+                (x0, time_scale * overlay_time_ms, z1),
+            ]
+            segs = [
+                [corners[0], corners[1]],
+                [corners[1], corners[2]],
+                [corners[2], corners[3]],
+                [corners[3], corners[0]],
+            ]
+            lc = Line3DCollection(
+                segs,
+                colors=[box_color],
+                linewidths=0.8,
+                linestyles="dashed",
+            )
+            ax.add_collection3d(lc)
         # Dashed wireframe box around the overlay plane
         corners = [
             (x0, time_scale * overlay_time_ms, z0),
