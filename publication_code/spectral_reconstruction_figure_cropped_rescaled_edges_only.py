@@ -373,14 +373,7 @@ def render_spectral_grid(
             if img is None:
                 img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
             if row == 2:
-                # Diff row: display as-is; if grayscale, use a diverging colormap
-                if img.ndim == 3:
-                    # Drop alpha channel if present and render RGB directly
-                    if img.shape[2] == 4:
-                        img = img[..., :3]
-                    ax.imshow(img, origin="lower", aspect=image_aspect34)
-                else:
-                    ax.imshow(img, origin="lower", aspect=image_aspect34, cmap="coolwarm")
+                ax.imshow(img, origin="lower", aspect=image_aspect34)
             else:
                 if img.ndim == 3 and img.shape[2] >= 3:
                     lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
