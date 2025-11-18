@@ -185,7 +185,7 @@ def plot_cloud(
     ax.set_ylim(ylo, yhi)
 
     ax.set_xlabel("X (px)", labelpad=1)
-    ax.set_ylabel("Time (ms)", labelpad=1)
+    ax.set_ylabel("Time (ms)", labelpad=8)
     ax.set_zlabel("Y (px)", labelpad=1)
     ax.set_title(title, pad=2)
     # View with time on Y, spatial on X/Z; gentle perspective from front-left
