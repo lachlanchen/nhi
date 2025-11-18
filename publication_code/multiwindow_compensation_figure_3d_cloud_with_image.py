@@ -137,6 +137,12 @@ def plot_cloud(
     fixed_zlim: Optional[Tuple[float, float]] = None,
     overlay_box: bool = False,
     box_color: Tuple[float, float, float, float] = (0, 0, 0, 0.6),
+    # Optional pinned grid configuration
+    sensor_width: Optional[int] = None,
+    sensor_height: Optional[int] = None,
+    x_segments: int = 4,
+    z_segments: int = 3,
+    time_grid_ms: Optional[np.ndarray] = None,
 ):
     pos = p > 0
     neg = p <= 0
@@ -168,20 +174,27 @@ def plot_cloud(
     pad_x = 0.02 * (x_max - x_min + 1)
     pad_y = 0.02 * (y_max - y_min + 1)
     pad_t = 0.02 * (t_max - t_min + 1e-6)
-    xlo, xhi = (x_min - pad_x, x_max + pad_x) if fixed_xlim is None else fixed_xlim
-    # Clamp to non-negative pixel coordinates
-    xlo = max(0.0, xlo)
-    if fixed_zlim is None:
-        zlo, zhi = (y_min - pad_y, y_max + pad_y)
-        zlo = max(0.0, zlo)
-        # Compress Z (sensor Y) span more aggressively to tighten vertical footprint.
-        z_scale = 0.3
-        z_c = 0.5 * (zlo + zhi)
-        z_span = (zhi - zlo) * z_scale
-        zlo = z_c - 0.5 * z_span
-        zhi = z_c + 0.5 * z_span
+    # X/Z limits: pin to sensor grid if provided; otherwise use data limits (or fixed_* if provided)
+    if sensor_width is not None:
+        xlo, xhi = 0.0, float(sensor_width)
     else:
-        zlo, zhi = fixed_zlim
+        xlo, xhi = (x_min - pad_x, x_max + pad_x) if fixed_xlim is None else fixed_xlim
+        xlo = max(0.0, xlo)
+
+    if sensor_height is not None:
+        zlo, zhi = 0.0, float(sensor_height)
+    else:
+        if fixed_zlim is None:
+            zlo, zhi = (y_min - pad_y, y_max + pad_y)
+            zlo = max(0.0, zlo)
+            # Compress Z (sensor Y) span more aggressively to tighten vertical footprint.
+            z_scale = 0.3
+            z_c = 0.5 * (zlo + zhi)
+            z_span = (zhi - zlo) * z_scale
+            zlo = z_c - 0.5 * z_span
+            zhi = z_c + 0.5 * z_span
+        else:
+            zlo, zhi = fixed_zlim
     ylo, yhi = (time_scale * (t_min - pad_t), time_scale * (t_max + pad_t)) if fixed_ylim is None else fixed_ylim
     ylo = max(0.0, ylo)
     ax.set_xlim(xlo, xhi)
@@ -207,22 +220,29 @@ def plot_cloud(
 
     ax.get_proj = short_proj
     ax.tick_params(axis="both", which="major", labelsize=8, pad=2)
-    # Integer-friendly ticks: X into 4 segments (5 ticks), Z (sensor Y) into 3 segments (4 ticks),
-    # Time into 3 segments (4 ticks). Round labels to integers (ms/px).
+    # Integer-friendly ticks: X into x_segments (x_segments+1 ticks), Z into z_segments (z_segments+1 ticks),
+    # Time into 3 segments by default (4 ticks) or via explicit time_grid_ms. Labels are integers (ms/px).
     try:
         # X ticks
-        xticks = np.linspace(xlo, xhi, 5)
+        if sensor_width is not None:
+            xticks = np.linspace(0.0, float(sensor_width), x_segments + 1)
+        else:
+            xticks = np.linspace(xlo, xhi, x_segments + 1)
         ax.set_xticks(xticks)
         ax.set_xticklabels([f"{max(0, int(round(v)))}" for v in xticks])
         # Z (sensor Y) ticks
-        zticks = np.linspace(zlo, zhi, 4)
+        if sensor_height is not None:
+            zticks = np.linspace(0.0, float(sensor_height), z_segments + 1)
+        else:
+            zticks = np.linspace(zlo, zhi, z_segments + 1)
         ax.set_zticks(zticks)
         ax.set_zticklabels([f"{max(0, int(round(v)))}" for v in zticks])
         # Time ticks (set in axis coordinates then format to true ms)
-        t0 = max(0.0, (ylo / time_scale))
-        t1 = (yhi / time_scale)
-        # Force start at 0 to avoid negative labels
-        yticks_ms = np.linspace(0.0, t1, 4)
+        if time_grid_ms is not None:
+            yticks_ms = np.asarray(time_grid_ms, dtype=float)
+        else:
+            t1 = (yhi / time_scale)
+            yticks_ms = np.linspace(0.0, t1, 4)
         yticks_axis = time_scale * yticks_ms
         ax.set_yticks(yticks_axis)
         ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{max(0, int(round(v/s)))}"))
@@ -309,6 +329,11 @@ def main():
     ap.add_argument("--overlay-stride", type=int, default=8, help="Downsample factor for overlay plane to keep PDF lightweight (default 8)")
     ap.add_argument("--lock-time-axis", action="store_true", default=True, help="Use identical time axis limits for before/after panels")
     ap.add_argument("--lock-spatial-axis", action="store_true", default=True, help="Use identical X/Z limits for before/after panels")
+    # Grid pinning options
+    ap.add_argument("--pin-grid", action="store_true", help="Pin ticks to sensor/time grid (requires --sensor-width/--sensor-height for X/Z)")
+    ap.add_argument("--sensor-width", type=int, default=None, help="Sensor width in pixels (pins X ticks to 0..W with 4 segments)")
+    ap.add_argument("--sensor-height", type=int, default=None, help="Sensor height in pixels (pins Z ticks to 0..H with 3 segments)")
+    ap.add_argument("--time-segments", type=int, default=3, help="Number of segments for time grid (default 3 -> 0,1/3,2/3,1)")
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -348,21 +373,37 @@ def main():
     # Compute fixed axes if requested
     fixed_xlim = fixed_zlim = fixed_ylim = None
     if args.lock_spatial_axis:
-        x_min = float(min(xs.min(), xs_w.min()))
-        x_max = float(max(xs.max(), xs_w.max()))
-        y_min = float(min(ys.min(), ys_w.min()))
-        y_max = float(max(ys.max(), ys_w.max()))
-        pad_x = 0.02 * (x_max - x_min + 1)
-        pad_y = 0.02 * (y_max - y_min + 1)
-        fixed_xlim = (x_min - pad_x, x_max + pad_x)
-        fixed_zlim = (y_min - pad_y, y_max + pad_y)
+        if args.pin_grid and (args.sensor_width is not None) and (args.sensor_height is not None):
+            fixed_xlim = (0.0, float(args.sensor_width))
+            fixed_zlim = (0.0, float(args.sensor_height))
+        else:
+            x_min = float(min(xs.min(), xs_w.min()))
+            x_max = float(max(xs.max(), xs_w.max()))
+            y_min = float(min(ys.min(), ys_w.min()))
+            y_max = float(max(ys.max(), ys_w.max()))
+            pad_x = 0.02 * (x_max - x_min + 1)
+            pad_y = 0.02 * (y_max - y_min + 1)
+            fixed_xlim = (x_min - pad_x, x_max + pad_x)
+            fixed_zlim = (y_min - pad_y, y_max + pad_y)
     if args.lock_time_axis:
         tmin = float(min(ts_ms.min(), ts_w_ms.min()))
         tmax = float(max(ts_ms.max(), ts_w_ms.max()))
+        # Use a small pad above T, but keep min at 0
         pad_t = 0.02 * (tmax - tmin + 1e-6)
-        ylo_fixed = max(0.0, args.time_scale * (tmin - pad_t))
+        ylo_fixed = 0.0
         yhi_fixed = args.time_scale * (tmax + pad_t)
         fixed_ylim = (ylo_fixed, yhi_fixed)
+
+    # Prepare pinned time grid if requested
+    time_grid_ms = None
+    if args.pin_grid:
+        # 0, 1/seg, 2/seg, ..., 1 times T
+        if args.lock_time_axis:
+            tmax = float(max(ts_ms.max(), ts_w_ms.max()))
+        else:
+            tmax = float(ts_ms.max())
+        seg = max(1, int(args.time_segments))
+        time_grid_ms = np.linspace(0.0, tmax, seg + 1)
 
     # Save panels separately to avoid overflow
     fig1 = plt.figure(figsize=(4.4, 3.3))
@@ -386,6 +427,11 @@ def main():
         fixed_zlim=fixed_zlim,
         overlay_box=True,
         box_color=(1.0, 0.0, 0.0, 0.7),
+        sensor_width=args.sensor_width if args.pin_grid else None,
+        sensor_height=args.sensor_height if args.pin_grid else None,
+        x_segments=4,
+        z_segments=3,
+        time_grid_ms=time_grid_ms if args.pin_grid else None,
     )
     # Keep a small margin so axis labels stay visible after tight saving
     fig1.subplots_adjust(left=0.06, right=0.98, top=0.98, bottom=0.06)
@@ -414,6 +460,11 @@ def main():
         fixed_zlim=fixed_zlim,
         overlay_box=True,
         box_color=(0.0, 0.6, 0.0, 0.7),
+        sensor_width=args.sensor_width if args.pin_grid else None,
+        sensor_height=args.sensor_height if args.pin_grid else None,
+        x_segments=4,
+        z_segments=3,
+        time_grid_ms=time_grid_ms if args.pin_grid else None,
     )
     fig2.subplots_adjust(left=0.06, right=0.98, top=0.98, bottom=0.06)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
