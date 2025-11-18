@@ -129,3 +129,39 @@ export MPLBACKEND=Agg
 Output
 - Folder: `publication_code/figures/spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_noflip_<timestamp>`
 - Main PDF: `spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_noflip.pdf`
+
+## Variant — Signed Raw + Median Scaling (Comp & Diff), Single Bar
+
+- Raw row keeps polarity (± counts).
+- Comp row TwoSlopeNorm built from global median(|value|) (robust, signed).
+- Diff row loads signed NPZ gradients (fallback PNG) and scales by global median(|abs|); no per-image shift.
+- Single colorbar over all rows, abs range fixed via `--comp-global-abs` (e.g., 2).
+- Equal aspect; downsample 2; no flips.
+
+Command
+```
+export MPLBACKEND=Agg
+/home/lachlan/miniconda3/envs/nhi_test/bin/python \
+  publication_code/spectral_reconstruction_figure_cropped_rescaled_edges_only.py \
+  --segment /home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_sanqin_2835_20250925_184638/angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz \
+  --gt-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/groundtruth_spectrum_2835 \
+  --diff-frames-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/test300_rotated_frames_137d37_roi_crops_gradient_20nm \
+  --ref-frames-dir  /home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/test300_rotated_frames_137d37_roi_crops \
+  --bin-width-us 50000 --fine-step-us 5000 \
+  --sensor-width 1280 --sensor-height 720 \
+  --edge-quantile 0.05 \
+  --wl-min 400 --wl-max 700 --wl-step 20 \
+  --bar-wl-min 400 --bar-wl-max 700 \
+  --col-gap 0.045 --row-gap 0.006 \
+  --image-aspect12 equal --image-aspect34 equal \
+  --downsample-rate 2 \
+  --single-colorbar --row12-shared-cbar --comp-global-abs 2 \
+  --crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --external-crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --figure-name spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_onebar_abs2_npz_medscale_compmed_signedraw \
+  --save-png
+```
+
+Output
+- Folder: `publication_code/figures/spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_onebar_abs2_npz_medscale_compmed_signedraw_<timestamp>`
+- Main PDF: `spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_onebar_abs2_npz_medscale_compmed_signedraw.pdf`
