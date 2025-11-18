@@ -147,7 +147,7 @@ def plot_cloud(
         y[pos],
         c=colors["pos"],
         s=0.1,
-        alpha=0.6,
+        alpha=0.3,
         marker=".",
         rasterized=True,
     )
@@ -157,7 +157,7 @@ def plot_cloud(
         y[neg],
         c=colors["neg"],
         s=0.1,
-        alpha=0.6,
+        alpha=0.3,
         marker=".",
         rasterized=True,
     )
