@@ -305,10 +305,10 @@ def render_spectral_grid(
         arr = _load_diff_scalar(p)
         if arr is None:
             continue
-        # Collect absolute values for robust scale
+        # Collect 95th absolute values for robust scale
         vals = np.abs(arr).ravel()
         if vals.size > 0:
-            diff_abs_values.append(float(np.median(vals)))
+            diff_abs_values.append(float(np.percentile(vals, 95)))
     diff_global_den = None
     if diff_abs_values:
         diff_global_den = float(np.median(np.array(diff_abs_values, dtype=np.float32)))
@@ -318,10 +318,10 @@ def render_spectral_grid(
     # Precompute unified scales for rows 1–2 if requested
     raw_vmin = raw_global_vmin
     raw_vmax = raw_global_vmax
-    raw_abs_median = None
+    raw_abs_q95 = None
     comp_norm = None
     shared_norm = None
-    comp_abs_median = None
+    comp_abs_q95 = None
     selected_indices = [int(m["index"]) for m in columns]
     if unify_row12_scales and selected_indices:
         # Build cropped frames for scale calculation
@@ -332,11 +332,11 @@ def render_spectral_grid(
             return frame[y0:y1, x0:x1]
         # Collect median abs for comp row
         comp_abs_list: List[float] = []
-        # Row 1 global min/max and median |value|
-        if raw_vmin is None or raw_vmax is None or raw_abs_median is None:
+        # Row 1 global min/max and 95th |value|
+        if raw_vmin is None or raw_vmax is None or raw_abs_q95 is None:
             rmins = []
             rmaxs = []
-            rmeds = []
+            rqs = []
             for idx in selected_indices:
                 if not (0 <= idx < len(originals)):
                     continue
@@ -346,23 +346,23 @@ def render_spectral_grid(
                 fr = crop_sensor(fr)
                 rmins.append(float(np.nanmin(fr)))
                 rmaxs.append(float(np.nanmax(fr)))
-                rmeds.append(float(np.median(np.abs(fr))))
+                rqs.append(float(np.percentile(np.abs(fr), 95)))
             if rmins and rmaxs:
                 rvmin = min(rmins); rvmax = max(rmaxs)
                 if np.isclose(rvmin, rvmax):
                     rvmax = rvmin + 1e-3
                 raw_vmin = rvmin if raw_vmin is None else raw_vmin
                 raw_vmax = rvmax if raw_vmax is None else raw_vmax
-            if rmeds:
-                raw_abs_median = float(np.median(np.array(rmeds, dtype=np.float32)))
-                if raw_abs_median <= 1e-9:
-                    raw_abs_median = None
-        # Row 2 symmetric TwoSlopeNorm around 0 using global abs
+            if rqs:
+                raw_abs_q95 = float(np.median(np.array(rqs, dtype=np.float32)))
+                if raw_abs_q95 <= 1e-9:
+                    raw_abs_q95 = None
+        # Row 2 symmetric TwoSlopeNorm around 0 using global 95th abs
         if comp_norm is None:
             if comp_global_abs is not None:
                 comp_abs = float(comp_global_abs)
             else:
-                # Median |value| across selected comp frames (robust scale)
+                # 95th |value| across selected comp frames (robust scale)
                 if not comp_abs_list:
                     for idx in selected_indices:
                         if not (0 <= idx < len(compensated)):
@@ -371,10 +371,10 @@ def render_spectral_grid(
                         if flip_row12:
                             fc = np.flipud(fc)
                         fc = crop_sensor(fc)
-                        comp_abs_list.append(float(np.median(np.abs(fc))))
+                        comp_abs_list.append(float(np.percentile(np.abs(fc), 95)))
                 if comp_abs_list:
-                    comp_abs_median = float(np.median(np.array(comp_abs_list, dtype=np.float32)))
-                comp_abs = comp_abs_median if comp_abs_median is not None else None
+                    comp_abs_q95 = float(np.median(np.array(comp_abs_list, dtype=np.float32)))
+                comp_abs = comp_abs_q95 if comp_abs_q95 is not None else None
             if comp_abs is None:
                 cmins = []
                 cmaxs = []
@@ -404,8 +404,8 @@ def render_spectral_grid(
                 comp_abs = 1.0
             from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
             shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
-        elif comp_abs_median is not None:
-            comp_abs = float(comp_abs_median)
+        elif comp_abs_q95 is not None:
+            comp_abs = float(comp_abs_q95)
             if comp_abs <= 0.0:
                 comp_abs = 1.0
             from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
@@ -427,8 +427,8 @@ def render_spectral_grid(
             if sens_crop is not None:
                 y0, y1, x0, x1 = sens_crop
                 frame = frame[y0:y1, x0:x1]
-            if row == 0 and raw_abs_median is not None and raw_abs_median > 0:
-                frame = frame / raw_abs_median
+            if row == 0 and raw_abs_q95 is not None and raw_abs_q95 > 0:
+                frame = frame / raw_abs_q95
                 # If no explicit raw limits were provided, default to symmetric about 0
                 if raw_global_vmin is None and raw_global_vmax is None:
                     raw_vmin = -1.0
