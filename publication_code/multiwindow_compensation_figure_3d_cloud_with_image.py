@@ -203,11 +203,31 @@ def plot_cloud(
 
     ax.get_proj = short_proj
     ax.tick_params(axis="both", which="major", labelsize=8, pad=2)
-    ax.xaxis.set_major_locator(MaxNLocator(4))
-    ax.yaxis.set_major_locator(MaxNLocator(3))
-    ax.zaxis.set_major_locator(MaxNLocator(3))
-    # Show true milliseconds on ticks even though we stretch by time_scale
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{v/s:.0f}"))
+    # Integer-friendly ticks: X into 4 segments (5 ticks), Z (sensor Y) into 3 segments (4 ticks),
+    # Time into 3 segments (4 ticks). Round labels to integers (ms/px).
+    try:
+        # X ticks
+        xticks = np.linspace(xlo, xhi, 5)
+        ax.set_xticks(xticks)
+        ax.set_xticklabels([f"{int(round(v))}" for v in xticks])
+        # Z (sensor Y) ticks
+        zticks = np.linspace(zlo, zhi, 4)
+        ax.set_zticks(zticks)
+        ax.set_zticklabels([f"{int(round(v))}" for v in zticks])
+        # Time ticks (set in axis coordinates then format to true ms)
+        t0 = (ylo / time_scale)
+        t1 = (yhi / time_scale)
+        yticks_ms = np.linspace(t0, t1, 4)
+        yticks_axis = time_scale * yticks_ms
+        ax.set_yticks(yticks_axis)
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{int(round(v/s))}"))
+    except Exception:
+        # Fallback: limit tick count if manual setting fails
+        ax.xaxis.set_major_locator(MaxNLocator(4))
+        ax.yaxis.set_major_locator(MaxNLocator(3))
+        ax.zaxis.set_major_locator(MaxNLocator(3))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{v/s:.0f}"))
+    ax.grid(True)
 
     # Optional overlay plane of an image at a fixed time (in ms)
     if overlay_img is not None and overlay_time_ms is not None:
