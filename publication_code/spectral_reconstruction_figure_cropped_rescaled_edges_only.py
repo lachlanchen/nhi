@@ -372,14 +372,19 @@ def render_spectral_grid(
                     img = np.flipud(img)
             if img is None:
                 img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
-            if row == 2:
+            # Small change only:
+            # - Show row 3 and 4 "as is" (preserve RGB if provided)
+            # - For grayscale Diff (row 3), apply a coolwarm colormap; Reference stays as-is.
+            if img.ndim == 3:
+                # Drop alpha if present
+                if img.shape[2] == 4:
+                    img = img[..., :3]
                 ax.imshow(img, origin="lower", aspect=image_aspect34)
             else:
-                if img.ndim == 3 and img.shape[2] >= 3:
-                    lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
+                if row == 2:
+                    ax.imshow(img, origin="lower", aspect=image_aspect34, cmap="coolwarm")
                 else:
-                    lum = img.astype(np.float32)
-                ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap="gray")
+                    ax.imshow(img, origin="lower", aspect=image_aspect34, cmap="gray")
             ax.axis("off")
             row_axes[row].append(ax)
 
