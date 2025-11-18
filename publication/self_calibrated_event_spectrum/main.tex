@@ -44,7 +44,7 @@ We demonstrate a transmission hyperspectral system that drives a diffracted illu
 \usepackage{placeins}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,shadings}
+\usetikzlibrary{arrows.meta,positioning,shadings,calc}
 % Colors used in event cloud legends
 \definecolor{evtPos}{HTML}{FFBB78} % +1 polarity (orange)
 \definecolor{evtNeg}{HTML}{AEC7E8} % -1 polarity (blue)
@@ -178,29 +178,24 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   \begin{minipage}[t]{0.45\linewidth}
     \begin{tikzpicture}
       \node[anchor=south west, inner sep=0] (img3d) at (0,0)
-        {\includegraphics[width=\linewidth]{figures/overlay_image_after_plain.pdf}};
+        {\includegraphics[width=0.94\linewidth]{figures/overlay_image_after_plain.pdf}};
       \begin{scope}[x={(img3d.south east)}, y={(img3d.north west)}]
         \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
           at (-0.05, 1.12) {(d)};
       \end{scope}
-    \end{tikzpicture}
-  \end{minipage}\hspace{0.012\linewidth}
-  % External color bar to the right of (d): light blue -> white -> orange.
-  % Anchor bar height to panel (d) via an invisible reference image.
-  \begin{minipage}[t]{0.06\linewidth}
-    \begin{tikzpicture}
-      % Reserve the bar area height equal to panel (d)
-      \path[use as bounding box] (0,0) rectangle (0.06\linewidth, \panelDheight);
-      % Draw full-height bar with small margins
-      \def\xoff{0.012\linewidth}
-      \def\barw{0.035\linewidth}
-      \shade[bottom color=evtNeg, top color=white] (\xoff, 0.02\panelDheight)
-        rectangle (\xoff+\barw, 0.51\panelDheight);
-      \shade[bottom color=white, top color=evtPos] (\xoff, 0.51\panelDheight)
-        rectangle (\xoff+\barw, 0.98\panelDheight);
-      \node[anchor=west, inner sep=1pt, scale=0.7] at (\xoff+\barw+0.01, 0.02\panelDheight) {$-1$};
-      \node[anchor=west, inner sep=1pt, scale=0.7] at (\xoff+\barw+0.01, 0.51\panelDheight) {$0$};
-      \node[anchor=west, inner sep=1pt, scale=0.7] at (\xoff+\barw+0.01, 0.98\panelDheight) {$1$};
+      % Color bar to the immediate right of (d), full height, with small gap
+      \coordinate (barBL) at ($(img3d.south east)+(1.5mm,0mm)$);
+      \coordinate (barTL) at ($(img3d.north east)+(1.5mm,0mm)$);
+      \coordinate (barBR) at ($(barBL)+(3mm,0mm)$);
+      \coordinate (barTR) at ($(barTL)+(3mm,0mm)$);
+      \coordinate (barML) at ($(barBL)!0.5!(barTL)$);
+      \coordinate (barMR) at ($(barBR)!0.5!(barTR)$);
+      \shade[bottom color=evtNeg, top color=white] (barBL) rectangle (barMR);
+      \shade[bottom color=white, top color=evtPos] (barML) rectangle (barTR);
+      \node[anchor=west, inner sep=1pt, scale=0.7] at ($(barBR)+(0.6mm,0mm)$) {$-1$};
+      \node[anchor=west, inner sep=1pt, scale=0.7] at ($(barMR)+(0.6mm,0mm)$) {$0$};
+      \node[anchor=west, inner sep=1pt, scale=0.7] at ($(barTR)+(0.6mm,0mm)$) {$1$};
+    \end{scope}
     \end{tikzpicture}
   \end{minipage}\\[-2pt]
 
