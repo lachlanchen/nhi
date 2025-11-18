@@ -384,12 +384,23 @@ def render_spectral_grid(
             idx = meta["index"]; ax = fig.add_subplot(gs[row, ci + 1])
             img = None
             if 0 <= idx < len(paths) and paths[idx] and paths[idx].exists():
-                img = plt.imread(paths[idx])
-                if ext_crop is not None and img.ndim >= 2:
-                    y0, y1, x0, x1 = ext_crop
-                    img = img[y0:y1, x0:x1]
-                if flip_row34:
-                    img = np.flipud(img)
+                path = paths[idx]
+                if path.suffix.lower() == ".npz":
+                    try:
+                        img = np.load(path)["frame"]
+                    except Exception:
+                        img = None
+                if img is None:
+                    try:
+                        img = plt.imread(path)
+                    except Exception:
+                        img = None
+                if img is not None:
+                    if ext_crop is not None and img.ndim >= 2:
+                        y0, y1, x0, x1 = ext_crop
+                        img = img[y0:y1, x0:x1]
+                    if flip_row34:
+                        img = np.flipud(img)
             if img is None:
                 img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
             if row == 2:
@@ -399,6 +410,8 @@ def render_spectral_grid(
                     img_scalar = (0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]).astype(np.float32)
                 else:
                     img_scalar = img.astype(np.float32)
+                if diff_global_den is not None:
+                    img_scalar = img_scalar / diff_global_den
                 if single_colorbar:
                     ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
                 else:
@@ -949,3 +962,42 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    # Precompute a global symmetric scale for Diff if available (use NPZ if present, else PNG).
+    diff_global_min = None
+    diff_global_max = None
+    def _load_diff_scalar(path: Path) -> np.ndarray | None:
+        if path is None or (not path.exists()):
+            return None
+        arr = None
+        if path.suffix.lower() == ".npz":
+            try:
+                arr = np.load(path)["frame"]
+            except Exception:
+                arr = None
+        if arr is None:
+            try:
+                arr = plt.imread(path)
+            except Exception:
+                arr = None
+        if arr is None:
+            return None
+        if ext_crop is not None and arr.ndim >= 2:
+            y0, y1, x0, x1 = ext_crop
+            arr = arr[y0:y1, x0:x1]
+        if arr.ndim == 3 and arr.shape[2] >= 3:
+            arr = (0.2126 * arr[...,0] + 0.7152 * arr[...,1] + 0.0722 * arr[...,2]).astype(np.float32)
+        else:
+            arr = arr.astype(np.float32)
+        return arr
+    for p in diff_paths:
+        arr = _load_diff_scalar(p)
+        if arr is None:
+            continue
+        vmin = float(np.nanmin(arr)); vmax = float(np.nanmax(arr))
+        diff_global_min = vmin if diff_global_min is None else min(diff_global_min, vmin)
+        diff_global_max = vmax if diff_global_max is None else max(diff_global_max, vmax)
+    diff_global_den = None
+    if diff_global_min is not None and diff_global_max is not None:
+        diff_global_den = 0.5 * (abs(diff_global_min) + abs(diff_global_max))
+        if diff_global_den <= 1e-9:
+            diff_global_den = 1.0
