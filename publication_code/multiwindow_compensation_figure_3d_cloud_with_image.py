@@ -265,26 +265,6 @@ def plot_cloud(
                 linestyles="dashed",
             )
             ax.add_collection3d(lc)
-        # Dashed wireframe box around the overlay plane
-        corners = [
-            (x0, time_scale * overlay_time_ms, z0),
-            (x1, time_scale * overlay_time_ms, z0),
-            (x1, time_scale * overlay_time_ms, z1),
-            (x0, time_scale * overlay_time_ms, z1),
-        ]
-        segs = [
-            [corners[0], corners[1]],
-            [corners[1], corners[2]],
-            [corners[2], corners[3]],
-            [corners[3], corners[0]],
-        ]
-        lc = Line3DCollection(
-            segs,
-            colors=[(0, 0, 0, 0.6)],
-            linewidths=0.8,
-            linestyles="dashed",
-        )
-        ax.add_collection3d(lc)
 
 
 def main():
@@ -377,6 +357,8 @@ def main():
         fixed_xlim=fixed_xlim,
         fixed_ylim=fixed_ylim,
         fixed_zlim=fixed_zlim,
+        overlay_box=True,
+        box_color=(1.0, 0.0, 0.0, 0.7),
     )
     fig1.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig1, ax1, out_dir / "event_cloud_before.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
@@ -402,6 +384,8 @@ def main():
         fixed_xlim=fixed_xlim,
         fixed_ylim=fixed_ylim,
         fixed_zlim=fixed_zlim,
+        overlay_box=True,
+        box_color=(0.0, 0.6, 0.0, 0.7),
     )
     fig2.subplots_adjust(left=0, right=1, top=1, bottom=0)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
