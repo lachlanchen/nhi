@@ -393,10 +393,16 @@ def render_spectral_grid(
             if img is None:
                 img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
             if row == 2:
-                if single_colorbar:
-                    ax.imshow(img, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
+                # Diff row: always map to a scalar before applying colormap
+                if img.ndim == 3 and img.shape[2] >= 3:
+                    # Convert to luminance so cmap applies consistently
+                    img_scalar = (0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]).astype(np.float32)
                 else:
-                    ax.imshow(img, origin="lower", aspect=image_aspect34)
+                    img_scalar = img.astype(np.float32)
+                if single_colorbar:
+                    ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
+                else:
+                    ax.imshow(img_scalar, origin="lower", aspect=image_aspect34)
             else:
                 if img.ndim == 3 and img.shape[2] >= 3:
                     lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
