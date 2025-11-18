@@ -318,6 +318,7 @@ def render_spectral_grid(
     # Precompute unified scales for rows 1–2 if requested
     raw_vmin = raw_global_vmin
     raw_vmax = raw_global_vmax
+    raw_abs_median = None
     comp_norm = None
     shared_norm = None
     comp_abs_median = None
@@ -331,10 +332,11 @@ def render_spectral_grid(
             return frame[y0:y1, x0:x1]
         # Collect median abs for comp row
         comp_abs_list: List[float] = []
-        # Row 1 global min/max
-        if raw_vmin is None or raw_vmax is None:
+        # Row 1 global min/max and median |value|
+        if raw_vmin is None or raw_vmax is None or raw_abs_median is None:
             rmins = []
             rmaxs = []
+            rmeds = []
             for idx in selected_indices:
                 if not (0 <= idx < len(originals)):
                     continue
@@ -344,13 +346,17 @@ def render_spectral_grid(
                 fr = crop_sensor(fr)
                 rmins.append(float(np.nanmin(fr)))
                 rmaxs.append(float(np.nanmax(fr)))
+                rmeds.append(float(np.median(np.abs(fr))))
             if rmins and rmaxs:
                 rvmin = min(rmins); rvmax = max(rmaxs)
-                # Avoid degenerate range
                 if np.isclose(rvmin, rvmax):
                     rvmax = rvmin + 1e-3
                 raw_vmin = rvmin if raw_vmin is None else raw_vmin
                 raw_vmax = rvmax if raw_vmax is None else raw_vmax
+            if rmeds:
+                raw_abs_median = float(np.median(np.array(rmeds, dtype=np.float32)))
+                if raw_abs_median <= 1e-9:
+                    raw_abs_median = None
         # Row 2 symmetric TwoSlopeNorm around 0 using global abs
         if comp_norm is None:
             if comp_global_abs is not None:
@@ -421,6 +427,12 @@ def render_spectral_grid(
             if sens_crop is not None:
                 y0, y1, x0, x1 = sens_crop
                 frame = frame[y0:y1, x0:x1]
+            if row == 0 and raw_abs_median is not None and raw_abs_median > 0:
+                frame = frame / raw_abs_median
+                # If no explicit raw limits were provided, default to symmetric about 0
+                if raw_global_vmin is None and raw_global_vmax is None:
+                    raw_vmin = -1.0
+                    raw_vmax = 1.0
             if single_colorbar:
                 # Force shared colormap/norm across all rows
                 ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12, norm=shared_norm)
