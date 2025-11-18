@@ -598,8 +598,9 @@ def render_spectral_grid(
             top = max(ax.get_position().y1 for ax in all_axes) if all_axes else cax_all.get_position().y1
             bot = min(ax.get_position().y0 for ax in all_axes) if all_axes else cax_all.get_position().y0
             pos = cax_all.get_position()
-            # Shift the bar to the right by one extra gap to increase separation from data columns
-            cax_all.set_position([pos.x0 + gap, bot, pos.width, max(0.0, top - bot)])
+            # Nudge the bar slightly to the right (10% of gap) for a subtle separation
+            offset = 0.1 * gap
+            cax_all.set_position([pos.x0 + offset, bot, pos.width, max(0.0, top - bot)])
         except Exception:
             pass
     # Else, if requested, add colorbars for rows 1–2 at the far right
