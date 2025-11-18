@@ -89,3 +89,43 @@ Tip: Use `git show <sha>` to inspect the diff of an individual change.
 - Use `--flip-row12` for row 1–2 if required by your dataset orientation.
 - Use `--edge-quantile` to adjust edge sensitivity (default 0.05).
 
+
+## Variant — No‑Flip, Equal Aspect, ds=2, Row/External Colorbars
+
+Purpose
+- Keep all four rows at equal pixel aspect; do not flip sensor or external rows.
+- Add a single shared colorbar for the top two rows (Original + Comp.).
+- Add one external colorbar spanning the bottom two rows (Diff + Reference).
+- Keep every 2nd column (downsample‑rate 2) from the selected wavelength range.
+
+Command
+```
+export MPLBACKEND=Agg
+/home/lachlan/miniconda3/envs/nhi_test/bin/python \
+  publication_code/spectral_reconstruction_figure_cropped_rescaled_edges_only.py \
+  --segment /home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/\
+           angle_20_sanqin_2835_20250925_184638/\
+           angle_20_sanqin_2835_event_20250925_184638_segments/Scan_1_Forward_events.npz \
+  --gt-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/groundtruth_spectrum_2835 \
+  --diff-frames-dir /home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/\
+                    test300_rotated_frames_137d37_roi_crops_gradient_20nm \
+  --ref-frames-dir  /home/lachlan/ProjectsLFS/nhi_reconstruction/hyperspectral_data_sanqin_gt/\
+                    test300_rotated_frames_137d37_roi_crops \
+  --bin-width-us 50000 --fine-step-us 5000 \
+  --sensor-width 1280 --sensor-height 720 \
+  --edge-quantile 0.05 \
+  --wl-min 400 --wl-max 700 --wl-step 20 \
+  --bar-wl-min 400 --bar-wl-max 700 \
+  --col-gap 0.045 --row-gap 0.006 \
+  --image-aspect12 equal --image-aspect34 equal \
+  --downsample-rate 2 \
+  --row12-shared-cbar --row34-colorbar \
+  --crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --external-crop-json /home/lachlan/ProjectsLFS/nhi_reconstruction/alignment/crops/crop_metadata.json \
+  --figure-name spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_noflip \
+  --save-png
+```
+
+Output
+- Folder: `publication_code/figures/spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_noflip_<timestamp>`
+- Main PDF: `spectral_reconstruction_scan_rotated_cropped_400_700_ds2_equal_noflip.pdf`
