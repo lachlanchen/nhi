@@ -169,8 +169,11 @@ def plot_cloud(
     pad_y = 0.02 * (y_max - y_min + 1)
     pad_t = 0.02 * (t_max - t_min + 1e-6)
     xlo, xhi = (x_min - pad_x, x_max + pad_x) if fixed_xlim is None else fixed_xlim
+    # Clamp to non-negative pixel coordinates
+    xlo = max(0.0, xlo)
     if fixed_zlim is None:
         zlo, zhi = (y_min - pad_y, y_max + pad_y)
+        zlo = max(0.0, zlo)
         # Compress Z (sensor Y) span more aggressively to tighten vertical footprint.
         z_scale = 0.3
         z_c = 0.5 * (zlo + zhi)
@@ -180,6 +183,7 @@ def plot_cloud(
     else:
         zlo, zhi = fixed_zlim
     ylo, yhi = (time_scale * (t_min - pad_t), time_scale * (t_max + pad_t)) if fixed_ylim is None else fixed_ylim
+    ylo = max(0.0, ylo)
     ax.set_xlim(xlo, xhi)
     ax.set_zlim(zlo, zhi)
     ax.set_ylim(ylo, yhi)
@@ -215,7 +219,7 @@ def plot_cloud(
         ax.set_zticks(zticks)
         ax.set_zticklabels([f"{int(round(v))}" for v in zticks])
         # Time ticks (set in axis coordinates then format to true ms)
-        t0 = (ylo / time_scale)
+        t0 = max(0.0, (ylo / time_scale))
         t1 = (yhi / time_scale)
         yticks_ms = np.linspace(t0, t1, 4)
         yticks_axis = time_scale * yticks_ms
