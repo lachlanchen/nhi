@@ -279,6 +279,7 @@ def render_spectral_grid(
     raw_vmin = raw_global_vmin
     raw_vmax = raw_global_vmax
     comp_norm = None
+    shared_norm = None
     selected_indices = [int(m["index"]) for m in columns]
     if unify_row12_scales and selected_indices:
         # Build cropped frames for scale calculation
@@ -332,6 +333,20 @@ def render_spectral_grid(
                 comp_abs = 1.0
             from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
             comp_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
+    # Shared norm for the single colorbar path (all rows share the same TwoSlopeNorm)
+    if single_colorbar:
+        if comp_global_abs is not None:
+            comp_abs = float(comp_global_abs)
+            if comp_abs <= 0.0:
+                comp_abs = 1.0
+            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
+            shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
+        elif comp_norm is not None:
+            shared_norm = comp_norm
+        elif raw_vmin is not None and raw_vmax is not None:
+            comp_abs = max(abs(float(raw_vmin)), abs(float(raw_vmax)), 1e-3)
+            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
+            shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
     # Draw row 1/2
     for row, frames, cmap in [(0, originals, raw_cmap), (1, compensated, comp_cmap)]:
         for ci, meta in enumerate(columns, start=0):
@@ -343,7 +358,10 @@ def render_spectral_grid(
             if sens_crop is not None:
                 y0, y1, x0, x1 = sens_crop
                 frame = frame[y0:y1, x0:x1]
-            if row12_shared_cbar:
+            if single_colorbar:
+                # Force shared colormap/norm across all rows
+                ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12, norm=shared_norm)
+            elif row12_shared_cbar:
                 # Force both rows to use comp colormap and shared norm
                 if comp_norm is not None:
                     ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12, norm=comp_norm)
@@ -375,13 +393,19 @@ def render_spectral_grid(
             if img is None:
                 img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
             if row == 2:
-                ax.imshow(img, origin="lower", aspect=image_aspect34)
+                if single_colorbar:
+                    ax.imshow(img, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
+                else:
+                    ax.imshow(img, origin="lower", aspect=image_aspect34)
             else:
                 if img.ndim == 3 and img.shape[2] >= 3:
                     lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
                 else:
                     lum = img.astype(np.float32)
-                ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=row34_cmap_name or "gray")
+                if single_colorbar:
+                    ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
+                else:
+                    ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=row34_cmap_name or "gray")
             ax.axis("off")
             row_axes[row].append(ax)
 
@@ -487,8 +511,10 @@ def render_spectral_grid(
     # If requested, add a single tall colorbar spanning rows 1–4
     if single_colorbar and col_bar is not None:
         cax_all = fig.add_subplot(gs[0:4, col_bar])
-        # Prefer comp_norm (symmetric around 0) if available; fall back to raw range
-        if comp_norm is not None:
+        # Prefer shared_norm if available; fall back to comp_norm or raw range
+        if shared_norm is not None:
+            sm_all = plt.cm.ScalarMappable(norm=shared_norm, cmap=comp_cmap)
+        elif comp_norm is not None:
             sm_all = plt.cm.ScalarMappable(norm=comp_norm, cmap=comp_cmap)
         else:
             rvmin = raw_vmin if raw_vmin is not None else 0.0
@@ -499,6 +525,14 @@ def render_spectral_grid(
         cb_all.ax.set_ylabel("", rotation=90)
         cb_all.outline.set_visible(True); cb_all.outline.set_linewidth(0.8)
         cb_all.ax.tick_params(labelsize=8, width=0.6, length=3)
+        # Align single bar to rows 0–3 image bounds
+        try:
+            top03 = max(ax.get_position().y1 for ax in row_axes[0] + row_axes[1] + row_axes[2] + row_axes[3])
+            bot03 = min(ax.get_position().y0 for ax in row_axes[0] + row_axes[1] + row_axes[2] + row_axes[3])
+            pos = cax_all.get_position()
+            cax_all.set_position([pos.x0, bot03, pos.width, max(0.0, top03 - bot03)])
+        except Exception:
+            pass
     # Else, if requested, add colorbars for rows 1–2 at the far right
     elif add_row12_colorbars and col_bar is not None:
         if row12_shared_cbar:
