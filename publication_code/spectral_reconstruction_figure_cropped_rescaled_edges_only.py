@@ -460,11 +460,10 @@ def render_spectral_grid(
             axes_list.extend(row_axes[r])
         if not axes_list:
             continue
-        x0 = min(ax.get_position().x0 for ax in axes_list)
-        x1 = max(ax.get_position().x1 for ax in axes_list)
-        y0 = min(ax.get_position().y0 for ax in axes_list)
-        y1 = max(ax.get_position().y1 for ax in axes_list)
-        pad = 0.005
+        from matplotlib.transforms import Bbox
+        bbox = Bbox.union([ax.get_position() for ax in axes_list])
+        x0, y0, x1, y1 = bbox.x0, bbox.y0, bbox.x1, bbox.y1
+        pad = 0.002
         rect = mpatches.Rectangle(
             (x0 - pad, y0 - pad),
             (x1 - x0) + 2 * pad,
