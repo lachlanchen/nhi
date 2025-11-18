@@ -346,7 +346,7 @@ def save_panel_c_separates(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax
     def _one(img: np.ndarray, title: str, fname_pdf: str):
         f = plt.figure(figsize=(6.8, 3.2))
         ax = f.add_subplot(1, 1, 1)
-        im = ax.imshow(img, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+        im = ax.imshow(img, cmap="coolwarm", vmin=vmin, vmax=vmax, aspect="equal")
         label_font = 12
         tick_font = 10
         ax.set_title(title, fontsize=18, pad=8)
@@ -376,13 +376,13 @@ def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: fl
     import matplotlib.pyplot as plt
     png_o = out_dir / f"multiwindow_bin50ms_original_plain{suffix}.png"
     png_c = out_dir / f"multiwindow_bin50ms_compensated_plain{suffix}.png"
-    plt.imsave(png_o, orig, cmap="magma", vmin=vmin, vmax=vmax)
-    plt.imsave(png_c, comp, cmap="magma", vmin=vmin, vmax=vmax)
+    plt.imsave(png_o, orig, cmap="coolwarm", vmin=vmin, vmax=vmax)
+    plt.imsave(png_c, comp, cmap="coolwarm", vmin=vmin, vmax=vmax)
     # PDF: embed raster without axes
     def _pdf(img: np.ndarray, stem: str):
         f = plt.figure(figsize=(6, 3))
         ax = f.add_subplot(1, 1, 1)
-        ax.imshow(img, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+        ax.imshow(img, cmap="coolwarm", vmin=vmin, vmax=vmax, aspect="equal")
         ax.axis("off")
         f.savefig(out_dir / stem, dpi=300, bbox_inches="tight", pad_inches=0.0)
         plt.close(f)
@@ -423,7 +423,7 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True)
     label_font = 12
     tick_font = 10
-    im1 = ax1.imshow(orig, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+    im1 = ax1.imshow(orig, cmap="coolwarm", vmin=vmin, vmax=vmax, aspect="equal")
     ax1.set_title(f"Original – Bin {idx}", fontsize=label_font)
     ax1.set_xlabel("X (px)", fontsize=label_font)
     ax1.set_ylabel("Y (px)", fontsize=label_font)
@@ -434,7 +434,7 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
-    im2 = ax2.imshow(comp, cmap="magma", vmin=vmin, vmax=vmax, aspect="equal")
+    im2 = ax2.imshow(comp, cmap="coolwarm", vmin=vmin, vmax=vmax, aspect="equal")
     ax2.set_title(f"Compensated – Bin {idx}", fontsize=label_font)
     ax2.set_xlabel("X (px)", fontsize=label_font)
     # Hide right panel's y-label and tick labels (shared y-axis)
