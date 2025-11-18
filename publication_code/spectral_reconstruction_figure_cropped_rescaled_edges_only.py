@@ -832,10 +832,11 @@ def main() -> None:
     metadata_bins: List[Dict[str, float]] = []
     t_comp = t - ((float(np.mean(a_params)) * x + float(np.mean(b_params)) * y) if (a_params is not None and b_params is not None) else 0.0)
     weights = np.where(p >= 0, args.pos_scale, -neg_scale).astype(np.float32)
+    raw_weights = p.astype(np.float32)  # preserve polarity in the raw branch
     for k in range(num_bins):
         s = t_min + k * args.bin_width_us; e = min(t_min + (k + 1) * args.bin_width_us, t_max)
         mask = (t >= s) & (t < e); comp_mask = (t_comp >= s) & (t_comp < e)
-        frame_raw = accumulate_bin(x, y, mask, np.ones_like(weights), sensor_shape)
+        frame_raw = accumulate_bin(x, y, mask, raw_weights, sensor_shape)
         frame_comp = accumulate_bin(x, y, comp_mask, weights, sensor_shape)
         if args.smooth:
             frame_comp = smooth_volume_3d(np.stack([frame_comp], axis=0), 3)[0]
