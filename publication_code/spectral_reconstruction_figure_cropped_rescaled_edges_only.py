@@ -462,7 +462,7 @@ def render_spectral_grid(
             continue
         from matplotlib.transforms import Bbox
         bbox = Bbox.union([ax.get_position() for ax in axes_list])
-        x0, y0, x1, y1 = bbox.x0, bbox.y0, bbox.x1, bbox.y1
+        x0, y0, x1, y1 = bbox.x0, bbox.y0 + 0.02, bbox.x1, bbox.y1 + 0.02  # shift up slightly
         pad = 0.002
         rect = mpatches.Rectangle(
             (x0 - pad, y0 - pad),
