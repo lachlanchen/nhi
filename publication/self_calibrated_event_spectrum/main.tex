@@ -44,7 +44,10 @@ We demonstrate a transmission hyperspectral system that drives a diffracted illu
 \usepackage{placeins}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning}
+\usetikzlibrary{arrows.meta,positioning,shadings}
+% Colors used in event cloud legends
+\definecolor{evtPos}{HTML}{FFBB78} % +1 polarity (orange)
+\definecolor{evtNeg}{HTML}{AEC7E8} % -1 polarity (blue)
 
 % Yellow placeholder figure macro for drafts
 \newcommand{\phfig}[2][0.95\linewidth]{%
@@ -132,41 +135,62 @@ which drives event emission when the logarithmic intensity crosses the sensor th
 
 \begin{figure}[t]
   \centering
-  % Figure 3(a): Events with learned boundaries (X--T and Y--T)
+  % (a) 3D event cloud before compensation
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3a) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_a_events.pdf}};
-      {\includegraphics[width=0.8\linewidth]{figures/multiwindow_events_blank.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/event_cloud_before.pdf}};
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(a)};
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
+        at (-0.05, 1.050) {(a)};
+      % Discrete polarity legend (−1 blue, +1 orange)
+      \def\lx{0.70}\def\ly{0.92}\def\lw{0.08}\def\lh{0.03}
+      \draw[fill=evtNeg, draw=black, line width=0.2pt] (\lx,\ly) rectangle ++(\lw,\lh);
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+\lw+0.01, \ly+0.5*\lh) {$-1$};
+      \draw[fill=evtPos, draw=black, line width=0.2pt] (\lx,\ly-0.05) rectangle ++(\lw,\lh);
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+\lw+0.01, \ly-0.05+0.5*\lh) {$+1$};
     \end{scope}
-  \end{tikzpicture}\\[-5pt]
-  % Figure 3(b): 3D event cloud before compensation (tight-cropped)
+  \end{tikzpicture}\\[-8pt]
+
+  % (b) 3D event cloud after compensation
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (img3b) at (0,0)
-      {\includegraphics[width=0.8\linewidth]{figures/event_cloud_before.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/event_cloud_after.pdf}};
     \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(b)};
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
+        at (-0.05, 1.050) {(b)};
     \end{scope}
-  \end{tikzpicture}\\[-5pt]
-  % Figure 3(c): 3D event cloud after compensation (tight-cropped)
-  \begin{tikzpicture}
-    \node[anchor=south west, inner sep=0] (img3c) at (0,0)
-      {\includegraphics[width=0.8\linewidth]{figures/event_cloud_after.pdf}};
-    \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 1.050) {(c)};
-    \end{scope}
-  \end{tikzpicture}\\[-5pt]
-  % Figure 3(d): Single 50 ms bin comparison (original vs compensated)
-  \begin{tikzpicture}
-    \node[anchor=south west, inner sep=0] (img3d) at (0,0)
-      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
-      {\includegraphics[width=0.8\linewidth]{figures/multiwindow_bin50ms_sanqin.pdf}};
-    \begin{scope}[x={(img3d.south east)}, y={(img3d.north west)}]
-      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.00, 0.900) {(d)};
-    \end{scope}
-  \end{tikzpicture}\\[-20pt]
-  \caption{Multi-window compensation diagnostics. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) 3D event cloud before compensation, tight-cropped to remove whitespace. (c) 3D event cloud after compensation showing the straightened motion plane. (d) Example 50~ms bin comparing original and compensated frames.}
+  \end{tikzpicture}\\[-4pt]
+
+  % (c,d) 50 ms accumulations, side-by-side
+  \begin{minipage}[t]{0.49\linewidth}
+    \begin{tikzpicture}
+      \node[anchor=south west, inner sep=0] (img3c) at (0,0)
+        {\includegraphics[width=\linewidth]{figures/overlay_image_before_plain.pdf}};
+      \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
+        \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
+          at (-0.05, 1.12) {(c)};
+      \end{scope}
+    \end{tikzpicture}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.49\linewidth}
+    \begin{tikzpicture}
+      \node[anchor=south west, inner sep=0] (img3d) at (0,0)
+        {\includegraphics[width=\linewidth]{figures/overlay_image_after_plain.pdf}};
+      \begin{scope}[x={(img3d.south east)}, y={(img3d.north west)}]
+        \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
+          at (-0.05, 1.12) {(d)};
+        % Continuous color bar (coolwarm-like) inside panel (d)
+        \def\xb{0.92}\def\yb{0.10}\def\wb{0.035}\def\hb{0.80}
+        \shade[bottom color=blue, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
+        \shade[bottom color=white, top color=red]  (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb) {$-1$};
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb+0.5*\hb) {$0$};
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb+\hb) {$1$};
+      \end{scope}
+    \end{tikzpicture}
+  \end{minipage}\\[-2pt]
+
+  \caption{Multi-window scanning compensation results. Panels (a) and (b) show 3D event clouds before and after compensation, respectively. In each, a semi-transparent panel with a dashed outline (red in (a), green in (b)) marks the spatial footprint of a short (50~ms) temporal accumulation range. Panels (c) and (d) present the corresponding 2D event accumulations over that same range (before and after), matching the marked regions in (a) and (b). A polarity legend (\mbox{$-1$}, \mbox{$+1$}) is shown in (a); a continuous intensity color bar for (c,d) appears beside (d).}
   \label{fig:warp}
 \end{figure}
 
