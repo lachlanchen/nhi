@@ -738,13 +738,21 @@ def render_spectral_grid(
         save_frame_png(comp_used_dir / fname, f_comp, comp_cmap)
         # External rows: copy/crop matching images by index if available
         if 0 <= idx < len(diff_paths) and diff_paths[idx] and diff_paths[idx].exists():
-            img = plt.imread(diff_paths[idx])
-            if ext_crop is not None:
-                y0, y1, x0, x1 = ext_crop; img = img[y0:y1, x0:x1]
-            if flip_row34: img = np.flipud(img)
-            plt.imsave(diff_used_dir / fname, img, origin="lower")
-            # Also record as selected
-            plt.imsave(diff_sel_dir / fname, img, origin="lower")
+            p = diff_paths[idx]
+            if p.suffix.lower() == ".npz":
+                try:
+                    img = np.load(p)["frame"]
+                except Exception:
+                    img = None
+            else:
+                img = plt.imread(p)
+            if img is not None:
+                if ext_crop is not None and img.ndim >= 2:
+                    y0, y1, x0, x1 = ext_crop; img = img[y0:y1, x0:x1]
+                if flip_row34: img = np.flipud(img)
+                plt.imsave(diff_used_dir / fname, img, origin="lower")
+                # Also record as selected
+                plt.imsave(diff_sel_dir / fname, img, origin="lower")
         if 0 <= idx < len(ref_paths) and ref_paths[idx] and ref_paths[idx].exists():
             img = plt.imread(ref_paths[idx])
             if ext_crop is not None:
