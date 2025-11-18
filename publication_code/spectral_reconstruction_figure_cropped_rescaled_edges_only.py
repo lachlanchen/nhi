@@ -275,6 +275,46 @@ def render_spectral_grid(
         label_axes.append((r, ax))
     label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
 
+    # Precompute a global symmetric scale for Diff if available (use NPZ if present, else PNG).
+    diff_global_min = None
+    diff_global_max = None
+    diff_global_den = None
+    def _load_diff_scalar(path: Path) -> np.ndarray | None:
+        if path is None or (not path.exists()):
+            return None
+        arr = None
+        if path.suffix.lower() == ".npz":
+            try:
+                arr = np.load(path)["frame"]
+            except Exception:
+                arr = None
+        if arr is None:
+            try:
+                arr = plt.imread(path)
+            except Exception:
+                arr = None
+        if arr is None:
+            return None
+        if ext_crop is not None and arr.ndim >= 2:
+            y0, y1, x0, x1 = ext_crop
+            arr = arr[y0:y1, x0:x1]
+        if arr.ndim == 3 and arr.shape[2] >= 3:
+            arr = (0.2126 * arr[...,0] + 0.7152 * arr[...,1] + 0.0722 * arr[...,2]).astype(np.float32)
+        else:
+            arr = arr.astype(np.float32)
+        return arr
+    for p in diff_paths:
+        arr = _load_diff_scalar(p)
+        if arr is None:
+            continue
+        vmin = float(np.nanmin(arr)); vmax = float(np.nanmax(arr))
+        diff_global_min = vmin if diff_global_min is None else min(diff_global_min, vmin)
+        diff_global_max = vmax if diff_global_max is None else max(diff_global_max, vmax)
+    if diff_global_min is not None and diff_global_max is not None:
+        diff_global_den = 0.5 * (abs(diff_global_min) + abs(diff_global_max))
+        if diff_global_den <= 1e-9:
+            diff_global_den = 1.0
+
     # Precompute unified scales for rows 1–2 if requested
     raw_vmin = raw_global_vmin
     raw_vmax = raw_global_vmax
@@ -962,43 +1002,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    # Precompute a global symmetric scale for Diff if available (use NPZ if present, else PNG).
-    diff_global_min = None
-    diff_global_max = None
-    diff_global_den = None
-    def _load_diff_scalar(path: Path) -> np.ndarray | None:
-        if path is None or (not path.exists()):
-            return None
-        arr = None
-        if path.suffix.lower() == ".npz":
-            try:
-                arr = np.load(path)["frame"]
-            except Exception:
-                arr = None
-        if arr is None:
-            try:
-                arr = plt.imread(path)
-            except Exception:
-                arr = None
-        if arr is None:
-            return None
-        if ext_crop is not None and arr.ndim >= 2:
-            y0, y1, x0, x1 = ext_crop
-            arr = arr[y0:y1, x0:x1]
-        if arr.ndim == 3 and arr.shape[2] >= 3:
-            arr = (0.2126 * arr[...,0] + 0.7152 * arr[...,1] + 0.0722 * arr[...,2]).astype(np.float32)
-        else:
-            arr = arr.astype(np.float32)
-        return arr
-    for p in diff_paths:
-        arr = _load_diff_scalar(p)
-        if arr is None:
-            continue
-        vmin = float(np.nanmin(arr)); vmax = float(np.nanmax(arr))
-        diff_global_min = vmin if diff_global_min is None else min(diff_global_min, vmin)
-        diff_global_max = vmax if diff_global_max is None else max(diff_global_max, vmax)
-    diff_global_den = None
-    if diff_global_min is not None and diff_global_max is not None:
-        diff_global_den = 0.5 * (abs(diff_global_min) + abs(diff_global_max))
-        if diff_global_den <= 1e-9:
-            diff_global_den = 1.0
