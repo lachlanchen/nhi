@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, FuncFormatter
 from matplotlib.transforms import Bbox
 import numpy as np
 import torch
@@ -193,6 +193,8 @@ def plot_cloud(
     ax.tick_params(axis="both", which="major", labelsize=8, pad=2)
     ax.xaxis.set_major_locator(MaxNLocator(4))
     ax.yaxis.set_major_locator(MaxNLocator(4))
+    # Show true milliseconds on ticks even though we stretch by time_scale
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{v/s:.0f}"))
 
     # Optional overlay plane of an image at a fixed time (in ms)
     if overlay_img is not None and overlay_time_ms is not None:
