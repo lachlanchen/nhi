@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, List, Sequence, Tuple, Optional
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
 from matplotlib.colors import Colormap, TwoSlopeNorm, Normalize
 
@@ -452,6 +453,30 @@ def render_spectral_grid(
             row_axes[row].append(ax)
 
     # Gradient bar with wavelength ticks under the bar
+    # Optional dashed box around rows 2 and 3 (Comp. and Diff.)
+    for boxed_rows in ([1, 2],):
+        axes_list = []
+        for r in boxed_rows:
+            axes_list.extend(row_axes[r])
+        if not axes_list:
+            continue
+        x0 = min(ax.get_position().x0 for ax in axes_list)
+        x1 = max(ax.get_position().x1 for ax in axes_list)
+        y0 = min(ax.get_position().y0 for ax in axes_list)
+        y1 = max(ax.get_position().y1 for ax in axes_list)
+        pad = 0.005
+        rect = mpatches.Rectangle(
+            (x0 - pad, y0 - pad),
+            (x1 - x0) + 2 * pad,
+            (y1 - y0) + 2 * pad,
+            transform=fig.transFigure,
+            fill=False,
+            linestyle="--",
+            linewidth=0.8,
+            edgecolor="black",
+        )
+        fig.add_artist(rect)
+
     ax_bar_ref = None
     # Determine bar wavelength range: prefer override, else from selected columns' nm, else guess from ref paths
     wl_min = bar_wl_min
