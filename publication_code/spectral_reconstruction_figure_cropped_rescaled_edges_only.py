@@ -320,6 +320,7 @@ def render_spectral_grid(
     raw_vmax = raw_global_vmax
     comp_norm = None
     shared_norm = None
+    comp_abs_median = None
     selected_indices = [int(m["index"]) for m in columns]
     if unify_row12_scales and selected_indices:
         # Build cropped frames for scale calculation
@@ -328,6 +329,8 @@ def render_spectral_grid(
                 return frame
             y0, y1, x0, x1 = sens_crop
             return frame[y0:y1, x0:x1]
+        # Collect median abs for comp row
+        comp_abs_list: List[float] = []
         # Row 1 global min/max
         if raw_vmin is None or raw_vmax is None:
             rmins = []
@@ -353,6 +356,20 @@ def render_spectral_grid(
             if comp_global_abs is not None:
                 comp_abs = float(comp_global_abs)
             else:
+                # Median |value| across selected comp frames (robust scale)
+                if not comp_abs_list:
+                    for idx in selected_indices:
+                        if not (0 <= idx < len(compensated)):
+                            continue
+                        fc = compensated[idx]
+                        if flip_row12:
+                            fc = np.flipud(fc)
+                        fc = crop_sensor(fc)
+                        comp_abs_list.append(float(np.median(np.abs(fc))))
+                if comp_abs_list:
+                    comp_abs_median = float(np.median(np.array(comp_abs_list, dtype=np.float32)))
+                comp_abs = comp_abs_median if comp_abs_median is not None else None
+            if comp_abs is None:
                 cmins = []
                 cmaxs = []
                 for idx in selected_indices:
@@ -377,6 +394,12 @@ def render_spectral_grid(
     if single_colorbar:
         if comp_global_abs is not None:
             comp_abs = float(comp_global_abs)
+            if comp_abs <= 0.0:
+                comp_abs = 1.0
+            from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
+            shared_norm = _TwoSlopeNorm(vmin=-comp_abs, vcenter=0.0, vmax=comp_abs)
+        elif comp_abs_median is not None:
+            comp_abs = float(comp_abs_median)
             if comp_abs <= 0.0:
                 comp_abs = 1.0
             from matplotlib.colors import TwoSlopeNorm as _TwoSlopeNorm
