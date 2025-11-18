@@ -965,6 +965,7 @@ if __name__ == "__main__":
     # Precompute a global symmetric scale for Diff if available (use NPZ if present, else PNG).
     diff_global_min = None
     diff_global_max = None
+    diff_global_den = None
     def _load_diff_scalar(path: Path) -> np.ndarray | None:
         if path is None or (not path.exists()):
             return None
@@ -1001,5 +1002,3 @@ if __name__ == "__main__":
         diff_global_den = 0.5 * (abs(diff_global_min) + abs(diff_global_max))
         if diff_global_den <= 1e-9:
             diff_global_den = 1.0
-    else:
-        diff_global_den = None
