@@ -887,13 +887,19 @@ def main() -> None:
         return best[1] if best else None
     def choose_grad_for_nm(nm: float) -> Optional[Path]:
         best: Tuple[float, Path] | None = None
-        for p in diff_dir.glob('*.png'):
-            rng = parse_grad_range(p)
-            if rng is None: continue
-            lo, hi = rng
-            if lo <= nm <= hi: return p
-            centre = 0.5 * (lo + hi); d = abs(centre - nm)
-            if best is None or d < best[0]: best = (d, p)
+        # Prefer NPZ (signed) if available, else fall back to PNG
+        for ext in ("*.npz", "*.png"):
+            for p in diff_dir.glob(ext):
+                rng = parse_grad_range(p)
+                if rng is None:
+                    continue
+                lo, hi = rng
+                if lo <= nm <= hi:
+                    return p
+                centre = 0.5 * (lo + hi)
+                d = abs(centre - nm)
+                if best is None or d < best[0]:
+                    best = (d, p)
         return best[1] if best else None
     for it in metadata_bins:
         idx = int(it['index']); nm = wavelength_lookup.get(idx)
