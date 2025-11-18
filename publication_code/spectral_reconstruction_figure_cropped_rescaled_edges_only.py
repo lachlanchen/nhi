@@ -552,27 +552,28 @@ def render_spectral_grid(
 
     # If requested, add a single tall colorbar spanning rows 1–4
     if single_colorbar and col_bar is not None:
-        cax_all = fig.add_subplot(gs[0:4, col_bar])
+        # Limit bar to rows 1–2 vertical extent (row2 top to row3 bottom)
+        cax_all = fig.add_subplot(gs[1:3, col_bar])
         # Prefer shared_norm if available; fall back to comp_norm or raw range
         if shared_norm is not None:
             sm_all = plt.cm.ScalarMappable(norm=shared_norm, cmap=comp_cmap)
         elif comp_norm is not None:
             sm_all = plt.cm.ScalarMappable(norm=comp_norm, cmap=comp_cmap)
         else:
-            rvmin = raw_vmin if raw_vmin is not None else 0.0
+            rvmin = raw_vmin if raw_vmin is not None else -1.0
             rvmax = raw_vmax if raw_vmax is not None else 1.0
             sm_all = plt.cm.ScalarMappable(norm=Normalize(vmin=rvmin, vmax=rvmax), cmap=comp_cmap)
         sm_all.set_array([])
-        cb_all = fig.colorbar(sm_all, cax=cax_all)
+        cb_all = fig.colorbar(sm_all, cax=cax_all, ticks=[-1, 0, 1])
         cb_all.ax.set_ylabel("", rotation=90)
         cb_all.outline.set_visible(True); cb_all.outline.set_linewidth(0.8)
         cb_all.ax.tick_params(labelsize=8, width=0.6, length=3)
-        # Align single bar to rows 0–3 image bounds
+        # Align bar to rows 1–2 bounds
         try:
-            top03 = max(ax.get_position().y1 for ax in row_axes[0] + row_axes[1] + row_axes[2] + row_axes[3])
-            bot03 = min(ax.get_position().y0 for ax in row_axes[0] + row_axes[1] + row_axes[2] + row_axes[3])
+            top12 = max(ax.get_position().y1 for ax in row_axes[1] + row_axes[2]) if (row_axes[1] or row_axes[2]) else cax_all.get_position().y1
+            bot12 = min(ax.get_position().y0 for ax in row_axes[1] + row_axes[2]) if (row_axes[1] or row_axes[2]) else cax_all.get_position().y0
             pos = cax_all.get_position()
-            cax_all.set_position([pos.x0, bot03, pos.width, max(0.0, top03 - bot03)])
+            cax_all.set_position([pos.x0, bot12, pos.width, max(0.0, top12 - bot12)])
         except Exception:
             pass
     # Else, if requested, add colorbars for rows 1–2 at the far right
