@@ -142,12 +142,12 @@ which drives event emission when the logarithmic intensity crosses the sensor th
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
         at (-0.05, 1.050) {(a)};
-      % Discrete polarity legend (−1 blue, +1 orange)
-      \def\lx{0.70}\def\ly{0.92}\def\lw{0.08}\def\lh{0.03}
-      \draw[fill=evtNeg, draw=black, line width=0.2pt] (\lx,\ly) rectangle ++(\lw,\lh);
-      \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+\lw+0.01, \ly+0.5*\lh) {$-1$};
-      \draw[fill=evtPos, draw=black, line width=0.2pt] (\lx,\ly-0.05) rectangle ++(\lw,\lh);
-      \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+\lw+0.01, \ly-0.05+0.5*\lh) {$+1$};
+      % Discrete polarity legend using dot handles (−1 light blue, +1 orange)
+      \def\lx{0.70}\def\ly{0.92}\def\rr{0.014}
+      \filldraw[fill=evtNeg, draw=black, line width=0.2pt] (\lx,\ly) circle (\rr);
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+0.03, \ly) {$-1$};
+      \filldraw[fill=evtPos, draw=black, line width=0.2pt] (\lx,\ly-0.06) circle (\rr);
+      \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+0.03, \ly-0.06) {$+1$};
     \end{scope}
   \end{tikzpicture}\\[-8pt]
 
@@ -161,8 +161,8 @@ which drives event emission when the logarithmic intensity crosses the sensor th
     \end{scope}
   \end{tikzpicture}\\[-4pt]
 
-  % (c,d) 50 ms accumulations, side-by-side
-  \begin{minipage}[t]{0.49\linewidth}
+  % (c,d) 50 ms accumulations, side-by-side, with external color bar to the right of (d)
+  \begin{minipage}[t]{0.47\linewidth}
     \begin{tikzpicture}
       \node[anchor=south west, inner sep=0] (img3c) at (0,0)
         {\includegraphics[width=\linewidth]{figures/overlay_image_before_plain.pdf}};
@@ -172,20 +172,26 @@ which drives event emission when the logarithmic intensity crosses the sensor th
       \end{scope}
     \end{tikzpicture}
   \end{minipage}\hfill
-  \begin{minipage}[t]{0.49\linewidth}
+  \begin{minipage}[t]{0.47\linewidth}
     \begin{tikzpicture}
       \node[anchor=south west, inner sep=0] (img3d) at (0,0)
         {\includegraphics[width=\linewidth]{figures/overlay_image_after_plain.pdf}};
       \begin{scope}[x={(img3d.south east)}, y={(img3d.north west)}]
         \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
           at (-0.05, 1.12) {(d)};
-        % Continuous color bar (coolwarm-like) inside panel (d)
-        \def\xb{0.92}\def\yb{0.10}\def\wb{0.035}\def\hb{0.80}
-        \shade[bottom color=blue, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
-        \shade[bottom color=white, top color=red]  (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb) {$-1$};
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb+0.5*\hb) {$0$};
-        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.01, \yb+\hb) {$1$};
+      \end{scope}
+    \end{tikzpicture}
+  \end{minipage}\hfill
+  % External color bar to the right of (d): light blue -> white -> orange
+  \begin{minipage}[t]{0.06\linewidth}
+    \begin{tikzpicture}
+      \begin{scope}
+        \def\xb{0.10}\def\yb{0.06}\def\wb{0.35}\def\hb{0.88}
+        \shade[bottom color=evtNeg, top color=white] (\xb,\yb) rectangle (\xb+\wb, \yb+0.5*\hb);
+        \shade[bottom color=white, top color=evtPos] (\xb,\yb+0.5*\hb) rectangle (\xb+\wb, \yb+\hb);
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.02, \yb) {$-1$};
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.02, \yb+0.5*\hb) {$0$};
+        \node[anchor=west, inner sep=1pt, scale=0.7] at (\xb+\wb+0.02, \yb+\hb) {$1$};
       \end{scope}
     \end{tikzpicture}
   \end{minipage}\\[-2pt]
