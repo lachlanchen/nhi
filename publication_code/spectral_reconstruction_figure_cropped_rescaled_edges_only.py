@@ -274,7 +274,7 @@ def render_spectral_grid(
     def label_column(r: int, text: str) -> None:
         ax = fig.add_subplot(gs[r, 0]); ax.axis("off"); ax.text(0.5, 0.5, text, rotation=90, ha="center", va="center", fontsize=9, fontweight="bold")
         label_axes.append((r, ax))
-    label_column(0, "Original"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
+    label_column(0, "Raw Events"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Frame")
 
     # Precompute a global median-abs scale for Diff (use NPZ if present, else PNG).
     diff_abs_values: List[float] = []
