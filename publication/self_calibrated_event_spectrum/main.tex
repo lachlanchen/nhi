@@ -96,7 +96,7 @@ The system operates in transmission across the visible band (\SIrange{420}{700}{
 % \end{figure*}
 
 \olsection{System architecture and sensing model}
-Figure~\ref{fig:overview} sketches the optical layout. A broadband LED source passes through a slit and diffraction grating before illuminating the specimen. The transmitted light is collected by a microscope and relayed through a 4$f$ system onto a hybrid detection plane comprising an event camera and a frame camera. The motor executes repeated forward/backward scans, but its speed is neither constant nor calibrated.
+Our system consists of a dispersed illumination module and a detection module (Figure~\ref{fig:overview}). In the illumination path, a broadband LED with a slit and diffraction grating projects different wavelengths across the specimen. The transmitted light is collected and relayed (4$f$ system) to both an event camera and a frame sensor. This configuration preserves the original microscope imaging via a beam splitter and enables synchronous event and frame capture. The motor repeatedly scans forward and backward at an uncalibrated, non-uniform speed.
 
 Under small-angle assumptions the wavelength incident on pixel $(x,y)$ is
 \begin{equation}
@@ -108,14 +108,14 @@ where $d$ is the grating dispersion constant, $z_2$ and $z_1$ denote distances f
   \frac{\partial I_{x,y}}{\partial t} = \frac{\partial I_0^{(x,y)}}{\partial \lambda} \frac{\partial \lambda(x,t)}{\partial t},
   \label{eq:intensity_gradient}
 \end{equation}
-which drives event emission when the logarithmic intensity crosses the sensor threshold. Because $\partial \lambda/\partial t$ is governed by the motor trajectory, reconstructing $I_0^{(x,y)}(\lambda)$ reduces to integrating polarity-weighted events along a synchronized wavelength axis.
+which drives event emission when the logarithmic intensity crosses the sensor threshold~\cite{yu2025active}. Because $\partial \lambda/\partial t$ is governed by the motor trajectory, reconstructing $I_0^{(x,y)}(\lambda)$ reduces to integrating polarity-weighted events along a synchronized wavelength axis.
 
 \begin{figure}[t]
   \centering
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (f2b) at (0,0)
       % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_correlation.pdf}};
-      {\includegraphics[width=0.8\linewidth]{figures/figure02_correlation.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/figure02_correlation.pdf}};
     \begin{scope}[x={(f2b.south east)}, y={(f2b.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.0, 1.05) {(a)};
     \end{scope}
@@ -124,7 +124,7 @@ which drives event emission when the logarithmic intensity crosses the sensor th
   \begin{tikzpicture}
     \node[anchor=south west, inner sep=0] (f2a) at (0,0)
       % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure02_activity.pdf}};
-      {\includegraphics[width=0.8\linewidth]{figures/figure02_activity.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/figure02_activity.pdf}};
     \begin{scope}[x={(f2a.south east)}, y={(f2a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (0.0, 1.05) {(b)};
     \end{scope}
