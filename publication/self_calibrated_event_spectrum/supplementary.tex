@@ -10,8 +10,9 @@
   \DeclareSIUnit{\USD}{USD}
 }{%
   \newcommand{\sisetup}[1]{}
-  \newcommand{\SI}[2]{\ensuremath{#1\,#2}}
-  \newcommand{\SIrange}[3]{\ensuremath{#1\text{--}#2\,#3}}
+  % When defining macros inside an \IfFileExists argument, use doubled #'s
+  \newcommand{\SI}[2]{\ensuremath{##1\,##2}}
+  \newcommand{\SIrange}[3]{\ensuremath{##1\text{--}##2\,##3}}
   \newcommand{\DeclareSIUnit}[2]{}
   % Common unit symbols used in this manuscript
   \providecommand{\nano}{\ensuremath{\mathrm{n}}}
@@ -19,6 +20,7 @@
   \providecommand{\milli}{\ensuremath{\mathrm{m}}}
   \providecommand{\second}{\ensuremath{\mathrm{s}}}
   \providecommand{\meter}{\ensuremath{\mathrm{m}}}
+  \providecommand{\per}{\ensuremath{\,/\,}}
   \providecommand{\pixel}{\ensuremath{\mathrm{px}}}
   \providecommand{\USD}{\ensuremath{\mathrm{USD}}}
 }
@@ -81,7 +83,7 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
 \olsection{Self-synchronized scan segmentation}
-We first convert the event timestamps into an activity signal $a[n]$ (the number of events per 1~ms bin). The peak of auto-correlation
+We summarize the segmentation procedure used in the main letter and provide implementation details without repeating its narrative description. Event timestamps are first binned into an activity signal $a[n]$ (events per 1~ms bin). The peak of auto-correlation
 \begin{equation}
   R[k] = \sum_{n} a[n]\,a[n+k]
 \end{equation}
@@ -90,12 +92,12 @@ reveals the scanning period, while the auto-convolution of $a[n]$ the correlatio
   R_{\mathrm{rev}}[k] = \sum_{n} a[n]\,a[N{-}1{-}n],
   \label{eq:rev_corr}
 \end{equation}
-exposes the pre- and post-scan regions through the mirror-symmetric peaks around the turnaround time. An iterative peak search refines the start and end indices of each half-scan, producing scanning segments without reference measurements. Figure~\ref{fig:segmentation} illustrates the auto-correlation and auto-convolution used to estimate the scan period, as well as the resulting segmentation of forward and backward passes over the full recording. 
+exposes the pre- and post-scan regions through mirror-symmetric peaks around the turnaround. An iterative peak search then refines the start and end indices of each half-scan, producing forward/backward segments without auxiliary triggers. The main letter includes illustrative plots of these signals; here we focus on the core computations to keep the supplement self-contained.
 
-This data-driven segmentation adapts to slow drifts or perturbations, ensuring that subsequent reconstructions operate on consistent temporal support. 
+This data-driven segmentation adapts to slow drifts or perturbations and yields consistent temporal support for reconstruction.
 
 \olsection{Multi-window scanning compensation}
-Even with accurate segmentation, \eqref{eq:lambda_mapping} introduces a spatially varying delay through the $x/z_2$ term; motor acceleration near turnarounds further shears the time axis. Our multi-window compensation routine addresses this by fitting boundary surfaces
+Even with accurate segmentation, non-uniform motor motion induces spatially varying temporal delays and shear in the event cloud. Our multi-window compensation routine addresses this by fitting boundary surfaces
 \begin{equation}
   T_i(x,y) = a_i x + b_i y + c_i,
 \end{equation}
@@ -160,7 +162,7 @@ where $\mathsf{E}_k(x,y)$ is the compensated event frame in bin $k$, $\mu_k = (H
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (-0.05, 1.05) {(c)};
     \end{scope}
   \end{tikzpicture}\\[-0pt]
-  \caption{Multi-window compensation diagnostics. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) Variance per 50~ms bin over time (original vs. compensate). (c) Example 50~ms bin comparing original and compensate frames.}
+\caption{Supplementary diagnostics for multi-window compensation. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) Variance per 50~ms bin over time (original vs. compensated). (c) Example 50~ms bin comparing original and compensated frames.}
   \label{fig:warp}
 \end{figure}
 
