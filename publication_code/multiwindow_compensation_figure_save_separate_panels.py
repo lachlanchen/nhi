@@ -369,7 +369,16 @@ def save_panel_c_separates(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax
     _one(comp, f"Compensated – Bin {idx}", f"multiwindow_bin50ms_compensated{suffix}.pdf")
 
 
-def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: float, out_dir: Path, suffix: str, add_blue_variant: bool = False) -> None:
+def save_panel_c_plain(
+    orig: np.ndarray,
+    comp: np.ndarray,
+    vmin: float,
+    vmax: float,
+    out_dir: Path,
+    suffix: str,
+    add_blue_variant: bool = False,
+    add_blue_minmax_variant: bool = False,
+) -> None:
     """Save plain images (no title, ticks, axes, or colorbar).
 
     If add_blue_variant is True, also save duplicates with center-zero mapping
@@ -413,8 +422,48 @@ def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: fl
         _pdf_blue(orig, f"multiwindow_bin50ms_original_plain_blue{suffix}.png")
         _pdf_blue(comp, f"multiwindow_bin50ms_compensated_plain_blue{suffix}.png")
 
+    # Optional: blue-only min->max mapping (no red):
+    # low (vmin_img) -> deep blue, high (vmax_img) -> white
+    if add_blue_minmax_variant:
+        from matplotlib.colors import ListedColormap, Normalize
+        import matplotlib.pyplot as _plt
 
-def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "best", suffix: str = "", add_blue_variant: bool = False) -> None:
+        base = _plt.get_cmap("coolwarm")
+        blue_half = base(np.linspace(0.0, 0.5, 256))  # deep blue -> white
+        blue_cmap = ListedColormap(blue_half)
+
+        def _pdf_blue_minmax(img: np.ndarray, stem: str):
+            f = plt.figure(figsize=(6, 3))
+            ax = f.add_subplot(1, 1, 1)
+            vals = img[np.isfinite(img)]
+            if vals.size == 0:
+                vmin_img, vmax_img = -1.0, 0.0
+            else:
+                vmin_img = float(np.min(vals))
+                vmax_img = float(np.max(vals))
+                if vmin_img == vmax_img:
+                    vmax_img = vmin_img + 1e-6
+            norm = Normalize(vmin=vmin_img, vmax=vmax_img)
+            ax.imshow(img, cmap=blue_cmap, norm=norm, aspect="equal")
+            ax.axis("off")
+            f.savefig(out_dir / stem, dpi=300, bbox_inches="tight", pad_inches=0.0)
+            if stem.endswith('.pdf'):
+                f.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight", pad_inches=0.0)
+            plt.close(f)
+
+        _pdf_blue_minmax(orig, f"multiwindow_bin50ms_original_plain_blueminmax{suffix}.pdf")
+        _pdf_blue_minmax(comp, f"multiwindow_bin50ms_compensated_plain_blueminmax{suffix}.pdf")
+
+
+def render_panel_c(
+    segments_dir: Path,
+    base: str,
+    out_dir: Path,
+    choose: str = "best",
+    suffix: str = "",
+    add_blue_variant: bool = False,
+    add_blue_minmax_variant: bool = False,
+) -> None:
     # Use the aggregated 50 ms bin NPZ for clean single-bin images
     _, allbins_path = find_timebin_csv_and_npz(segments_dir, base)
     with np.load(allbins_path, allow_pickle=False) as d:
@@ -490,7 +539,16 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     # Also save separate single panels using same vmin/vmax
     save_panel_c_separates(orig, comp, vmin, vmax, idx, out_dir, suffix)
     # And save plain images without titles/ticks/colorbar
-    save_panel_c_plain(orig, comp, vmin, vmax, out_dir, suffix, add_blue_variant=add_blue_variant)
+    save_panel_c_plain(
+        orig,
+        comp,
+        vmin,
+        vmax,
+        out_dir,
+        suffix,
+        add_blue_variant=add_blue_variant,
+        add_blue_minmax_variant=add_blue_minmax_variant,
+    )
 
 
 def main() -> None:
@@ -515,6 +573,8 @@ def main() -> None:
                         help="Select which time bin to visualize in panel (c); default 'best' chooses max std diff, 'bin4' forces bin 4.")
     parser.add_argument("--plain_blue_extra", action="store_true",
                         help="Save extra blue/white duplicates for plain images (keeps originals unchanged)")
+    parser.add_argument("--plain_blue_minmax_extra", action="store_true",
+                        help="Save blue-only min->max extras (min=deep blue, max=white) for both original and compensated")
     args = parser.parse_args()
 
     setup_style()
@@ -573,7 +633,15 @@ def main() -> None:
         sensor_h=args.sensor_height,
         suffix=suffix,
     )
-    render_panel_c(segments_dir, base, out_dir, choose=args.panel_c_choice, suffix=suffix, add_blue_variant=bool(args.plain_blue_extra))
+    render_panel_c(
+        segments_dir,
+        base,
+        out_dir,
+        choose=args.panel_c_choice,
+        suffix=suffix,
+        add_blue_variant=bool(args.plain_blue_extra),
+        add_blue_minmax_variant=bool(args.plain_blue_minmax_extra),
+    )
 
 
 if __name__ == "__main__":
