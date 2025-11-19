@@ -1,6 +1,17 @@
 \documentclass[9pt,twocolumn]{opticajnl}
 \journal{opticajournal}
 \setboolean{shortarticle}{true}
+\usepackage{siunitx}
+\sisetup{range-phrase = --, range-units = single}
+\usepackage{siunitx}
+\sisetup{per-mode = symbol}
+\DeclareSIUnit{\pixel}{px}
+\DeclareSIUnit{\USD}{USD}
+\usepackage{ifthen}
+\usepackage{placeins}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 
 % Keep typography and packages consistent with the main Optica letter
 \IfFileExists{siunitx.sty}{%
@@ -45,15 +56,6 @@ This document provides supplementary methods, implementation notes, and addition
 % Simple section helper matching main style
 \newcommand{\olsection}[1]{\par\noindent\textbf{#1.} }
 
-% \olsection{Additional Methods}
-% The procedures below mirror the methodology detailed in the main letter.
-% We briefly summarize details that complement the main text:
-% \begin{itemize}
-%   \item Scan segmentation uses the activity auto-correlation and auto-convolution peaks to determine the one-way period and pre/post regions.
-%   \item Multi-window compensation fits linear boundary surfaces per window and optimizes spatial variance within fixed temporal bins to undo temporal shear.
-%   \item Spectral displays use 50~ms cumulative bins unless otherwise noted; background subtraction and light smoothing may be applied for visibility.
-% \end{itemize}
-
 \olsection{Event-trigger probability model}
 Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
 \begin{equation}
@@ -84,104 +86,112 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 
 This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
-\olsection{Scan segmentation details}
-Events are binned at 1~ms to form the activity signal $a[n]$. The auto-correlation
-\[
-  R[k] = \sum_n a[n]\,a[n+k]
-\]
-is used to find the dominant round-trip period (largest off-centre peak). The reverse-correlation (auto-convolution) of $a[n]$ with its reversed copy $a_{\mathrm{rev}}[n]=a[N{-}1{-}n]$,
-\[
-  R_{\mathrm{rev}}[k] = \sum_n a[n]\,a_{\mathrm{rev}}[n],
-\]
-exposes the pre/post symmetry; the global peak lag of $R_{\mathrm{rev}}$ fixes the turnaround. Given the round-trip period $P$ and reverse-correlation lag $\ell$, the prelude and aftermath solve
-\[
-  \text{prelude} - \text{aftermath} = \ell,\qquad \text{prelude} + \text{aftermath} + 3P = N,
-\]
-yielding $\text{prelude} = (N-3P+\ell)/2$ and $\text{aftermath} = (N-3P-\ell)/2$ (clipped to nonnegative). The main scan spans the remaining $3P$ samples (three round trips, six one-way passes), and the one-way period is $P/2$. An iterative refinement re-estimates $P$ and $\ell$ on the updated window. These logic steps mirror the implementation in \texttt{segment\_robust\_fixed.py}.
+\olsection{Self-synchronized scan segmentation}
+We first convert the event timestamps into an activity signal $a[n]$ (the number of events per 1~ms bin). The peak of auto-correlation
+\begin{equation}
+  R[k] = \sum_{n} a[n]\,a[n+k]
+\end{equation}
+reveals the scanning period, while the auto-convolution of $a[n]$ the correlation of $a[n]$ and its time-reversed sequence $a_{\mathrm{rev}}[n] = a[N{-}1{-}n]$,
+\begin{equation}
+  R_{\mathrm{rev}}[k] = \sum_{n} a[n]\,a[N{-}1{-}n],
+  \label{eq:rev_corr}
+\end{equation}
+exposes the pre- and post-scan regions through the mirror-symmetric peaks around the turnaround time. An iterative peak search refines the start and end indices of each half-scan, producing scanning segments without reference measurements. Figure~\ref{fig:segmentation} illustrates the auto-correlation and auto-convolution used to estimate the scan period, as well as the resulting segmentation of forward and backward passes over the full recording. 
 
-\olsection{Time--wavelength auto-alignment details}
-The background trace $b(t)$ is sampled at $\Delta t{=}5$~ms and normalised by its pre/post plateaus,
-\[
-  \tilde b(t)=\frac{b(t)-\mu_{\mathrm{pre}}}{\mu_{\mathrm{post}}-\mu_{\mathrm{pre}}},\quad t\in[0,T].
-\]
-The active interval $[t_0,t_1]$ is located from the rising and falling edge quantiles of the smoothed $\tilde b(t)$: $t_0$ is the first crossing of a lower edge level, and $t_1$ is the last crossing of the corresponding upper edge level, locking the start and tail plateaus. For ground-truth spectra $\{g_i(\lambda)\}_{i=1}^M$ with active intervals $[\lambda_{0,i},\lambda_{1,i}]$, we fit an affine map
-\[
+This data-driven segmentation adapts to slow drifts or perturbations, ensuring that subsequent reconstructions operate on consistent temporal support. 
+
+\olsection{Multi-window scanning compensation}
+Even with accurate segmentation, \eqref{eq:lambda_mapping} introduces a spatially varying delay through the $x/z_2$ term; motor acceleration near turnarounds further shears the time axis. Our multi-window compensation routine addresses this by fitting boundary surfaces
+\begin{equation}
+  T_i(x,y) = a_i x + b_i y + c_i,
+\end{equation}
+which partition each scan into $M$ temporal windows. Soft memberships,
+\begin{equation}
+  w_i(x,y,t) = \frac{\sigma\!\left(\frac{t - T_i}{\tau}\right)\sigma\!\left(\frac{T_{i+1}-t}{\tau}\right)}{\sum_j \sigma\!\left(\frac{t - T_j}{\tau}\right)\sigma\!\left(\frac{T_{j+1}-t}{\tau}\right)},
+\end{equation}
+blend adjacent windows (temperature $\tau \approx 1$~ms). The compensated time is
+\begin{equation}
+  t' = t - \sum_{i=1}^{M-1} w_i(x,y,t)\bigl(\tilde{a}_i x + \tilde{b}_i y \bigr),
+  \label{eq:timewarp}
+\end{equation}
+where $\{\tilde{a}_i,\tilde{b}_i\}$ are trainable slopes optimized by minimizing the spatial variance of binned event intensities while enforcing smoothness across neighbouring windows. The objective is 
+\begin{equation}
+\begin{split}
+  \mathcal{L}(\theta)
+  &= 
+  \underbrace{
+  \tfrac{1}{HW}\!\sum_k\!\sum_{x,y}
+  \bigl(\mathsf{E}_k(x,y;\theta)-\mu_k\bigr)^2
+  }_{\mathcal{L}_{\mathrm{var}}} \\[3pt]
+  &\quad + 
+  \lambda_{\mathrm{sm}}
+  \underbrace{
+  \sum_{i=1}^{M-2}
+  \!\Big[
+  (\tilde{a}_{i+1}-\tilde{a}_i)^2
+  +(\tilde{b}_{i+1}-\tilde{b}_i)^2
+  \Big]
+  }_{\mathcal{L}_{\mathrm{sm}}},
+  \label{eq:loss}
+\end{split}
+\end{equation}
+where $\mathsf{E}_k(x,y)$ is the compensated event frame in bin $k$, $\mu_k = (HW)^{-1}\sum_{x,y}\mathsf{E}_k(x,y)$ is its spatial mean, and $\lambda_{\mathrm{sm}}$ controls the smoothness strength. Minimizing $\mathcal{L}(\theta)$ by gradient descent aligns temporal windows, suppresses acceleration-induced shear, and yields sharper spectral reconstructions than a single-plane warp.
+
+\begin{figure}[t]
+  \centering
+  % Figure 3(a): Events with learned boundaries (X--T and Y--T)
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (img3a) at (0,0)
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_a_events.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/multiwindow_events_blank.pdf}};
+    \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (-0.05, 1.050) {(a)};
+    \end{scope}
+  \end{tikzpicture}\\[-0pt]
+  % Figure 3(b): Variance vs time (50 ms bins)
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (img3b) at (0,0)
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_b_variance.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/multiwindow_variance_blank.pdf}};
+    \begin{scope}[x={(img3b.south east)}, y={(img3b.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (-0.05, 1.050) {(b)};
+    \end{scope}
+  \end{tikzpicture}\\[-0pt]
+  % Figure 3(c): Single 50 ms bin comparison (original vs compensated)
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (img3c) at (0,0)
+      % {\includegraphics[width=\linewidth]{../../publication_code/figures/figure03_c_bin50ms.pdf}};
+      {\includegraphics[width=1\linewidth]{figures/multiwindow_bin50ms_sanqin.pdf}};
+    \begin{scope}[x={(img3c.south east)}, y={(img3c.north west)}]
+      \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt] at (-0.05, 1.05) {(c)};
+    \end{scope}
+  \end{tikzpicture}\\[-0pt]
+  \caption{Multi-window compensation diagnostics. (a) Events (X--T and Y--T) with learned boundary surfaces overlaid. (b) Variance per 50~ms bin over time (original vs. compensate). (c) Example 50~ms bin comparing original and compensate frames.}
+  \label{fig:warp}
+\end{figure}
+
+Panel~(a) illustrates how the learned boundary surfaces align the event distribution in both spatial–temporal projections, effectively capturing the nonuniform scanning motion. 
+The fitted slopes span from  \SI{-1.74}{\micro\second\per\pixel} to \SI{5.50}{\micro\second\per\pixel} for \(X\)-axis, and from \SI{-79.82}{\micro\second\per\pixel} to \SI{-75.67}{\micro\second\per\pixel} for \(Y\)-axis, representing the lateral and vertical time-per-pixel coefficients of the multi-window model.
+Panel~(b) shows that the temporal variance within each 50~ms bin decreases after compensation, indicating improved temporal coherence across the field of view. 
+Panel~(c) compares representative cumulative event frames before and after correction, where the removal of diagonal blur patterns confirms that the time-warp model successfully restores the spatial integrity of each spectral slice.
+
+\olsection{Time--wavelength auto-alignment}
+A one-dimensional background trace $b(t)$ is computed from polarity-weighted, fast-compensated events using a fixed step $\Delta t$ (5~ms). After normalising by the start and end plateaus,
+\begin{equation}
+  \tilde b(t)=\frac{b(t)-\mu_{\mathrm{pre}}}{\mu_{\mathrm{post}}-\mu_{\mathrm{pre}}},\quad t\in[0,T],
+\end{equation}
+the active scan interval $[t_0,t_1]$ is identified from the rising and falling edge quantiles of the smoothed $\tilde b(t)$: $t_0$ is the first time at which $\tilde b(t)$ crosses a lower edge level, and $t_1$ is the last time at which it crosses the corresponding upper edge level. This edges-only procedure robustly locks the start and tail plateaus. For ground-truth spectra $\{g_i(\lambda)\}_{i=1}^M$ with active intervals $[\lambda_{0,i},\lambda_{1,i}]$, the time-to-wavelength mapping is given by the affine model
+\begin{equation}
   \lambda(t)=\alpha t+\beta,\quad 
   \alpha=\frac{\bar\lambda_1-\bar\lambda_0}{t_1-t_0},\;
   \beta=\bar\lambda_0-\alpha t_0,
-\]
-where $\bar\lambda_0,\bar\lambda_1$ are mean boundaries. The transformed series $\tilde b_\lambda(\lambda)=\tilde b\big((\lambda-\beta)/\alpha\big)$ is amplitude-aligned to the mean ground-truth $\bar g(\lambda)$ via a least-squares affine fit,
-\[
+\end{equation}
+where $\bar\lambda_0$ and $\bar\lambda_1$ are the mean boundary wavelengths across curves. The transformed series $\tilde b_\lambda(\lambda)=\tilde b\big((\lambda-\beta)/\alpha\big)$ is then amplitude-aligned to the mean ground-truth $\bar g(\lambda)=M^{-1}\sum_i \tilde g_i(\lambda)$ by a least-squares affine fit,
+\begin{equation}
   (a^*,c^*)=\arg\min_{a,c}\sum_j[\bar g(\lambda_j)-a\,\tilde b_\lambda(\lambda_j)-c]^2,
-\]
-with closed form $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\mathbf{y}$ for $X=[\tilde b_\lambda\;\mathbf{1}]$, $\mathbf{y}=\bar g$.
+\end{equation}
+with closed-form solution $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\mathbf{y}$, $X=[\tilde b_\lambda\;\mathbf{1}]$, $\mathbf{y}=\bar g$.
 
-% \olsection{Supplementary Figure S1}
-% Figure~\ref{fig:s1} shows the aligned background (event-derived) against a spectrometer curve, formatted as in the main text.
-
-% \begin{figure}[t]
-%   \centering
-%   \includegraphics[width=\columnwidth]{figures/figure04_rescaled_bg_gt_third_only.pdf}
-%   \caption{Background mapped to wavelength (blue) overlaid with Light SPD (orange). Legend placed inside, consistent with Fig.~5 styling.}
-%   \label{fig:s1}
-% \end{figure}
-
-% \olsection{Segment Fusion Performance}
-% We compare reconstruction noise across three fusion settings using a single dataset (\texttt{angle\_20\_sanqin\_2835\_20250925\_184638}) and 50~ms temporal bins:
-% \begin{itemize}
-%   \item Forward only (F): first forward segment.
-%   \item Forward+Backward (F+B): first forward plus one backward (time-reversed, polarity-flipped).
-%   \item Three cycles (3~F+B): up to six segments (F1,B2,F3,B4,F5,B6).
-% \end{itemize}
-% Learned parameters $(a,b)$ from the first forward segment are reused for all segments. For backward segments we reverse time ($t' = t_{\min}+t_{\max}-t$) and negate polarity (mapping 0/1 to $1{-}p$, or simply $-p$ in $\{-1,1\}$ form). Fused frames are averaged per-bin across segments, then background-subtracted prior to metric computation.
-
-% Figure~\ref{fig:s2} shows the first 20 bins for each scenario. Table~\ref{tab:fusion_metrics} reports spatial standard deviation (STD) and median absolute deviation (MAD) averaged over bins.
-
-% \begin{figure*}[t]
-%   \centering
-%   % Local copies for stable LaTeX inclusion
-%   \includegraphics[width=0.96\textwidth]{figures_sm/forward_only_montage.pdf}\\[-2pt]
-%   \includegraphics[width=0.96\textwidth]{figures_sm/f_plus_b_montage.pdf}\\[-2pt]
-%   \includegraphics[width=0.96\textwidth]{figures_sm/three_cycles_f_plus_b_montage.pdf}
-%   \caption{Supplementary Figure S2: First 20 binned frames (50~ms each). Top: Forward only; Middle: Forward+Backward; Bottom: Three F+B cycles.}
-%   \label{fig:s2}
-% \end{figure*}
-
-% \begin{table}[t]
-% \centering
-% \caption{Average spatial noise per scenario (50~ms bins).}
-% \label{tab:fusion_metrics}
-% \begin{tabular}{lcc}
-% \hline
-% \textbf{Scenario} & \textbf{STD} & \textbf{MAD} \\
-% \hline
-% Forward only & 0.4322 & 0.0000 \\
-% F + B & 0.3301 & 0.1235 \\
-% 3\,$\times$\,(F + B) & 0.2403 & 0.1166 \\
-% \hline
-% \end{tabular}
-% \end{table}
-
-% \olsection{Reproducibility: Segment Fusion}
-% The following command generates the figures and metrics above:
-% \begin{itemize}
-%   \item \texttt{python publication\_code/compare\_segment\_fusion.py \\
-%     --dataset scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638 \\
-%     --bin-width-us 50000 --sensor-width 1280 --sensor-height 720 \\
-%     --save-png --save-pdf}
-% \end{itemize}
-
-% \olsection{Reproducibility Notes}
-% The following commands (run in the \texttt{nhi\_test} environment) regenerate the figures referenced here:
-% \begin{itemize}
-%   \item Figure 4 grid and overlay:
-% \texttt{python publication\_code/figure04\_rescaled\_allinone.py \\
-%   --segment scan\_angle\_20\_led\_2835b/angle\_20\_sanqin\_2835\_20250925\_184638/angle\_20\_sanqin\_2835\_event\_20250925\_184638\_segments/Scan\_1\_Forward\_events.npz \\
-%   --gt-dir groundtruth\_spectrum\_2835 \\
-%   --gt-frames-dir hyperspectral\_data\_sanqin\_gt/test300\_roi\_square\_frames\_matched \\
-%   --bin-width-us 50000 --start-bin 3 --end-bin 15 --show-wavelength \\
-%   --add-gt-row --bar-height-ratio 0.06 --bar-px 4 --save-png}
-% \end{itemize}
 
 \bibliography{ref}
 
