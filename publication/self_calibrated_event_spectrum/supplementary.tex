@@ -1,40 +1,34 @@
 \documentclass[9pt,twocolumn]{opticajnl}
 \journal{opticajournal}
 \setboolean{shortarticle}{true}
-\usepackage{siunitx}
-\sisetup{range-phrase = --, range-units = single}
-\usepackage{siunitx}
-\sisetup{per-mode = symbol}
-\DeclareSIUnit{\pixel}{px}
-\DeclareSIUnit{\USD}{USD}
-\usepackage{ifthen}
-\usepackage{placeins}
-\usepackage{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning}
-
-% Keep typography and packages consistent with the main Optica letter
+% Load siunitx when available; otherwise provide minimal fallbacks so local builds succeed
 \IfFileExists{siunitx.sty}{%
   \usepackage{siunitx}
   \sisetup{range-phrase = --, range-units = single}
   \sisetup{per-mode = symbol}
+  \DeclareSIUnit{\pixel}{px}
+  \DeclareSIUnit{\USD}{USD}
 }{%
   \newcommand{\sisetup}[1]{}
-  \newcommand{\SI}[2]{\ensuremath{##1\,##2}}
-  \newcommand{\SIrange}[3]{\ensuremath{##1\text{--}##2\,##3}}
+  \newcommand{\SI}[2]{\ensuremath{#1\,#2}}
+  \newcommand{\SIrange}[3]{\ensuremath{#1\text{--}#2\,#3}}
   \newcommand{\DeclareSIUnit}[2]{}
+  % Common unit symbols used in this manuscript
+  \providecommand{\nano}{\ensuremath{\mathrm{n}}}
+  \providecommand{\micro}{\ensuremath{\mu}}
+  \providecommand{\milli}{\ensuremath{\mathrm{m}}}
+  \providecommand{\second}{\ensuremath{\mathrm{s}}}
+  \providecommand{\meter}{\ensuremath{\mathrm{m}}}
+  \providecommand{\pixel}{\ensuremath{\mathrm{px}}}
+  \providecommand{\USD}{\ensuremath{\mathrm{USD}}}
 }
-\providecommand{\nano}{\ensuremath{\mathrm{n}}}
-\providecommand{\micro}{\ensuremath{\mu}}
-\providecommand{\milli}{\ensuremath{\mathrm{m}}}
-\providecommand{\second}{\ensuremath{\mathrm{s}}}
-\providecommand{\meter}{\ensuremath{\mathrm{m}}}
-\providecommand{\per}{\ensuremath{\,/\,}}
-\providecommand{\pixel}{\ensuremath{\mathrm{px}}}
-\providecommand{\USD}{\ensuremath{\mathrm{USD}}}
-\DeclareSIUnit{\pixel}{px}
-\DeclareSIUnit{\USD}{USD}
+\usepackage{ifthen}
+\usepackage{placeins}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shadings,calc}
+
+% color is already loaded above; keep typography consistent with main letter
 
 \title{Supplementary Material: Self-Calibrated Neuromorphic Hyperspectral Sensing}
 \author[]{Rongzhou Chen}
