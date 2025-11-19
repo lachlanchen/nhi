@@ -26,6 +26,9 @@
 !.lfsconfig
 !publication_code/
 !publication_code/**
+# Ignore large/generated artifacts under publication_code/figures, keep a placeholder README
+publication_code/figures/**
+!publication_code/figures/README.md
 !publication/**/*.tex
 
 # Ignore local scan angle data folder
