@@ -104,6 +104,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--cbar-ratio", type=float, default=0.10, help="Width ratio for the colorbar column (relative to an image column)")
     # Row 3–4 colorbar at right
     ap.add_argument("--row34-colorbar", action="store_true", help="Add a colorbar for rows 3–4 (external images)")
+    ap.add_argument("--row3-colorbar", action="store_true", help="Add a grayscale colorbar for row 3 only (fixed [0,1])")
+    ap.add_argument("--row4-colorbar", action="store_true", help="Add a grayscale colorbar for row 4 only (fixed [0,1])")
+    ap.add_argument("--row123-shared-cbar", action="store_true", help="Add a shared coolwarm colorbar spanning rows 1–3")
     ap.add_argument("--row34-cmap", type=str, default="gray", help="Colormap name for the rows 3–4 colorbar (intensity)")
     ap.add_argument("--single-colorbar", action="store_true", help="Use one tall colorbar spanning rows 1–4; overrides individual row colorbars")
     # Shared sensor (rows 1–2) colorbar and mapping
@@ -229,6 +232,9 @@ def render_spectral_grid(
     add_row12_colorbars: bool = True,
     cbar_ratio: float = 0.15,
     add_row34_colorbar: bool = False,
+    add_row3_colorbar: bool = False,
+    add_row4_colorbar: bool = False,
+    add_row123_shared_cbar: bool = False,
     row34_cmap_name: str = "gray",
     single_colorbar: bool = False,
     row12_shared_cbar: bool = False,
@@ -250,7 +256,7 @@ def render_spectral_grid(
     # Reserve a single narrow column for all colorbars on the far right
     width_ratios = [0.22] + [1] * num_cols
     col_bar = None
-    if add_row12_colorbars or add_row34_colorbar or single_colorbar:
+    if add_row12_colorbars or add_row34_colorbar or single_colorbar or add_row3_colorbar or add_row4_colorbar or add_row123_shared_cbar:
         col_bar = len(width_ratios)
         width_ratios.append(cbar_ratio)
     total_cols = len(width_ratios)
@@ -393,7 +399,7 @@ def render_spectral_grid(
                 frame = frame / raw_abs_q95
             if row == 1 and comp_abs_q95 is not None and comp_abs_q95 > 0:
                 frame = frame / comp_abs_q95
-            if single_colorbar or row12_shared_cbar:
+            if single_colorbar or row12_shared_cbar or add_row123_shared_cbar:
                 ax.imshow(frame, cmap=comp_cmap, origin="lower", aspect=image_aspect12, norm=shared_norm)
             else:
                 if row == 0:
@@ -439,14 +445,18 @@ def render_spectral_grid(
                     img_scalar = img.astype(np.float32)
                 if diff_global_den is not None:
                     img_scalar = img_scalar / diff_global_den
-                ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=comp_cmap if single_colorbar else row34_cmap_name or "gray", norm=shared_norm)
+                if single_colorbar or add_row123_shared_cbar:
+                    ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
+                else:
+                    ax.imshow(img_scalar, origin="lower", aspect=image_aspect34, cmap=row34_cmap_name or "gray")
             else:
                 if img.ndim == 3 and img.shape[2] >= 3:
                     lum = 0.2126 * img[...,0] + 0.7152 * img[...,1] + 0.0722 * img[...,2]
                 else:
                     lum = img.astype(np.float32)
                 if single_colorbar:
-                    ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=comp_cmap, norm=shared_norm)
+                    # Under single-bar mode, keep row 4 in grayscale
+                    ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=row34_cmap_name or "gray")
                 else:
                     ax.imshow(lum, origin="lower", aspect=image_aspect34, cmap=row34_cmap_name or "gray")
             ax.axis("off")
@@ -574,10 +584,10 @@ def render_spectral_grid(
     except Exception:
         pass
 
-    # If requested, add a single tall colorbar spanning rows 1–4
+    # If requested, add a single tall colorbar spanning rows 1–3 only
     if single_colorbar and col_bar is not None:
-        # Single bar spanning rows 1–4
-        cax_all = fig.add_subplot(gs[0:4, col_bar])
+        # Single bar spanning rows 1–3 (grid rows 0..2)
+        cax_all = fig.add_subplot(gs[0:3, col_bar])
         # Prefer shared_norm if available; fall back to comp_norm or raw range
         if shared_norm is not None:
             sm_all = plt.cm.ScalarMappable(norm=shared_norm, cmap=comp_cmap)
@@ -592,19 +602,17 @@ def render_spectral_grid(
         cb_all.ax.set_ylabel("", rotation=90)
         cb_all.outline.set_visible(True); cb_all.outline.set_linewidth(0.8)
         cb_all.ax.tick_params(labelsize=8, width=0.6, length=3)
-        # Align bar to rows 0–3 bounds
+        # Align bar to rows 0–2 bounds (rows 1–3 in the rendered figure)
         try:
-            all_axes = row_axes[0] + row_axes[1] + row_axes[2] + row_axes[3]
-            top = max(ax.get_position().y1 for ax in all_axes) if all_axes else cax_all.get_position().y1
-            bot = min(ax.get_position().y0 for ax in all_axes) if all_axes else cax_all.get_position().y0
+            axes123 = row_axes[0] + row_axes[1] + row_axes[2]
+            top = max(ax.get_position().y1 for ax in axes123) if axes123 else cax_all.get_position().y1
+            bot = min(ax.get_position().y0 for ax in axes123) if axes123 else cax_all.get_position().y0
             pos = cax_all.get_position()
-            # Nudge the bar slightly to the right (10% of gap) for a subtle separation
-            offset = 0.1 * gap
-            cax_all.set_position([pos.x0 + offset, bot, pos.width, max(0.0, top - bot)])
+            cax_all.set_position([pos.x0, bot, pos.width, max(0.0, top - bot)])
         except Exception:
             pass
     # Else, if requested, add colorbars for rows 1–2 at the far right
-    elif add_row12_colorbars and col_bar is not None:
+    elif add_row12_colorbars and (not bool(locals().get('add_row123_shared_cbar', False))) and col_bar is not None:
         if row12_shared_cbar:
             # One tall shared bar spanning rows 0–1 using comp_norm
             cax12 = fig.add_subplot(gs[0:2, col_bar])
@@ -695,6 +703,66 @@ def render_spectral_grid(
             bot23 = min(ax.get_position().y0 for ax in row_axes[3]) if row_axes[3] else cax34.get_position().y0
             pos = cax34.get_position()
             cax34.set_position([pos.x0, bot23, pos.width, max(0.0, top23 - bot23)])
+        except Exception:
+            pass
+
+    # Optional grayscale colorbar for row 3 only (Diff.), fixed [0,1]
+    if (not single_colorbar) and add_row3_colorbar and col_bar is not None:
+        # Single bar aligned to row 3 image axes
+        cax3 = fig.add_subplot(gs[2, col_bar])
+        from matplotlib.colors import Normalize as _Normalize
+        sm3 = plt.cm.ScalarMappable(norm=_Normalize(vmin=0.0, vmax=1.0), cmap=row34_cmap_name or "gray")
+        sm3.set_array([])
+        cb3 = fig.colorbar(sm3, cax=cax3, ticks=[0.0, 0.5, 1.0])
+        cb3.ax.set_ylabel("", rotation=90)
+        cb3.outline.set_visible(True); cb3.outline.set_linewidth(0.8)
+        cb3.ax.tick_params(labelsize=8, width=0.6, length=3)
+        # Align bar to row 3 bounds
+        try:
+            if row_axes[2]:
+                top3 = max(ax.get_position().y1 for ax in row_axes[2])
+                bot3 = min(ax.get_position().y0 for ax in row_axes[2])
+                pos = cax3.get_position()
+                cax3.set_position([pos.x0, bot3, pos.width, max(0.0, top3 - bot3)])
+        except Exception:
+            pass
+
+    # Shared coolwarm colorbar for rows 1–3
+    if (not single_colorbar) and bool(getattr(locals(), 'add_row123_shared_cbar', False)) and col_bar is not None:
+        cax123 = fig.add_subplot(gs[0:3, col_bar])
+        sm123 = plt.cm.ScalarMappable(norm=shared_norm, cmap=comp_cmap)
+        sm123.set_array([])
+        cb123 = fig.colorbar(sm123, cax=cax123, ticks=[-1, -0.5, 0, 0.5, 1])
+        cb123.ax.set_ylabel("", rotation=90)
+        cb123.outline.set_visible(True); cb123.outline.set_linewidth(0.8)
+        cb123.ax.tick_params(labelsize=8, width=0.6, length=3)
+        try:
+            axes123 = row_axes[0] + row_axes[1] + row_axes[2]
+            if axes123:
+                top = max(ax.get_position().y1 for ax in axes123)
+                bot = min(ax.get_position().y0 for ax in axes123)
+                pos = cax123.get_position()
+                cax123.set_position([pos.x0, bot, pos.width, max(0.0, top - bot)])
+        except Exception:
+            pass
+
+    # Grayscale colorbar for row 4 only, fixed [0,1]
+    if (not single_colorbar) and bool(getattr(locals(), 'add_row4_colorbar', False)) and col_bar is not None:
+        cax4 = fig.add_subplot(gs[3, col_bar])
+        from matplotlib.colors import Normalize as _Normalize
+        sm4 = plt.cm.ScalarMappable(norm=_Normalize(vmin=0.0, vmax=1.0), cmap=row34_cmap_name or "gray")
+        sm4.set_array([])
+        cb4 = fig.colorbar(sm4, cax=cax4, ticks=[0.0, 0.5, 1.0])
+        cb4.ax.set_ylabel("", rotation=90)
+        cb4.outline.set_visible(True); cb4.outline.set_linewidth(0.8)
+        cb4.ax.tick_params(labelsize=8, width=0.6, length=3)
+        try:
+            axes4 = row_axes[3]
+            if axes4:
+                top4 = max(ax.get_position().y1 for ax in axes4)
+                bot4 = min(ax.get_position().y0 for ax in axes4)
+                pos = cax4.get_position()
+                cax4.set_position([pos.x0, bot4, pos.width, max(0.0, top4 - bot4)])
         except Exception:
             pass
 
@@ -998,6 +1066,9 @@ def main() -> None:
         add_row12_colorbars=(not bool(args.no_row12_colorbars)),
         cbar_ratio=float(args.cbar_ratio),
         add_row34_colorbar=bool(getattr(args, 'row34_colorbar', False)),
+        add_row3_colorbar=bool(getattr(args, 'row3_colorbar', False)),
+        add_row4_colorbar=bool(getattr(args, 'row4_colorbar', False)),
+        add_row123_shared_cbar=bool(getattr(args, 'row123_shared_cbar', False)),
         row34_cmap_name=str(getattr(args, 'row34_cmap', 'gray')),
         single_colorbar=bool(getattr(args, 'single_colorbar', False)),
         column_step=max(1, int(getattr(args, 'column_step', 1))),
