@@ -219,13 +219,8 @@ Event timestamps are binned (1~ms) into an activity trace. Two correlation peaks
 % Planned figs include (i) using only the first forward/back pair to quantify baseline noise, and (ii) averaging all three pairs to demonstrate variance reduction. 
 
 \olsection{Multi-window scanning compensation}
-Even with accurate segmentation, \eqref{eq:lambda_mapping} introduces a spatially varying delay through the $x/z_2$ term; motor acceleration near turnarounds further shears the time axis. Our multi-window compensation routine addresses this by fitting boundary surfaces
-\begin{equation}
-  T_i(x,y) = a_i x + b_i y + c_i,
-\end{equation}
-which partition each scan into $M$ temporal windows. Soft memberships,
-\begin{equation}
-  w_i(x,y,t) = \frac{\sigma\!\left(\frac{t - T_i}{\tau}\right)\sigma\!\left(\frac{T_{i+1}-t}{\tau}\right)}{\sum_j \sigma\!\left(\frac{t - T_j}{\tau}\right)\sigma\!\left(\frac{T_{j+1}-t}{\tau}\right)},
+Even with accurate segmentation, residual non-uniform motor motion introduces spatially varying temporal delays and shear in the event cloud. We therefore model each scan as a sequence of $M$ temporal windows, each with its own local affine time warp whose slopes vary smoothly across the field (full parameterization in \textbf{Supplement~1}); here we summarize the optimization. The objective is 
+\frac{t - T_j}{\tau}\right)\sigma\!\left(\frac{T_{j+1}-t}{\tau}\right)},
 \end{equation}
 blend adjacent windows (temperature $\tau \approx 1$~ms). The compensated time is
 \begin{equation}
