@@ -369,8 +369,12 @@ def save_panel_c_separates(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax
     _one(comp, f"Compensated – Bin {idx}", f"multiwindow_bin50ms_compensated{suffix}.pdf")
 
 
-def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: float, out_dir: Path, suffix: str) -> None:
-    """Save plain images (no title, ticks, axes, or colorbar)."""
+def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: float, out_dir: Path, suffix: str, add_blue_variant: bool = False) -> None:
+    """Save plain images (no title, ticks, axes, or colorbar).
+
+    If add_blue_variant is True, also save duplicates with center-zero mapping
+    (TwoSlopeNorm, coolwarm) so negatives map to blue→white. Originals unchanged.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     # PNG via imsave (no axes)
     import matplotlib.pyplot as plt
@@ -378,7 +382,7 @@ def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: fl
     png_c = out_dir / f"multiwindow_bin50ms_compensated_plain{suffix}.png"
     plt.imsave(png_o, orig, cmap="coolwarm", vmin=vmin, vmax=vmax)
     plt.imsave(png_c, comp, cmap="coolwarm", vmin=vmin, vmax=vmax)
-    # PDF: embed raster without axes
+    # PDF: embed raster without axes (original behavior: use vmin/vmax and coolwarm)
     def _pdf(img: np.ndarray, stem: str):
         f = plt.figure(figsize=(6, 3))
         ax = f.add_subplot(1, 1, 1)
@@ -389,8 +393,28 @@ def save_panel_c_plain(orig: np.ndarray, comp: np.ndarray, vmin: float, vmax: fl
     _pdf(orig, f"multiwindow_bin50ms_original_plain{suffix}.pdf")
     _pdf(comp, f"multiwindow_bin50ms_compensated_plain{suffix}.pdf")
 
+    if add_blue_variant:
+        from matplotlib.colors import TwoSlopeNorm
+        def _pdf_blue(img: np.ndarray, stem: str):
+            f = plt.figure(figsize=(6, 3))
+            ax = f.add_subplot(1, 1, 1)
+            # Revert to proven mapping: shared center-zero with reversed coolwarm
+            A = max(abs(float(vmin)), abs(float(vmax)), 1e-6)
+            norm = TwoSlopeNorm(vmin=-A, vcenter=0.0, vmax=A)
+            ax.imshow(img, cmap="coolwarm_r", norm=norm, aspect="equal")
+            ax.axis("off")
+            f.savefig(out_dir / stem, dpi=300, bbox_inches="tight", pad_inches=0.0)
+            if stem.endswith('.pdf'):
+                f.savefig(out_dir / stem.replace('.pdf', '.png'), dpi=300, bbox_inches="tight", pad_inches=0.0)
+            plt.close(f)
+        _pdf_blue(orig, f"multiwindow_bin50ms_original_plain_blue{suffix}.pdf")
+        _pdf_blue(comp, f"multiwindow_bin50ms_compensated_plain_blue{suffix}.pdf")
+        # Also save PNGs for convenience
+        _pdf_blue(orig, f"multiwindow_bin50ms_original_plain_blue{suffix}.png")
+        _pdf_blue(comp, f"multiwindow_bin50ms_compensated_plain_blue{suffix}.png")
 
-def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "best", suffix: str = "") -> None:
+
+def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "best", suffix: str = "", add_blue_variant: bool = False) -> None:
     # Use the aggregated 50 ms bin NPZ for clean single-bin images
     _, allbins_path = find_timebin_csv_and_npz(segments_dir, base)
     with np.load(allbins_path, allow_pickle=False) as d:
@@ -466,7 +490,7 @@ def render_panel_c(segments_dir: Path, base: str, out_dir: Path, choose: str = "
     # Also save separate single panels using same vmin/vmax
     save_panel_c_separates(orig, comp, vmin, vmax, idx, out_dir, suffix)
     # And save plain images without titles/ticks/colorbar
-    save_panel_c_plain(orig, comp, vmin, vmax, out_dir, suffix)
+    save_panel_c_plain(orig, comp, vmin, vmax, out_dir, suffix, add_blue_variant=add_blue_variant)
 
 
 def main() -> None:
@@ -489,6 +513,8 @@ def main() -> None:
                         help="Optional suffix appended to output filenames, e.g. 'blank' or 'sanqin'.")
     parser.add_argument("--panel_c_choice", choices=["best", "bin4"], default="best",
                         help="Select which time bin to visualize in panel (c); default 'best' chooses max std diff, 'bin4' forces bin 4.")
+    parser.add_argument("--plain_blue_extra", action="store_true",
+                        help="Save extra blue/white duplicates for plain images (keeps originals unchanged)")
     args = parser.parse_args()
 
     setup_style()
@@ -547,7 +573,7 @@ def main() -> None:
         sensor_h=args.sensor_height,
         suffix=suffix,
     )
-    render_panel_c(segments_dir, base, out_dir, choose=args.panel_c_choice, suffix=suffix)
+    render_panel_c(segments_dir, base, out_dir, choose=args.panel_c_choice, suffix=suffix, add_blue_variant=bool(args.plain_blue_extra))
 
 
 if __name__ == "__main__":

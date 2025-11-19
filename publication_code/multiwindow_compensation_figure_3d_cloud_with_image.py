@@ -137,6 +137,7 @@ def plot_cloud(
     fixed_ylim: Optional[Tuple[float, float]] = None,
     fixed_zlim: Optional[Tuple[float, float]] = None,
     overlay_box: bool = False,
+    overlay_box_times: Optional[Tuple[float, ...]] = None,
     box_color: Tuple[float, float, float, float] = (0, 0, 0, 0.6),
     # Optional pinned grid configuration
     sensor_width: Optional[int] = None,
@@ -292,12 +293,18 @@ def plot_cloud(
             surf.set_rasterized(True)
         except Exception:
             pass
-        if overlay_box:
+        times_to_box = []
+        if overlay_box and (overlay_time_ms is not None):
+            times_to_box.append(float(overlay_time_ms))
+        if overlay_box_times is not None:
+            times_to_box.extend(list(overlay_box_times))
+        for tbox in times_to_box:
+            taxis = time_scale * float(tbox)
             corners = [
-                (x0, time_scale * overlay_time_ms, z0),
-                (x1, time_scale * overlay_time_ms, z0),
-                (x1, time_scale * overlay_time_ms, z1),
-                (x0, time_scale * overlay_time_ms, z1),
+                (x0, taxis, z0),
+                (x1, taxis, z0),
+                (x1, taxis, z1),
+                (x0, taxis, z1),
             ]
             segs = [
                 [corners[0], corners[1]],
@@ -325,6 +332,7 @@ def main():
     ap.add_argument("--overlay-image-before", type=Path, default=None, help="PNG/JPG to overlay on BEFORE cloud")
     ap.add_argument("--overlay-image-after", type=Path, default=None, help="PNG/JPG to overlay on AFTER cloud")
     ap.add_argument("--overlay-time-ms", type=float, default=None, help="Time (ms) to place overlay plane (e.g., 50)")
+    ap.add_argument("--overlay-box-times", type=str, default=None, help="Comma-separated times (ms) to draw dashed boxes (e.g., '850,900')")
     ap.add_argument("--overlay-alpha", type=float, default=1.0, help="Overlay plane alpha (default 1.0)")
     ap.add_argument("--overlay-span", choices=["axis", "events"], default="axis", help="Map image over axis or event extents")
     ap.add_argument("--overlay-flipud", action="store_true", help="Flip overlay vertically to match event Y")
@@ -406,6 +414,14 @@ def main():
         seg = max(1, int(args.time_segments))
         time_grid_ms = np.linspace(0.0, tmax, seg + 1)
 
+    # Parse optional extra box times
+    box_times: Optional[Tuple[float, ...]] = None
+    if args.overlay_box_times:
+        try:
+            box_times = tuple(float(s.strip()) for s in args.overlay_box_times.split(',') if s.strip())
+        except Exception:
+            box_times = None
+
     # Save panels separately to avoid overflow
     fig1 = plt.figure(figsize=(4.4, 3.3))
     ax1 = fig1.add_subplot(1, 1, 1, projection="3d")
@@ -427,6 +443,7 @@ def main():
         fixed_ylim=fixed_ylim,
         fixed_zlim=fixed_zlim,
         overlay_box=True,
+        overlay_box_times=box_times,
         box_color=(1.0, 0.0, 0.0, 0.7),
         sensor_width=args.sensor_width if args.pin_grid else None,
         sensor_height=args.sensor_height if args.pin_grid else None,
@@ -469,6 +486,7 @@ def main():
         fixed_ylim=fixed_ylim,
         fixed_zlim=fixed_zlim,
         overlay_box=True,
+        overlay_box_times=box_times,
         box_color=(0.0, 0.6, 0.0, 0.7),
         sensor_width=args.sensor_width if args.pin_grid else None,
         sensor_height=args.sensor_height if args.pin_grid else None,
