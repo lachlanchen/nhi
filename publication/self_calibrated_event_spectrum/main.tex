@@ -1,18 +1,27 @@
 \documentclass[9pt,twocolumn]{opticajnl}
 \journal{opticajournal}
 \setboolean{shortarticle}{true}
-\usepackage{siunitx}
-\sisetup{range-phrase = --, range-units = single}
-\usepackage{siunitx}
-\sisetup{per-mode = symbol}
-% Local compile guard: define common unit macros if not provided by siunitx in this TeX Live
-\providecommand{\nano}{\ensuremath{\mathrm{n}}}
-\providecommand{\micro}{\ensuremath{\mu}}
-\providecommand{\milli}{\ensuremath{\mathrm{m}}}
-\providecommand{\second}{\ensuremath{\mathrm{s}}}
-\providecommand{\meter}{\ensuremath{\mathrm{m}}}
-\DeclareSIUnit{\pixel}{px}
-\DeclareSIUnit{\USD}{USD}
+% Load siunitx when available; otherwise provide minimal fallbacks so local builds succeed
+\IfFileExists{siunitx.sty}{%
+  \usepackage{siunitx}
+  \sisetup{range-phrase = --, range-units = single}
+  \sisetup{per-mode = symbol}
+  \DeclareSIUnit{\pixel}{px}
+  \DeclareSIUnit{\USD}{USD}
+}{%
+  \newcommand{\sisetup}[1]{}
+  \newcommand{\SI}[2]{\ensuremath{#1\,#2}}
+  \newcommand{\SIrange}[3]{\ensuremath{#1\text{--}#2\,#3}}
+  \newcommand{\DeclareSIUnit}[2]{}
+  % Common unit symbols used in this manuscript
+  \providecommand{\nano}{\ensuremath{\mathrm{n}}}
+  \providecommand{\micro}{\ensuremath{\mu}}
+  \providecommand{\milli}{\ensuremath{\mathrm{m}}}
+  \providecommand{\second}{\ensuremath{\mathrm{s}}}
+  \providecommand{\meter}{\ensuremath{\mathrm{m}}}
+  \providecommand{\pixel}{\ensuremath{\mathrm{px}}}
+  \providecommand{\USD}{\ensuremath{\mathrm{USD}}}
+}
 \usepackage{ifthen}
 \usepackage{placeins}
 \usepackage{xcolor}
@@ -40,8 +49,8 @@
 % \affil[]{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong, China}
 % % \address{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong, China}
 % \affil[*]{elam@eee.hku.hk}
-\author{Rongzhou Chen, Chutian Wang, Yuxing Li, Yuqing Cao, Shuo Zhu and Edmund Y. Lam{*}}
-\affil{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong, China}
+\author{Rongzhou Chen, Chutian Wang, Yuqing Cao and Edmund Y. Lam{*}}
+\affil{Department of Electrical and Electronic Engineering, The University of Hong Kong, Pokfulam, Hong Kong SAR, China}
 % \affil[*]{elam@eee.hku.hk}
 \affil{{*}elam@eee.hku.hk}
 \dates{\today}
