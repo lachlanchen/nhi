@@ -246,7 +246,11 @@ def plot_cloud(
             yticks_ms = np.linspace(0.0, t1, 4)
         yticks_axis = time_scale * yticks_ms
         ax.set_yticks(yticks_axis)
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{max(0, int(round(v/s)))}"))
+        # If using a pinned 0,T/3,2T/3,T grid (length 4), prefer symbolic fraction labels
+        if time_grid_ms is not None and len(yticks_ms) == 4:
+            ax.set_yticklabels(["0", "t/3", "2t/3", "t"])
+        else:
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{max(0, int(round(v/s)))}"))
     except Exception:
         # Fallback: limit tick count if manual setting fails
         ax.xaxis.set_major_locator(MaxNLocator(4))
