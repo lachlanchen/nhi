@@ -246,11 +246,8 @@ def plot_cloud(
             yticks_ms = np.linspace(0.0, t1, 4)
         yticks_axis = time_scale * yticks_ms
         ax.set_yticks(yticks_axis)
-        # If using a pinned 0,T/3,2T/3,T grid (length 4), prefer symbolic fraction labels
-        if time_grid_ms is not None and len(yticks_ms) == 4:
-            ax.set_yticklabels(["0", "t/3", "2t/3", "t"])
-        else:
-            ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{max(0, int(round(v/s)))}"))
+        # Always show numeric milliseconds (no symbolic fractions)
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, pos, s=time_scale: f"{max(0, int(round(v/s)))}"))
     except Exception:
         # Fallback: limit tick count if manual setting fails
         ax.xaxis.set_major_locator(MaxNLocator(4))
@@ -393,10 +390,9 @@ def main():
     if args.lock_time_axis:
         tmin = float(min(ts_ms.min(), ts_w_ms.min()))
         tmax = float(max(ts_ms.max(), ts_w_ms.max()))
-        # Use a small pad above T, but keep min at 0
-        pad_t = 0.02 * (tmax - tmin + 1e-6)
+        # Lock to exact [0, T] without fractional pad so top tick is T exactly
         ylo_fixed = 0.0
-        yhi_fixed = args.time_scale * (tmax + pad_t)
+        yhi_fixed = args.time_scale * tmax
         fixed_ylim = (ylo_fixed, yhi_fixed)
 
     # Prepare pinned time grid if requested
