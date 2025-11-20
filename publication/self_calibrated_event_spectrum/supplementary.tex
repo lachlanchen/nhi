@@ -27,13 +27,12 @@
 \usepackage{ifthen}
 \usepackage{placeins}
 \usepackage{xcolor}
-% Ensure citation commands (\cite) are available in local builds
-\IfFileExists{natbib.sty}{\usepackage[numbers,sort&compress]{natbib}}{%
-  % Minimal fallbacks so \cite does not error when natbib is unavailable
-  \providecommand{\cite}[1]{[##1]}%
-  \providecommand{\citet}[1]{\cite{##1}}%
-  \providecommand{\citep}[1]{\cite{##1}}%
-}
+% Provide lightweight citation defaults so local builds succeed
+\providecommand{\cite}[1]{[#1]}
+\providecommand{\citet}[1]{\cite{#1}}
+\providecommand{\citep}[1]{\cite{#1}}
+% When natbib is installed, load it to restore full citation features
+\IfFileExists{natbib.sty}{\usepackage[numbers,sort&compress]{natbib}}{}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shadings,calc}
 % Allow graphics to be found in multiple common output folders
