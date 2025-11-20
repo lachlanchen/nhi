@@ -34,10 +34,14 @@
 \graphicspath{{figures/}{figures_sm/}{../figures/}{../../publication_code/figures/}}
 
 % Robust includegraphics helper: prefer PNG, then PDF; otherwise draw a placeholder box
-\newcommand{\includegraphicsSafe}[2]{%% #1 base name (without extension), #2 width
+\newcommand{\includegraphicsSafe}[2]{%% #1 base name or path (without extension), #2 width
   \IfFileExists{#1.png}{\includegraphics[width=#2]{#1.png}}{%%
     \IfFileExists{#1.pdf}{\includegraphics[width=#2]{#1.pdf}}{%%
-      \fbox{\parbox{#2}{\centering\vspace{1em}\footnotesize Missing figure\vspace{1em}}}%%
+      \IfFileExists{#1.jpg}{\includegraphics[width=#2]{#1.jpg}}{%%
+        \IfFileExists{#1.jpeg}{\includegraphics[width=#2]{#1.jpeg}}{%%
+          \fbox{\parbox{#2}{\centering\vspace{1em}\footnotesize Missing figure\vspace{1em}}}%%
+        }%%
+      }%%
     }%%
   }%%
 }
