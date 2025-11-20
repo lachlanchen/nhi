@@ -100,6 +100,18 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Emit companion PNG renders for quick previews.",
     )
+    parser.add_argument(
+        "--font-scale",
+        type=float,
+        default=1.0,
+        help="Scale factor applied to base font sizes (e.g., 0.9).",
+    )
+    parser.add_argument(
+        "--output-suffix",
+        type=str,
+        default="",
+        help="Optional suffix appended to output filenames (e.g., '_fs08').",
+    )
     return parser.parse_args()
 
 
@@ -193,12 +205,17 @@ def load_activity_from_raw(raw_path: Path, time_bin_us: int) -> Tuple[np.ndarray
 ## (No segments-only fallback here by design) — rely on RAW for fidelity
 
 
-def setup_figure_style() -> None:
+_FONT_SCALE: float = 1.0
+_OUTPUT_SUFFIX: str = ""
+
+
+def setup_figure_style(font_scale: float = 1.0) -> None:
+    base = 11.7
     plt.rcParams.update(
         {
-            "font.size": 11.7,
-            "axes.labelsize": 11.7,
-            "axes.titlesize": 11.7,
+            "font.size": base * font_scale,
+            "axes.labelsize": base * font_scale,
+            "axes.titlesize": base * font_scale,
             "axes.linewidth": 1.04,
             "xtick.direction": "out",
             "ytick.direction": "out",
@@ -265,7 +282,7 @@ def render_activity_figure(
     legend = ax.legend(
         handles=legend_handles,
         loc="upper left",
-        fontsize=10.4,
+        fontsize=10.4 * _FONT_SCALE,
         frameon=True,
     )
     legend.get_frame().set_facecolor("white")
@@ -273,10 +290,10 @@ def render_activity_figure(
     legend.get_frame().set_alpha(0.9)
     fig.tight_layout()
 
-    pdf_path = output_dir / "figure02_activity.pdf"
+    pdf_path = output_dir / f"figure02_activity{_OUTPUT_SUFFIX}.pdf"
     fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
-        fig.savefig(output_dir / "figure02_activity.png", dpi=400)
+        fig.savefig(output_dir / f"figure02_activity{_OUTPUT_SUFFIX}.png", dpi=400)
     plt.close(fig)
     print(f"Saved activity figure to {pdf_path}")
 
@@ -345,16 +362,16 @@ def render_correlation_figure(
     # Annotate reverse-corr blue peak with its lag value
     # No text callout for reverse peak (keep blue dot only)
 
-    legend = ax.legend(loc="upper left", fontsize=10.4, frameon=True)
+    legend = ax.legend(loc="upper left", fontsize=10.4 * _FONT_SCALE, frameon=True)
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("#d0d0d0")
     legend.get_frame().set_alpha(0.9)
     fig.tight_layout()
 
-    pdf_path = output_dir / "figure02_correlation.pdf"
+    pdf_path = output_dir / f"figure02_correlation{_OUTPUT_SUFFIX}.pdf"
     fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
-        fig.savefig(output_dir / "figure02_correlation.png", dpi=400)
+        fig.savefig(output_dir / f"figure02_correlation{_OUTPUT_SUFFIX}.png", dpi=400)
     plt.close(fig)
     print(f"Saved correlation figure to {pdf_path}")
 
@@ -418,10 +435,10 @@ def render_duration_figure(
         ha="center",
         fontsize=9,
     )
-    pdf_path = output_dir / "figure02_duration.pdf"
+    pdf_path = output_dir / f"figure02_duration{_OUTPUT_SUFFIX}.pdf"
     fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
-        fig.savefig(output_dir / "figure02_duration.png", dpi=400)
+        fig.savefig(output_dir / f"figure02_duration{_OUTPUT_SUFFIX}.png", dpi=400)
     plt.close(fig)
     print(f"Saved duration figure to {pdf_path}")
 
@@ -472,16 +489,19 @@ def render_eventrate_figure(
         ha="center",
         fontsize=9,
     )
-    pdf_path = output_dir / "figure02_eventrate.pdf"
+    pdf_path = output_dir / f"figure02_eventrate{_OUTPUT_SUFFIX}.pdf"
     fig.savefig(pdf_path, dpi=400, bbox_inches="tight", pad_inches=0.01)
     if save_png:
-        fig.savefig(output_dir / "figure02_eventrate.png", dpi=400)
+        fig.savefig(output_dir / f"figure02_eventrate{_OUTPUT_SUFFIX}.png", dpi=400)
     plt.close(fig)
     print(f"Saved event-rate figure to {pdf_path}")
 
 
 def main() -> None:
     args = parse_args()
+    global _FONT_SCALE, _OUTPUT_SUFFIX
+    _FONT_SCALE = float(args.font_scale) if hasattr(args, "font_scale") else 1.0
+    _OUTPUT_SUFFIX = str(args.output_suffix) if hasattr(args, "output_suffix") and args.output_suffix else ""
     dataset_path = args.dataset_path.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -541,7 +561,7 @@ def main() -> None:
     one_way_s = results["one_way_period"] * (corr_bin_us / 1_000_000.0)
     turnaround_s = results["reverse_peak_lag"] * (corr_bin_us / 1_000_000.0)
 
-    setup_figure_style()
+    setup_figure_style(_FONT_SCALE)
     render_activity_figure(
         output_dir=output_dir,
         time_s=time_s,
