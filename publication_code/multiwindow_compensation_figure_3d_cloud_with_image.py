@@ -145,6 +145,7 @@ def plot_cloud(
     x_segments: int = 4,
     z_segments: int = 3,
     time_grid_ms: Optional[np.ndarray] = None,
+    axis_font_scale: float = 1.0,
 ):
     pos = p > 0
     neg = p <= 0
@@ -203,9 +204,18 @@ def plot_cloud(
     ax.set_zlim(zlo, zhi)
     ax.set_ylim(ylo, yhi)
 
-    ax.set_xlabel("X (px)", labelpad=1)
-    ax.set_ylabel("Time (ms)", labelpad=8)
-    ax.set_zlabel("Y (px)", labelpad=1)
+    # Axis label font sizes (scale around an approximate 10pt base)
+    try:
+        base_label_size = plt.rcParams.get("axes.labelsize", 10.0)
+        # If rc value is a string (e.g., 'medium'), fall back to 10.0
+        if not isinstance(base_label_size, (int, float)):
+            base_label_size = 10.0
+    except Exception:
+        base_label_size = 10.0
+    lbl_size = float(base_label_size) * float(axis_font_scale)
+    ax.set_xlabel("X (px)", labelpad=1, fontsize=lbl_size)
+    ax.set_ylabel("Time (ms)", labelpad=8, fontsize=lbl_size)
+    ax.set_zlabel("Y (px)", labelpad=1, fontsize=lbl_size)
     ax.set_title(title, pad=2)
     # View with time on Y, spatial on X/Z; gentle perspective from front-left
     ax.view_init(elev=25, azim=-35)
@@ -344,6 +354,7 @@ def main():
     ap.add_argument("--sensor-width", type=int, default=None, help="Sensor width in pixels (pins X ticks to 0..W with 4 segments)")
     ap.add_argument("--sensor-height", type=int, default=None, help="Sensor height in pixels (pins Z ticks to 0..H with 3 segments)")
     ap.add_argument("--time-segments", type=int, default=3, help="Number of segments for time grid (default 3 -> 0,1/3,2/3,1)")
+    ap.add_argument("--axis-font-scale", type=float, default=0.9, help="Scale factor for axis label font sizes (default 0.9)")
     args = ap.parse_args()
 
     x, y, t, p = load_events(args.segment_npz)
@@ -450,6 +461,7 @@ def main():
         x_segments=4,
         z_segments=3,
         time_grid_ms=time_grid_ms if args.pin_grid else None,
+        axis_font_scale=float(args.axis_font_scale),
     )
     # Keep a small margin so axis labels stay visible after tight saving
     fig1.subplots_adjust(left=0.06, right=0.98, top=0.98, bottom=0.06)
@@ -493,6 +505,7 @@ def main():
         x_segments=4,
         z_segments=3,
         time_grid_ms=time_grid_ms if args.pin_grid else None,
+        axis_font_scale=float(args.axis_font_scale),
     )
     fig2.subplots_adjust(left=0.06, right=0.98, top=0.98, bottom=0.06)
     _save_tight_3d(fig2, ax2, out_dir / "event_cloud_after.pdf", dpi=400, pad_inches=0.0, extra_pad=0.01)
