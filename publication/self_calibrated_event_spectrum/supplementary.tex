@@ -29,6 +29,9 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shadings,calc}
+% Allow graphics to be found in multiple common output folders
+\usepackage{graphicx}
+\graphicspath{{figures/}{../figures/}{../../publication_code/figures/}}
 
 % Robust includegraphics helper: prefer PNG, then PDF; otherwise draw a placeholder box
 \newcommand{\includegraphicsSafe}[2]{%% #1 base name (without extension or path in figures/), #2 width
