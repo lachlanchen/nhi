@@ -75,6 +75,15 @@ This document provides supplementary methods, implementation notes, and addition
 \newcommand{\olsection}[1]{\par\noindent\textbf{#1.} }
 
 \olsection{Event-trigger probability model}
+Figure~\ref{fig:device_setup} shows the physical configuration of the prototype hyperspectral microscope used throughout the study. A broadband 2835 LED, collimator, and motorised grating--dichroic assembly (bottom left) sweep a dispersed illumination line across the specimen, which is fixed at the centre of the optical breadboard. The grating arm is driven by a NEMA-17 stepper motor using a compact 3D-printed fixture with modular holders for the LED, collimator tube, and grating cap. Above the sample, a vertical $4f$ detection column relays the transmitted light to an event camera and a frame-based hyperspectral sensor through a lateral beam splitter. All illumination mounts, motor couplings, and microscope adapters are 3D-printed (Ultimaker~3S) with snap-fit tolerances, isolating the scanning illumination subsystem from the detection stack and enabling repeatable forward/backward scans without precision optomechanics.
+
+\begin{figure}[t]
+  \centering
+  \includegraphicsSafe{figures_sm/device_setup}{\columnwidth}\\[-2pt]
+  \caption{Device setup for the event-driven transmission hyperspectral microscope. The lower-left module is the scanning illumination arm, comprising a broadband 2835 LED, collimating optics, and a motorised grating--dichroic assembly driven by a NEMA-17 stepper motor. A dispersed illumination line is projected onto the specimen mounted at the centre of the breadboard. The vertical $4f$ detection column above the sample relays the transmitted light through a lateral beam splitter to an event camera and a frame-based sensor. Structural components in red/black are 3D-printed mounts, holders, and adapters, forming a compact, reconfigurable platform for self-synchronised spectral scanning.}
+  \label{fig:device_setup}
+\end{figure}
+
 Event emission occurs when the logarithmic brightness increment surpasses a fixed magnitude $\theta$. Under realistic sensing conditions the observed gradient is corrupted by noise, which we model as
 \begin{equation}
   \nabla I = \nabla I_{\text{true}} + \eta,\qquad \eta \sim \mathcal{N}(0,\sigma^2).
