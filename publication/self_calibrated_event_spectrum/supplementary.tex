@@ -27,6 +27,8 @@
 \usepackage{ifthen}
 \usepackage{placeins}
 \usepackage{xcolor}
+% Ensure citation commands (\cite) are available in local builds
+\IfFileExists{natbib.sty}{\usepackage[numbers,sort&compress]{natbib}}{}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shadings,calc}
 % Allow graphics to be found in multiple common output folders
