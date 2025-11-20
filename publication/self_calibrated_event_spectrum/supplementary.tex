@@ -82,6 +82,15 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
 
 This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{figures/event_probability_results.png}\\[-2pt]
+  \caption{Empirical event probabilities under scanning illumination. Shown are example 10~ms accumulations sampled across a single \SI{3.5}{\second} scan. The spatial event density and polarity vary smoothly with the local signed temporal derivative of brightness: regions with increasing intensity emit predominantly positive events (red), decreasing regions emit negative events (blue), and near-stationary regions remain close to zero density. This observation is consistent with the model in Eqs.~(\ref{eq:trigger_probability})--(\ref{eq:expected_events}), in which per-bin event probabilities deviate from 0 and 1 according to the magnitude and sign of $\nabla I_{\text{true}}$, thereby encoding spectral slope information.}
+  \label{fig:event_probability}
+\end{figure*}
+
+\FloatBarrier
+
 \olsection{Self-synchronized scan segmentation}
 We summarize the segmentation procedure used in the main letter and provide implementation details without repeating its narrative description. Event timestamps are first binned into an activity signal $a[n]$ (events per 1~ms bin). The peak of auto-correlation
 \begin{equation}
