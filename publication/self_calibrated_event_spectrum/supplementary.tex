@@ -101,6 +101,15 @@ This probabilistic link between event statistics and intensity gradients underpi
   \label{fig:event_probability}
 \end{figure*}
 
+As a complementary, source-referenced validation, Fig.~\ref{fig:cumsum_vs_spd} examines how background event statistics relate to the illumination spectrum during a \SI{3.5}{\second} scan. The top row visualizes properties of the calibrated Lumileds spectral power distribution (SPD): (a) the derivative of the log-SPD induced by the wavelength--time mapping, (b) the log-SPD itself, and (c) the original SPD. The bottom row shows background event measurements formed by counting polarity-weighted events in 5~ms bins across the scan: (d) the normalized dominant background event density, (e) its cumulative sum, and (f) the exponential of the normalized cumulative sum. Consistent with the probabilistic trigger model, the background density in (d) qualitatively follows the derivative of log intensity in (a), while the integrated-and-exponentiated curve in (f) recovers the SPD shape in (c) up to a global scale.
+
+\begin{figure}[t]
+  \centering
+  \includegraphicsSafe{figures_sm/cumsum_vs_spd}{\columnwidth}\\[-2pt]
+  \caption{Relationship between light-source spectrum and background events. Top row: properties of the Lumileds spectral power distribution (SPD)---(a) derivative of the log-SPD, (b) log-SPD, and (c) original SPD. Bottom row: background event statistics over a \SI{3.5}{\second} scan with 5~ms bins---(d) normalized dominant background event density, (e) cumulative sum of the density, and (f) exponential of the normalized cumulative sum. The correspondence between (a) and (d), and between (c) and (f), indicates that the background event stream encodes the source SPD up to integration and an exponential mapping.}
+  \label{fig:cumsum_vs_spd}
+\end{figure}
+
 % \FloatBarrier
 
 \olsection{Self-synchronized scan segmentation}
