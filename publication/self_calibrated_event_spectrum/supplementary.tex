@@ -30,6 +30,15 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shadings,calc}
 
+% Robust includegraphics helper: prefer PNG, then PDF; otherwise draw a placeholder box
+\newcommand{\includegraphicsSafe}[2]{%% #1 base name (without extension or path in figures/), #2 width
+  \IfFileExists{figures/#1.png}{\includegraphics[width=#2]{figures/#1.png}}{%%
+    \IfFileExists{figures/#1.pdf}{\includegraphics[width=#2]{figures/#1.pdf}}{%%
+      \fbox{\parbox{#2}{\centering\vspace{1em}\footnotesize Missing figure: \texttt{#1}\vspace{1em}}}%%
+    }%%
+  }%%
+}
+
 % color is already loaded above; keep typography consistent with main letter
 
 \title{Supplementary Material: Self-Calibrated Neuromorphic Hyperspectral Sensing}
@@ -84,7 +93,7 @@ This probabilistic link between event statistics and intensity gradients underpi
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.98\textwidth]{figures/event_probability_results.png}\\[-2pt]
+  \includegraphicsSafe{event_probability_results}{0.98\textwidth}\\[-2pt]
   \caption{Empirical event probabilities under scanning illumination. Shown are example 10~ms accumulations sampled across a single \SI{3.5}{\second} scan. The spatial event density and polarity vary smoothly with the local signed temporal derivative of brightness: regions with increasing intensity emit predominantly positive events (red), decreasing regions emit negative events (blue), and near-stationary regions remain close to zero density. This observation is consistent with the model in Eqs.~(\ref{eq:trigger_probability})--(\ref{eq:expected_events}), in which per-bin event probabilities deviate from 0 and 1 according to the magnitude and sign of $\nabla I_{\text{true}}$, thereby encoding spectral slope information.}
   \label{fig:event_probability}
 \end{figure*}
