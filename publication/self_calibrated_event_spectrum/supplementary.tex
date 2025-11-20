@@ -102,7 +102,7 @@ with $\lambda$ the effective sampling rate per pixel. Averaging events over repe
   \label{eq:gradient_estimate}
 \end{equation}
 
-This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Empirically, this behaviour is visible in Fig.~\ref{fig:event_probability}: across a \SI{3.5}{\second} scan, 10~ms accumulations exhibit spatial event densities that deviate from the binary extremes and vary with the local signed temporal derivative of brightness (positive derivatives yield predominantly positive events; negative derivatives yield predominantly negative events). Related evidence that event streams encode log-intensity changes has also been observed in static-scene recovery from noise-enabled triggering~\cite{cao2025noise2image}. Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
+This probabilistic link between event statistics and intensity gradients underpins the reconstruction strategy in the main letter. Equation~(\ref{eq:gradient_estimate}) justifies using temporally binned events as sufficient statistics for spectral estimation: the scan-induced evolution of $\nabla I_{\text{true}}$ encodes spectral slopes, while averaging suppresses sensor noise and preserves the dynamic-range benefits of event vision. Empirically, this behaviour is visible in Fig.~\ref{fig:event_probability}: across a \SI{3.5}{\second} scan, 10~ms accumulations exhibit spatial event densities that deviate from the binary extremes and vary with the local signed temporal derivative of brightness (positive derivatives yield predominantly positive events; negative derivatives yield predominantly negative events). Related evidence that event streams encode log-intensity changes also appears in the Noise2Image static-scene recovery technique (Cao \emph{et~al.}, Optica \textbf{12}, 46--55, 2025). Subsequent steps segment scans and correct residual temporal shear before building the spectral cube.
 
 \begin{figure*}[t]
   \centering
@@ -229,6 +229,7 @@ where $\bar\lambda_0$ and $\bar\lambda_1$ are the mean boundary wavelengths acro
 with closed-form solution $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\mathbf{y}$, $X=[\tilde b_\lambda\;\mathbf{1}]$, $\mathbf{y}=\bar g$.
 
 
+\nocite{cao2025noise2image}
 \bibliography{ref}
 
 \end{document}
