@@ -202,7 +202,7 @@ def align_edges_only(
     BG_COLOR = "#1f77b4"; SPD_COLOR = "#ff7f0e"
     ax.plot(wl_bg, bg_norm_wl, color=BG_COLOR, linewidth=1.8, label="Background")
     ax.plot(wl0, gt0_norm, color=SPD_COLOR, linewidth=1.8, label="Light SPD")
-    ax.set_xlabel("Wavelength (nm)"); ax.set_ylabel("Normalised intensity (a.u.)")
+    ax.set_xlabel("Wavelength (nm)"); ax.set_ylabel("Normalised intensity")
     ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
     ax.axvline(wl_low, color="black", linestyle="--", linewidth=1.0, alpha=0.6)
     ax.axvline(wl_high, color="black", linestyle="--", linewidth=1.0, alpha=0.6)
@@ -220,7 +220,7 @@ def align_edges_only(
         fig2, ax2 = plt.subplots(figsize=(5.6, 3.0))
         ax2.plot(wl_bg, bg_norm_wl, color=BG_COLOR, linewidth=1.8, label="Background")
         ax2.plot(wl0, gt0_norm, color=SPD_COLOR, linewidth=1.8, label="Light SPD")
-        ax2.set_xlabel("Wavelength (nm)"); ax2.set_ylabel("Normalised intensity (a.u.)")
+        ax2.set_xlabel("Wavelength (nm)"); ax2.set_ylabel("Normalised intensity")
         ax2.grid(alpha=0.3, linestyle="--", linewidth=0.6)
         ax2.axvline(wl_low, color="black", linestyle="--", linewidth=1.0, alpha=0.6)
         ax2.axvline(wl_high, color="black", linestyle="--", linewidth=1.0, alpha=0.6)

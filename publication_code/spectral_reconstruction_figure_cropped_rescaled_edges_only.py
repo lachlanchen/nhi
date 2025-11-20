@@ -81,6 +81,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--save-png", action="store_true")
     ap.add_argument("--bar-height-ratio", type=float, default=0.08)
     ap.add_argument("--bar-px", type=int, default=6)
+    # Global font scale for this figure (multiplies rcParams font sizes)
+    ap.add_argument("--fig-font-scale", type=float, default=1.0,
+                    help="Scale factor for figure fonts (e.g., 1.1 to enlarge)")
     # Layout gaps
     ap.add_argument("--col-gap", type=float, default=0.045, help="Column gap (matplotlib wspace)")
     ap.add_argument("--row-gap", type=float, default=None, help="Row gap (matplotlib hspace); default = 0.35 * col-gap")
@@ -854,6 +857,29 @@ def render_spectral_grid(
 def main() -> None:
     args = parse_args()
     setup_style()
+    # Apply optional font scaling across common rcParams
+    try:
+        import matplotlib as _mpl
+        s = float(getattr(args, 'fig_font_scale', 1.0) or 1.0)
+        if s != 1.0:
+            def _scale_rc(key: str, base: float | None = None) -> None:
+                try:
+                    val = _mpl.rcParams.get(key, base if base is not None else None)
+                    if isinstance(val, (int, float)):
+                        _mpl.rcParams[key] = float(val) * s
+                    elif base is not None:
+                        _mpl.rcParams[key] = float(base) * s
+                except Exception:
+                    if base is not None:
+                        _mpl.rcParams[key] = float(base) * s
+            _scale_rc("font.size", 11.7)
+            _scale_rc("axes.labelsize", 11.7)
+            _scale_rc("axes.titlesize", 11.7)
+            _scale_rc("xtick.labelsize", 11.7)
+            _scale_rc("ytick.labelsize", 11.7)
+            _scale_rc("legend.fontsize", 10.4)
+    except Exception:
+        pass
     segment_path = args.segment.resolve()
     figures_root = Path(__file__).resolve().parent / "figures"
     base_name = Path(args.figure_name).stem if args.figure_name else "spectral_reconstruction_scan"

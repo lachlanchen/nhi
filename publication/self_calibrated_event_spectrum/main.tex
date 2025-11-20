@@ -2,31 +2,41 @@
 \journal{opticajournal}
 \setboolean{shortarticle}{true}
 % Load siunitx when available; otherwise provide minimal fallbacks so local builds succeed
-\IfFileExists{siunitx.sty}{%
+\newif\ifhavesi
+\IfFileExists{siunitx.sty}{\havesitrue}{\havesifalse}
+\ifhavesi
   \usepackage{siunitx}
   \sisetup{range-phrase = --, range-units = single}
   \sisetup{per-mode = symbol}
   \DeclareSIUnit{\pixel}{px}
   \DeclareSIUnit{\USD}{USD}
-}{%
+\else
   \newcommand{\sisetup}[1]{}
-  \newcommand{\SI}[2]{\ensuremath{#1\,#2}}
-  \newcommand{\SIrange}[3]{\ensuremath{#1\text{--}#2\,#3}}
+  \newcommand{\SI}[2]{#1\,#2}
+  \newcommand{\SIrange}[3]{#1--#2\,#3}
   \newcommand{\DeclareSIUnit}[2]{}
   % Common unit symbols used in this manuscript
-  \providecommand{\nano}{\ensuremath{\mathrm{n}}}
+  \providecommand{\nano}{n}
   \providecommand{\micro}{\ensuremath{\mu}}
-  \providecommand{\milli}{\ensuremath{\mathrm{m}}}
-  \providecommand{\second}{\ensuremath{\mathrm{s}}}
-  \providecommand{\meter}{\ensuremath{\mathrm{m}}}
-  \providecommand{\pixel}{\ensuremath{\mathrm{px}}}
-  \providecommand{\USD}{\ensuremath{\mathrm{USD}}}
-}
+  \providecommand{\milli}{m}
+  \providecommand{\kilo}{k}
+  \providecommand{\mega}{M}
+  \providecommand{\giga}{G}
+  \providecommand{\second}{s}
+  \providecommand{\meter}{m}
+  \providecommand{\pixel}{px}
+  \providecommand{\byte}{B}
+  \providecommand{\per}{/}
+  \providecommand{\USD}{USD}
+\fi
 \usepackage{ifthen}
 \usepackage{placeins}
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shadings,calc}
+% Outline for high-contrast text over images
+\usepackage[outline]{contour}
+\contourlength{0.6pt}
 % Colors used in event cloud legends
 \definecolor{evtPos}{HTML}{FFBB78} % +1 polarity (orange)
 \definecolor{evtNeg}{HTML}{AEC7E8} % -1 polarity (blue)
@@ -159,11 +169,11 @@ which drives event emission when the logarithmic intensity crosses the sensor th
     \begin{scope}[x={(img3a.south east)}, y={(img3a.north west)}]
       \node[font=\bfseries, anchor=north west, fill=none, text=black, inner sep=2pt]
         at (-0.05, 1.050) {(a)};
-      % Discrete polarity legend using dot handles (−1 light blue, +1 orange)
-      \def\lx{0.90}\def\ly{0.97}\def\rr{0.014}
-      \filldraw[fill=evtNeg, draw=black, line width=0.2pt] (\lx,\ly) circle (\rr);
+      % Discrete polarity legend using node circles (immune to x/y anisotropy)
+      \def\lx{0.90}\def\ly{0.97}
+      \node[draw=black, fill=evtNeg, circle, minimum size=2mm, inner sep=0pt] at (\lx,\ly) {};
       \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+0.03, \ly) {$-1$};
-      \filldraw[fill=evtPos, draw=black, line width=0.2pt] (\lx,\ly-0.06) circle (\rr);
+      \node[draw=black, fill=evtPos, circle, minimum size=2mm, inner sep=0pt] at (\lx,\ly-0.06) {};
       \node[anchor=west, inner sep=1pt, scale=0.7] at (\lx+0.03, \ly-0.06) {$+1$};
     \end{scope}
   \end{tikzpicture}\\[-10pt]
@@ -237,7 +247,21 @@ which drives event emission when the logarithmic intensity crosses the sensor th
 \begin{figure*}[t]
   \centering
   % \includegraphics[width=0.98\textwidth]{../../publication_code/figures/figure04_allinone_20251101_161009/figure04_rescaled_grid_bins_03_15.pdf}
-\includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan_rotated_cropped_400_700_wllist_signedraw_q95_sharednorm_fullbar_ticks_labels_v3.pdf}\\[-0pt]
+  % Wrap in TikZ to overlay a scale bar (full-width of cropped sensor image \approx 2 mm; 50\,\textmu m bar = 2.5\% width)
+  \begin{tikzpicture}
+    \node[anchor=south west, inner sep=0] (specimg) at (0,0)
+      {\includegraphics[width=0.98\textwidth]{figures/spectral_reconstruction_scan_rotated_cropped_400_700_wllist_signedraw_q95_sharednorm_fullbar_ticks_labels_v3.pdf}};
+    \begin{scope}[x={(specimg.south east)}, y={(specimg.north west)}]
+      % Normalized coordinates: (0,0) bottom-left, (1,1) top-right
+      % Place a 50\,\textmu m scale bar (2.5% of width) near lower-right
+      \def\sx{0.42}\def\sy{0.78}\def\sw{0.025}\def\sh{0.008}
+      % Transparent background (no backing pad)
+      % Black bar
+      \fill[black] (\sx, \sy) rectangle (\sx+\sw, \sy+\sh);
+      % Label (black text)
+      \node[anchor=west, inner sep=1pt, scale=0.9] at (\sx+\sw+0.01, \sy+0.002) {$300\,\micro\meter$};
+    \end{scope}
+  \end{tikzpicture}\\[-0pt]
   \caption{
   % Spectral reconstruction across a single forward scan. Each column shows a 50~ms temporal bin.
    % (top: original; bottom: compensated with 3$\times$3$\times$3 smoothing and background subtraction). 
