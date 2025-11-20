@@ -34,7 +34,7 @@
 \newcommand{\includegraphicsSafe}[2]{%% #1 base name (without extension or path in figures/), #2 width
   \IfFileExists{figures/#1.png}{\includegraphics[width=#2]{figures/#1.png}}{%%
     \IfFileExists{figures/#1.pdf}{\includegraphics[width=#2]{figures/#1.pdf}}{%%
-      \fbox{\parbox{#2}{\centering\vspace{1em}\footnotesize Missing figure: \texttt{#1}\vspace{1em}}}%%
+      \fbox{\parbox{#2}{\centering\vspace{1em}\footnotesize Missing figure\vspace{1em}}}%%
     }%%
   }%%
 }
