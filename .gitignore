@@ -15,6 +15,7 @@
 !*.md
 !**/*.tex
 !**/*.bib
+!groundtruth_filters/*.xls
 !images/
 !images/*.png
 
