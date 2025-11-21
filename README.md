@@ -1,4 +1,5 @@
 # Self-Calibrated Neuromorphic Hyperspectral Sensing
+*(Rongzhou Chen, Chutian Wang, Yuxing Li, Yuqing Cao, Shuo Zhu, and Edmund Y. Lam\*)*
 
 A comprehensive pipeline for reconstructing spectra from event cameras with dispersed light illumination (e.g., diffraction grating). The system records intensity change events $e = (x, y, t, p)$ where $p \in \{-1, +1\}$ indicates polarity of log-intensity change, and automatically infers scan timing and calibration metadata (“auto info”) directly from the event stream.
 
@@ -417,10 +418,10 @@ wavelength = wavelength_min + (t_normalized / t_max) * (wavelength_max - wavelen
 
 ## Citation
 
-If this repository is useful in your research, please cite the associated paper:
+If this repository is useful in your research, please cite the associated manuscript (under review):
 
-> Rongzhou Chen, Chutian Wang, Yuqing Cao, and Edmund Y. Lam,  
-> *Self-Calibrated Neuromorphic Hyperspectral Sensing*, Optica, 2025.
+> Rongzhou Chen, Chutian Wang, Yuxing Li, Yuqing Cao, Shuo Zhu, and Edmund Y. Lam*,  
+> *Self-Calibrated Neuromorphic Hyperspectral Sensing*, 2025 (manuscript under review).
 
 ## License
 
