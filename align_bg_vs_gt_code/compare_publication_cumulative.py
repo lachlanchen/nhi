@@ -5,7 +5,8 @@ Generates exactly one figure per provided reconstruction segment. Each figure
 contains three lines: the compensated, auto-scaled exponential cumulative
 reconstruction and the two spectrometer ground-truth curves. Styling uses
 thicker lines and larger fonts suitable for publications. Outputs are saved to
-`groundtruth_spectrum_2835/publication_<timestamp>/` by default.
+`align_bg_vs_gt_code/publication_<timestamp>/` by default (or under the folder
+specified via ``--output_root``).
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ if str(REPO_ROOT) not in sys.path:
 
 # Reuse existing utilities
 import visualize_cumulative_weighted as vcw  # noqa: E402
-from groundtruth_spectrum.compare_reconstruction_to_gt import (  # noqa: E402
+from compare_reconstruction_to_gt import (  # noqa: E402
     detect_active_region,
     load_ground_truth,
     moving_average,
@@ -124,12 +125,13 @@ def load_gt_curves(gt_dir: Path) -> List[Tuple[str, np.ndarray, np.ndarray]]:
             continue
         if isinstance(wl, np.ndarray) and wl.size >= 50 and isinstance(val, np.ndarray) and val.size == wl.size:
             valid.append((txt.stem, wl, val))
-    if len(valid) < 2:
+    if not valid:
         raise FileNotFoundError(
-            f"Found {len(valid)} spectrometer files in {gt_dir}; need at least two (*.txt with spectral data)"
+            f"Found no spectrometer files in {gt_dir}; expected at least one (*.txt with spectral data)"
         )
     # Heuristic: prefer files beginning with 'USB' if present
-    valid.sort(key=lambda t: (0 if t[0].upper().startswith('USB') else 1, t[0]))
+    valid.sort(key=lambda t: (0 if t[0].upper().startswith("USB") else 1, t[0]))
+    # Historically we used the first two; callers may also provide explicit files.
     return valid[:2]
 
 
@@ -199,7 +201,14 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--auto_neg_max", type=float, default=3.0)
     ap.add_argument("--plateau_frac", type=float, default=0.05)
     ap.add_argument("--xlim", type=float, nargs=2, default=(300.0, 900.0), help="X-axis wavelength limits (nm)")
-    ap.add_argument("--output_root", type=Path, default=REPO_ROOT / "groundtruth_spectrum_2835")
+    ap.add_argument(
+        "--gt_files",
+        type=Path,
+        nargs="+",
+        default=None,
+        help="Explicit list of spectrometer TXT files to use (overrides --gt_dir)",
+    )
+    ap.add_argument("--output_root", type=Path, default=REPO_ROOT / "align_bg_vs_gt_code")
     ap.add_argument("--show", action="store_true", help="Display plots interactively")
     return ap.parse_args()
 
@@ -208,8 +217,14 @@ def main() -> None:
     args = parse_args()
     publication_style()
 
-    # Load two ground-truth curves
-    gt_curves = load_gt_curves(args.gt_dir)
+    # Load one or more ground-truth curves
+    if args.gt_files:
+        gt_curves: List[Tuple[str, np.ndarray, np.ndarray]] = []
+        for txt in args.gt_files:
+            wl, val = load_ground_truth(txt)
+            gt_curves.append((txt.stem, wl, val))
+    else:
+        gt_curves = load_gt_curves(args.gt_dir)
     gt_start_nm, gt_end_nm = detect_visible_edges(gt_curves)
 
     out_dir = ensure_output_dir(args.output_root)
@@ -280,4 +295,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
