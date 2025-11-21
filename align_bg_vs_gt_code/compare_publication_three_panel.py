@@ -278,7 +278,7 @@ def main() -> None:
     ax3.plot(wl_bins, events_norm, color="#2ca02c")
     ax3.set_xlim(xmin, xmax)
     ax3.set_xlabel("Wavelength (nm)")
-    ax3.set_ylabel("d log(SPD)/dλ, event acc (5 ms bins)")
+    ax3.set_ylabel("d log(SPD)/dλ, Event Density")
     ax3.grid(alpha=0.3)
 
     fig.tight_layout()
