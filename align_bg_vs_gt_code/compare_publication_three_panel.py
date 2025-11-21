@@ -120,7 +120,8 @@ def build_cumulative_and_bins(
     sums_neg_bin, _ = vcw.base_binned_sums_weighted(
         t_comp[neg_mask], np.ones(np.count_nonzero(neg_mask), dtype=np.float32), t_min, t_max, step_us_bin
     )
-    net_bin = (pos_scale * sums_pos_bin - chosen_neg * sums_neg_bin) / hw
+    # For the derivative-style panel, use simple signed event counts per bin.
+    net_bin = sums_pos_bin - sums_neg_bin
 
     # Align bin timeline to cumulative zero (edges_ms_cum[0]).
     time_ms_bin = edges_ms_bin - edges_ms_cum[0]
@@ -223,8 +224,8 @@ def main() -> None:
     # Map event bins to wavelength using the same λ(t) mapping.
     wl_bins = slope * time_ms_bin + intercept
 
-    # Derivative of log(GT) and normalised event rates.
-    eps = 1e-6
+    # Derivative of log(GT) and normalised event rates (minimal processing).
+    eps = 1e-3
     log_gt = np.log(np.clip(gt_norm, eps, None))
     dlog_gt = np.gradient(log_gt, wl_gt)
     if np.max(np.abs(dlog_gt)) > 0:
@@ -232,10 +233,16 @@ def main() -> None:
     else:
         dlog_gt_norm = dlog_gt
 
-    if np.max(np.abs(net_bin)) > 0:
-        events_norm = net_bin / np.max(np.abs(net_bin))
+    # Light smoothing and centering on event bins in wavelength domain.
+    if net_bin.size:
+        smooth_events = moving_average(net_bin, max(5, len(net_bin) // 200 | 1))
+        smooth_events = smooth_events - float(np.mean(smooth_events))
     else:
-        events_norm = net_bin
+        smooth_events = net_bin
+    if np.max(np.abs(smooth_events)) > 0:
+        events_norm = smooth_events / np.max(np.abs(smooth_events))
+    else:
+        events_norm = smooth_events
 
     # Prepare figure
     out_dir = ensure_output_dir(args.output_root)
@@ -295,4 +302,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
