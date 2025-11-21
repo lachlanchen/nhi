@@ -46,6 +46,14 @@ publication_code/figures/**
 **/dispersed_frames/
 **/time_binned_frames/
 **/accumulation_results_*/
+**/per_bin_frames/
+**/all_accumulated_frames/
+**/bin_2ms_accumulation/
+**/compensated/
+**/four_panel_comparisons/
+**/original/
+**/smoothed/
+**/shifted/
 
 # Text/CSV/JSON in safe locations
 !/*.txt

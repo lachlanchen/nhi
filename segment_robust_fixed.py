@@ -1067,7 +1067,18 @@ def main():
     print(f"Activity fraction: {args.activity_fraction*100:.0f}%")
     if manual_period is None:
         print(f"Max iterations: {args.max_iterations}")
-    
+
+    if read_raw_simple is None:
+        print(
+            "Error: simple_raw_reader is not available. RAW input requires the "
+            "Metavision HAL runtime (see the `nhi_test` environment instructions)."
+        )
+        print(
+            "Hint: run this script in the HAL-enabled environment, or operate on "
+            "pre-segmented NPZ files with downstream tools."
+        )
+        raise SystemExit(1)
+
     # Read raw data
     x, y, t, p, width, height = read_raw_simple(args.raw_file)
     
