@@ -1,6 +1,6 @@
-# Neuromorphic Hyperspectral Reconstruction with Event Cameras
+# Self-Calibrated Neuromorphic Hyperspectral Sensing
 
-A comprehensive pipeline for reconstructing spectra from event cameras with dispersed light illumination (e.g., diffraction grating). The system records intensity change events $e = (x, y, t, p)$ where $p \in \{-1, +1\}$ indicates polarity of log-intensity change.
+A comprehensive pipeline for reconstructing spectra from event cameras with dispersed light illumination (e.g., diffraction grating). The system records intensity change events $e = (x, y, t, p)$ where $p \in \{-1, +1\}$ indicates polarity of log-intensity change, and automatically infers scan timing and calibration metadata (“auto info”) directly from the event stream.
 
 ## Overview
 
@@ -67,9 +67,9 @@ python visualize_cumulative_compare.py \
 
 * **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$):
 
-  $$
-  a[n] \;=\; \#\left\{\, i \;\middle|\; t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \,\right\}
-  $$
+  \[
+  a[n] = \#\left\{\, i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \,\right\}
+  \]
 
 * **Active window detection**: find the smallest contiguous window containing $80\%$ of events.
 
@@ -77,10 +77,10 @@ python visualize_cumulative_compare.py \
 
 * **Reverse-correlation** (timing structure):
 
-  $$
-  R[k] \;=\; \sum_{n} a[n]\; a_{\text{rev}}[n+k],
-  \quad \text{where} \quad a_{\text{rev}}[n] = a[N-1-n].
-  $$
+  \[
+  R[k] = \sum_{n} a[n]\, a_{\text{rev}}[n+k],
+  \qquad a_{\text{rev}}[n] = a[N-1-n].
+  \]
 
 **Usage**:
 
@@ -108,35 +108,32 @@ python segment_robust_fixed.py recording.raw --segment_events --round_trip_perio
 
 * **Boundary surfaces**:
 
-  $$
-  T_i(x, y) \;=\; a_i\,x \;+\; b_i\,y \;+\; c_i,
-  \qquad i=0,\ldots,M-1
-  $$
+  \[
+  T_i(x, y) = a_i x + b_i y + c_i,\qquad i=0,\ldots,M-1.
+  \]
 
 * **Soft window memberships**:
 
-  $$
-  m_i(x,y,t) \;=\; \sigma\!\left(\frac{t - T_i}{\tau}\right)\,
-                   \sigma\!\left(\frac{T_{i+1} - t}{\tau}\right), 
+  \[
+  m_i = \sigma\!\left(\frac{t - T_i}{\tau}\right)\sigma\!\left(\frac{T_{i+1} - t}{\tau}\right),
   \qquad
-  w_i \;=\; \frac{m_i}{\sum_j m_j + \varepsilon}
-  $$
+  w_i = \frac{m_i}{\sum_j m_j + \varepsilon}.
+  \]
 
 * **Interpolated slopes (optional)**:
 
-  $$
-  \alpha_i \;=\; \frac{t - T_i}{T_{i+1} - T_i},\qquad
-  \tilde{a}_i \;=\; (1-\alpha_i)a_i + \alpha_i a_{i+1},\quad
-  \tilde{b}_i \;=\; (1-\alpha_i)b_i + \alpha_i b_{i+1}
-  $$
+  \[
+  \alpha_i = \frac{t - T_i}{T_{i+1} - T_i},\qquad
+  \tilde{a}_i = (1-\alpha_i)a_i + \alpha_i a_{i+1},\quad
+  \tilde{b}_i = (1-\alpha_i)b_i + \alpha_i b_{i+1}.
+  \]
 
 * **Time warp**:
 
-  $$
-  \Delta t(x,y,t) \;=\; \sum_i w_i \,\big[\, \tilde{a}_i\,x + \tilde{b}_i\,y \,\big],
-  \qquad
-  t' \;=\; t \;-\; \Delta t(x,y,t)
-  $$
+  \[
+  \Delta t(x,y,t) = \sum_i w_i \big(\tilde{a}_i x + \tilde{b}_i y\big),\qquad
+  t' = t - \Delta t(x,y,t).
+  \]
 
 * **Loss**: variance minimization of time-binned frames with smoothness regularization on parameters.
 
@@ -189,17 +186,17 @@ python visualize_boundaries_and_frames.py segment.npz \
 
 * **Cumulative means**:
 
-  $$
-  F(T) \;=\; \frac{1}{H\,W}\sum_{t < T}\text{events}(t)
-  $$
+  \[
+  F(T) = \frac{1}{HW}\sum_{t < T}\text{events}(t).
+  \]
 
-* **Sliding means** (events in $[T-\Delta,\,T)$ divided by $H\times W$).
+* **Sliding means**: event counts in $[T-\Delta,\,T)$ divided by $H\!\times\!W$.
 
 * **Relationship** (finite-difference derivative):
 
-  $$
-  \Delta F(T) \;\approx\; \frac{F(T) - F(T-\Delta)}{\Delta}
-  $$
+  \[
+  \Delta F(T) \approx \frac{F(T) - F(T-\Delta)}{\Delta}.
+  \]
 
 **Usage**:
 
@@ -420,16 +417,10 @@ wavelength = wavelength_min + (t_normalized / t_max) * (wavelength_max - wavelen
 
 ## Citation
 
-If you use this work in your research, please cite:
+If this repository is useful in your research, please cite the associated paper:
 
-```bibtex
-@software{spectral_reconstruction_event_cameras,
-  title   = {Spectral Reconstruction with Event Cameras},
-  author  = {[Authors]},
-  year    = {2024},
-  url     = {https://github.com/[repository]}
-}
-```
+> Rongzhou Chen, Chutian Wang, Yuqing Cao, and Edmund Y. Lam,  
+> *Self-Calibrated Neuromorphic Hyperspectral Sensing*, Optica, 2025.
 
 ## License
 
