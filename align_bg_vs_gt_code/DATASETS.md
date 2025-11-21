@@ -29,6 +29,14 @@ paired with which spectrometer TXT files, so figures can be reproduced later.
   ```
 - **Current output (with suffix)**  
   - `align_bg_vs_gt_code/publication_20251121_182257/three_panel_5ms_Scan_1_Forward_2835.png`
+- **Wavelength–time mapping**  
+  For the compensated cumulative series used in the figure, the linear mapping
+  from compensated time (ms) to wavelength is
+  \[
+    \lambda(t_{\text{ms}}) \approx 0.5094\, t_{\text{ms}} + 248.09,
+  \]
+  with the active window detected on \(t_{\text{ms}} \in [298, 928]\), which
+  corresponds to \(\lambda \approx 400\text{ nm} \ldots 721\text{ nm}\).
 
 ## 2. Lumileds LED (scan_angle_20_lumileds)
 
@@ -55,4 +63,12 @@ paired with which spectrometer TXT files, so figures can be reproduced later.
   ```
 - **Current output (with suffix)**  
   - `align_bg_vs_gt_code/publication_20251121_182345/three_panel_5ms_Scan_1_Forward_lumileds.png`
+- **Wavelength–time mapping**  
+  For the compensated cumulative series used in the figure, the linear mapping
+  is
+  \[
+    \lambda(t_{\text{ms}}) \approx 0.6520\, t_{\text{ms}} + 179.52,
+  \]
+  with the active window detected on \(t_{\text{ms}} \in [364, 862]\),
+  corresponding to \(\lambda \approx 417\text{ nm} \ldots 742\text{ nm}\).
 
