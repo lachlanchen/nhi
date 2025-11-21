@@ -284,7 +284,7 @@ def main() -> None:
     ax3.set_ylabel("d log(SPD)/dλ, Event Density")
     ax3.grid(alpha=0.3)
 
-    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.97))
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.94))
 
     seg_name = args.segment.stem.replace("_events", "")
     out_name = f"three_panel_{args.bin_ms:.0f}ms_{seg_name}.png"
