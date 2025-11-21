@@ -66,7 +66,7 @@ python visualize_cumulative_compare.py \
 
 **Mathematical Description**:
 
-* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$): $$a[n] = \left|\big\{ i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \big\}\right|.$$
+* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$): $$a[n] = \left|\{ i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \}\right|.$$
 
 * **Active window detection**: find the smallest contiguous window containing $80\%$ of events.
 
@@ -102,7 +102,7 @@ python segment_robust_fixed.py recording.raw --segment_events --round_trip_perio
 
 * **Soft window memberships**: $$m_i = \sigma\!\Big(\frac{t - T_i}{\tau}\Big)\,\sigma\!\Big(\frac{T_{i+1} - t}{\tau}\Big),\qquad w_i = \frac{m_i}{\sum_j m_j + \varepsilon}.$$
 
-* **Interpolated slopes (optional)**: $$\alpha_i = \frac{t - T_i}{T_{i+1} - T_i},\qquad \tilde{a}_i = (1-\alpha_i)a_i + \alpha_i a_{i+1},\qquad \tilde{b}_i = (1-\alpha_i)b_i + \alpha_i b_{i+1}.$$
+* **Interpolated slopes (optional)**: $$\alpha_i = \frac{t - T_i}{T_{i+1} - T_i},\quad a_i' = (1-\alpha_i)a_i + \alpha_i a_{i+1},\quad b_i' = (1-\alpha_i)b_i + \alpha_i b_{i+1}.$$
 
 * **Time warp**: $$\Delta t(x,y,t) = \sum_i w_i (\tilde{a}_i x + \tilde{b}_i y),\qquad t' = t - \Delta t(x,y,t).$$
 

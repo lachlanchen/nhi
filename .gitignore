@@ -13,6 +13,8 @@
 !rotor/**/*.h
 !rotor/**/*.cpp
 !*.md
+!**/*.tex
+!**/*.bib
 !images/
 !images/*.png
 
@@ -35,6 +37,15 @@ publication_code/figures/**
 
 # Ignore local scan angle data folder
 /scan_angle_20/
+
+# Ignore large data/frames directories to keep tools fast
+**/frames/
+**/frames_*/
+**/frames-forward*/
+**/frames_forward*/
+**/dispersed_frames/
+**/time_binned_frames/
+**/accumulation_results_*/
 
 # Text/CSV/JSON in safe locations
 !/*.txt
