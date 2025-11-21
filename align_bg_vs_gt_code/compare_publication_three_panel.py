@@ -15,6 +15,7 @@ share a consistent λ(t) mapping.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import List, Sequence, Tuple
@@ -298,7 +299,27 @@ def main() -> None:
     seg_name = args.segment.stem.replace("_events", "")
     suffix = f"_{args.suffix}" if args.suffix else ""
     out_name = f"three_panel_{args.bin_ms:.0f}ms_{seg_name}{suffix}.png"
-    fig.savefig(out_dir / out_name, dpi=300)
+    fig_path = out_dir / out_name
+    fig.savefig(fig_path, dpi=300)
+
+    # Save wavelength–time mapping metadata next to the figure.
+    smooth_cum = moving_average(cum_exp, max(21, int(len(cum_exp) // 200) | 1))
+    region_cum = detect_active_region(smooth_cum)
+    t0 = float(time_ms_cum[region_cum.start_idx])
+    t1 = float(time_ms_cum[region_cum.end_idx])
+    lam0 = float(slope * t0 + intercept)
+    lam1 = float(slope * t1 + intercept)
+
+    mapping = {
+        "segment_npz": str(args.segment),
+        "gt_files": [str(p) for p in args.gt_files],
+        "slope_nm_per_ms": float(slope),
+        "intercept_nm": float(intercept),
+        "t_window_ms": [t0, t1],
+        "lambda_window_nm": [lam0, lam1],
+    }
+    mapping_path = fig_path.with_name(f"{fig_path.stem}_mapping.json")
+    mapping_path.write_text(json.dumps(mapping, indent=2), encoding="utf-8")
 
     if args.show:
         try:
@@ -307,7 +328,8 @@ def main() -> None:
             pass
     plt.close(fig)
 
-    print(f"Saved three-panel overlay to: {out_dir / out_name}")
+    print(f"Saved three-panel overlay to: {fig_path}")
+    print(f"Saved mapping JSON to: {mapping_path}")
 
 
 if __name__ == "__main__":
