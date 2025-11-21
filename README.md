@@ -10,6 +10,13 @@ When illumination sweeps across wavelengths over time, the event stream encodes 
 2. **Compensate**: Estimate piecewise-linear time-warp to remove scan-induced temporal tilt
 3. **Visualize**: Overlay learned boundaries and compare original vs. compensated time-binned frames
 
+<p align="center">
+  <img src="images/device_setup.png" alt="Device setup" width="48%">
+  <img src="images/data_acquisition_gui.png" alt="Acquisition GUI" width="48%">
+</p>
+
+*Left: modular transmission microscope with a motorised grating illumination arm and vertical detection stack. Right: data-acquisition GUI used to monitor segmentation, compensation, and reconstructions in real time.*
+
 ## Quick Start
 
 ### Prerequisites
