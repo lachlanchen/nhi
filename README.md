@@ -17,6 +17,12 @@ When illumination sweeps across wavelengths over time, the event stream encodes 
 
 *Left: modular transmission microscope with a motorised grating illumination arm and vertical detection stack. Right: data-acquisition GUI used to monitor segmentation, compensation, and reconstructions in real time.*
 
+<p align="center">
+  <img src="images/overview.png" alt="System overview and representative reconstructions" width="95%">
+</p>
+
+*Full system overview combining the hardware rendering (left), reconstructed spectral slices and spectra (top right), and representative results across different samples (bottom right).*
+
 ## Quick Start
 
 ### Prerequisites
