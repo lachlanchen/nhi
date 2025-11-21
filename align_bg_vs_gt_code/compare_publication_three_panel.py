@@ -195,6 +195,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--auto_neg_max", type=float, default=3.0)
     parser.add_argument("--plateau_frac", type=float, default=0.05)
     parser.add_argument("--xlim", type=float, nargs=2, default=(300.0, 900.0))
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        default="",
+        help="Optional suffix appended to output filename (e.g. 'lumileds', '2835')",
+    )
     parser.add_argument("--output_root", type=Path, default=REPO_ROOT / "align_bg_vs_gt_code")
     parser.add_argument("--show", action="store_true", help="Display figure interactively")
     return parser.parse_args()
@@ -290,7 +296,8 @@ def main() -> None:
     fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.94))
 
     seg_name = args.segment.stem.replace("_events", "")
-    out_name = f"three_panel_{args.bin_ms:.0f}ms_{seg_name}.png"
+    suffix = f"_{args.suffix}" if args.suffix else ""
+    out_name = f"three_panel_{args.bin_ms:.0f}ms_{seg_name}{suffix}.png"
     fig.savefig(out_dir / out_name, dpi=300)
 
     if args.show:
