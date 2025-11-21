@@ -420,8 +420,14 @@ wavelength = wavelength_min + (t_normalized / t_max) * (wavelength_max - wavelen
 
 If this repository is useful in your research, please cite the associated manuscript (under review):
 
-> Rongzhou Chen, Chutian Wang, Yuxing Li, Yuqing Cao, Shuo Zhu, and Edmund Y. Lam*,  
-> *Self-Calibrated Neuromorphic Hyperspectral Sensing*, 2025 (manuscript under review).
+```bibtex
+@article{chen2025selfcalibrated,
+  title   = {Self-Calibrated Neuromorphic Hyperspectral Sensing},
+  author  = {Chen, Rongzhou and Wang, Chutian and Li, Yuxing and Cao, Yuqing and Zhu, Shuo and Lam, Edmund Y.},
+  year    = {2025},
+  note    = {Manuscript under review}
+}
+```
 
 ## License
 
