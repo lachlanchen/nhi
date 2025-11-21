@@ -17,6 +17,37 @@ or optical density for a particular filter SKU.
 The corresponding `._*.xls` files are macOS resource‑fork sidecars and can be
 ignored.
 
+## Sheet structure
+
+For quick reference, the first row (and first data rows) of each sheet are:
+
+- `11010F0..X1.xls`
+  - `反蓝透红绿45°`: `['波长(nm)', '反蓝透红绿45°']`
+  - `反蓝透红绿0°`: `['波长', '反蓝透红绿0°']`
+  - `反射数据`: `['波长 (nm)', '透蓝绿反红RS', '透蓝绿反红RP']`
+  - `反蓝透红绿-45度自己测试`: `['波长', '反蓝透红绿']`
+
+- `11010F1..80.xls`
+  - `Sheet1`: `['波长(nm)', '520F10-0D3']`
+  - `Sheet2`, `Sheet3`: header rows empty (no title in first three rows)
+
+- `12010F1..X1.xls`
+  - `Sheet1`: `['波长', '600-700带通']`
+  - `Sheet2`, `Sheet3`: header rows empty
+
+- `14010F1..x1.xls`
+  - `Sheet1`: `['波长', '500-600nm带通']`
+  - `Sheet2`, `Sheet3`: header rows empty
+
+- `23010F0..80.xls`
+  - `Sheet1`: `['波长', 'NP470']`
+  - `Sheet2`, `Sheet3`: header rows empty
+
+- `GXZJ423..80.xls`
+  - `LP560-OD值`: `['波长 (nm)', 'LP560-OD值']`
+  - `透过率`: `['波长', 'LP560']`
+  - `Sheet3`: header rows empty
+
 ## Usage notes
 
 - These workbooks are not yet consumed directly by the Python pipeline
@@ -28,4 +59,3 @@ ignored.
 - If you start wiring these into code, consider adding a small mapping table
   (e.g., in this README) describing the optical role of each SKU
   (bandpass, ND, long‑pass, etc.) and linking to the manufacturer datasheet.
-
