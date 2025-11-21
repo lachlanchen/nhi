@@ -256,8 +256,8 @@ def main() -> None:
 
     # Panel 1: cumulative exp-intensity
     ax1.axvspan(380, 780, color="0.92", zorder=0)
-    # Light (ground-truth) vs event-based reconstruction
-    ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="Light")
+    # SPD (ground-truth) vs event-based reconstruction
+    ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="SPD")
     ax1.plot(wl_recon, recon_norm, color="#2ca02c", label="Events")
     ax1.set_xlim(xmin, xmax)
     ax1.set_ylim(-0.05, 1.05)
@@ -281,10 +281,10 @@ def main() -> None:
     ax3.plot(wl_bins, events_norm, color="#2ca02c")
     ax3.set_xlim(xmin, xmax)
     ax3.set_xlabel("Wavelength (nm)")
-    ax3.set_ylabel("d log(Light)/dλ, Event Density")
+    ax3.set_ylabel("d log(SPD)/dλ, Event Density")
     ax3.grid(alpha=0.3)
 
-    fig.tight_layout()
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.97))
 
     seg_name = args.segment.stem.replace("_events", "")
     out_name = f"three_panel_{args.bin_ms:.0f}ms_{seg_name}.png"
