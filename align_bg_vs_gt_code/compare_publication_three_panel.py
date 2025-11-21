@@ -244,7 +244,7 @@ def main() -> None:
     else:
         events_norm = smooth_events
 
-    # Prepare figure
+    # Prepare figure (three columns, shared x-axis)
     out_dir = ensure_output_dir(args.output_root)
     fig, axes = plt.subplots(1, 3, figsize=(12.0, 3.6), sharex=True)
     ax1, ax2, ax3 = axes
@@ -255,7 +255,6 @@ def main() -> None:
     ax1.axvspan(380, 780, color="0.92", zorder=0)
     ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="GT")
     ax1.plot(wl_recon, recon_norm, color="#2ca02c", label="Recon")
-    ax1.set_title("Cumulative exp-intensity")
     ax1.set_xlim(xmin, xmax)
     ax1.set_ylim(-0.05, 1.05)
     ax1.set_xlabel("Wavelength (nm)")
@@ -267,26 +266,24 @@ def main() -> None:
     ax2.axvspan(380, 780, color="0.92", zorder=0)
     ax2.plot(wl_gt, log_gt, color="#1f77b4", label="GT")
     ax2.plot(wl_recon, np.log(np.clip(recon_norm, eps, None)), color="#2ca02c", label="Recon")
-    ax2.set_title("Log-intensity")
     ax2.set_xlim(xmin, xmax)
     ax2.set_xlabel("Wavelength (nm)")
-    ax2.set_ylabel("log Normalised intensity")
+    ax2.set_ylabel("log intensity")
     ax2.grid(alpha=0.3)
 
     # Panel 3: spectral derivative vs events (5 ms bins)
     ax3.axvspan(380, 780, color="0.92", zorder=0)
-    ax3.plot(wl_gt, dlog_gt_norm, color="#1f77b4", label="d log(GT)/dλ")
-    ax3.plot(wl_bins, events_norm, color="#2ca02c", label=f"Events ({args.bin_ms:.0f} ms bins)")
-    ax3.set_title("Spectral derivative vs events")
+    ax3.plot(wl_gt, dlog_gt_norm, color="#1f77b4", label="GT gradient")
+    ax3.plot(wl_bins, events_norm, color="#2ca02c", label=f"Event rate ({args.bin_ms:.0f} ms)")
     ax3.set_xlim(xmin, xmax)
     ax3.set_xlabel("Wavelength (nm)")
+    ax3.set_ylabel("Normalised value")
     ax3.grid(alpha=0.3)
     ax3.legend(loc="upper right")
 
-    seg_name = args.segment.stem.replace("_events", "")
-    fig.suptitle(seg_name, y=1.02)
     fig.tight_layout()
 
+    seg_name = args.segment.stem.replace("_events", "")
     out_name = f"three_panel_{args.bin_ms:.0f}ms_{seg_name}.png"
     fig.savefig(out_dir / out_name, dpi=300)
 
