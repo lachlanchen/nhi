@@ -249,12 +249,15 @@ def main() -> None:
     fig, axes = plt.subplots(1, 3, figsize=(12.0, 3.6), sharex=True)
     ax1, ax2, ax3 = axes
 
-    xmin, xmax = args.xlim
+    # Limit x-range to the grey (visible) band
+    visible_min, visible_max = 380.0, 780.0
+    xmin = max(args.xlim[0], visible_min)
+    xmax = min(args.xlim[1], visible_max)
 
     # Panel 1: cumulative exp-intensity
     ax1.axvspan(380, 780, color="0.92", zorder=0)
-    # SPD (ground-truth) vs event-based reconstruction
-    ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="SPD")
+    # Light (ground-truth) vs event-based reconstruction
+    ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="Light")
     ax1.plot(wl_recon, recon_norm, color="#2ca02c", label="Events")
     ax1.set_xlim(xmin, xmax)
     ax1.set_ylim(-0.05, 1.05)
@@ -278,7 +281,7 @@ def main() -> None:
     ax3.plot(wl_bins, events_norm, color="#2ca02c")
     ax3.set_xlim(xmin, xmax)
     ax3.set_xlabel("Wavelength (nm)")
-    ax3.set_ylabel("d log(SPD)/dλ, Event Density")
+    ax3.set_ylabel("d log(Light)/dλ, Event Density")
     ax3.grid(alpha=0.3)
 
     fig.tight_layout()
