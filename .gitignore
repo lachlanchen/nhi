@@ -13,6 +13,8 @@
 !rotor/**/*.h
 !rotor/**/*.cpp
 !*.md
+!images/
+!images/*.png
 
 # Notebooks
 !**/*.ipynb         # track notebooks anywhere (code assets)
