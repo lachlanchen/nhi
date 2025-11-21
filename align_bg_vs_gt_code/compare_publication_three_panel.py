@@ -253,8 +253,9 @@ def main() -> None:
 
     # Panel 1: cumulative exp-intensity
     ax1.axvspan(380, 780, color="0.92", zorder=0)
-    ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="GT")
-    ax1.plot(wl_recon, recon_norm, color="#2ca02c", label="Recon")
+    # SPD (ground-truth) vs event-based reconstruction
+    ax1.plot(wl_gt, gt_norm, color="#1f77b4", label="SPD")
+    ax1.plot(wl_recon, recon_norm, color="#2ca02c", label="Events")
     ax1.set_xlim(xmin, xmax)
     ax1.set_ylim(-0.05, 1.05)
     ax1.set_xlabel("Wavelength (nm)")
@@ -273,13 +274,12 @@ def main() -> None:
 
     # Panel 3: spectral derivative vs events (5 ms bins)
     ax3.axvspan(380, 780, color="0.92", zorder=0)
-    ax3.plot(wl_gt, dlog_gt_norm, color="#1f77b4", label="GT gradient")
-    ax3.plot(wl_bins, events_norm, color="#2ca02c", label=f"Event rate ({args.bin_ms:.0f} ms)")
+    ax3.plot(wl_gt, dlog_gt_norm, color="#1f77b4")
+    ax3.plot(wl_bins, events_norm, color="#2ca02c")
     ax3.set_xlim(xmin, xmax)
     ax3.set_xlabel("Wavelength (nm)")
-    ax3.set_ylabel("Normalised value")
+    ax3.set_ylabel("Normalised d log(SPD)/dλ and event rate")
     ax3.grid(alpha=0.3)
-    ax3.legend(loc="upper right")
 
     fig.tight_layout()
 
