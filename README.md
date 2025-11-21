@@ -66,7 +66,7 @@ python visualize_cumulative_compare.py \
 
 **Mathematical Description**:
 
-* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$): $$a[n] = \left|\left\{\, i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \,\right\}\right|.$$
+* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$): $$a[n] = \left|\big\{ i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \big\}\right|.$$
 
 * **Active window detection**: find the smallest contiguous window containing $80\%$ of events.
 
