@@ -66,7 +66,7 @@ python visualize_cumulative_compare.py \
 
 **Mathematical Description**:
 
-* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$): $a[n] = \#\{\, i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \,\}$.
+* **Activity signal** (events binned with $\Delta t = 1000~\mu\text{s}$): $$a[n] = \#\{\, i \mid t_{\min} + n\Delta t \le t_i < t_{\min} + (n+1)\Delta t \,\}.$$
 
 * **Active window detection**: find the smallest contiguous window containing $80\%$ of events.
 
@@ -98,13 +98,13 @@ python segment_robust_fixed.py recording.raw --segment_events --round_trip_perio
 
 **Mathematical Description**:
 
-* **Boundary surfaces**: $T_i(x, y) = a_i x + b_i y + c_i$ for $i=0,\ldots,M-1$.
+* **Boundary surfaces**: $$T_i(x, y) = a_i x + b_i y + c_i,\quad i=0,\ldots,M-1.$$
 
-* **Soft window memberships**: $m_i = \sigma\!\big((t - T_i)/\tau\big)\,\sigma\!\big((T_{i+1} - t)/\tau\big)$ and $w_i = m_i / (\sum_j m_j + \varepsilon)$.
+* **Soft window memberships**: $$m_i = \sigma\!\Big(\frac{t - T_i}{\tau}\Big)\,\sigma\!\Big(\frac{T_{i+1} - t}{\tau}\Big),\qquad w_i = \frac{m_i}{\sum_j m_j + \varepsilon}.$$
 
-* **Interpolated slopes (optional)**: $\alpha_i = (t - T_i)/(T_{i+1} - T_i)$, $\tilde{a}_i = (1-\alpha_i)a_i + \alpha_i a_{i+1}$, $\tilde{b}_i = (1-\alpha_i)b_i + \alpha_i b_{i+1}$.
+* **Interpolated slopes (optional)**: $$\alpha_i = \frac{t - T_i}{T_{i+1} - T_i},\qquad \tilde{a}_i = (1-\alpha_i)a_i + \alpha_i a_{i+1},\qquad \tilde{b}_i = (1-\alpha_i)b_i + \alpha_i b_{i+1}.$$
 
-* **Time warp**: $\Delta t(x,y,t) = \sum_i w_i (\tilde{a}_i x + \tilde{b}_i y)$ and $t' = t - \Delta t(x,y,t)$.
+* **Time warp**: $$\Delta t(x,y,t) = \sum_i w_i (\tilde{a}_i x + \tilde{b}_i y),\qquad t' = t - \Delta t(x,y,t).$$
 
 * **Loss**: variance minimization of time-binned frames with smoothness regularization on parameters.
 
@@ -155,11 +155,11 @@ python visualize_boundaries_and_frames.py segment.npz \
 
 **Mathematical Description**:
 
-* **Cumulative means**: $F(T) = \frac{1}{HW}\sum_{t < T}\text{events}(t)$.
+* **Cumulative means**: $$F(T) = \frac{1}{HW}\sum_{t < T}\text{events}(t).$$
 
 * **Sliding means**: event counts in $[T-\Delta,\,T)$ divided by $H \times W$.
 
-* **Relationship** (finite-difference derivative): $\Delta F(T) \approx [F(T) - F(T-\Delta)]/\Delta$.
+* **Relationship** (finite-difference derivative): $$\Delta F(T) \approx \frac{F(T) - F(T-\Delta)}{\Delta}.$$
 
 **Usage**:
 
