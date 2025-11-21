@@ -248,6 +248,9 @@ def main() -> None:
     out_dir = ensure_output_dir(args.output_root)
     fig, axes = plt.subplots(1, 3, figsize=(12.0, 3.6), sharex=True)
     ax1, ax2, ax3 = axes
+    # Slightly tighten space below x-axis labels
+    for ax in axes:
+        ax.xaxis.labelpad = 2
 
     # Limit x-range to the grey (visible) band
     visible_min, visible_max = 380.0, 780.0
