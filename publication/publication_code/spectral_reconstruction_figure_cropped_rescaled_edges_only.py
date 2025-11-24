@@ -283,7 +283,7 @@ def render_spectral_grid(
     def label_column(r: int, text: str) -> None:
         ax = fig.add_subplot(gs[r, 0]); ax.axis("off"); ax.text(0.5, 0.5, text, rotation=90, ha="center", va="center", fontsize=9, fontweight="bold")
         label_axes.append((r, ax))
-    label_column(0, "Raw"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Reference")
+    label_column(0, "Raw"); label_column(1, "Comp."); label_column(2, "Diff."); label_column(3, "Frame")
 
     # Precompute a global median-abs scale for Diff (use NPZ if present, else PNG).
     diff_abs_values: List[float] = []
@@ -431,12 +431,12 @@ def render_spectral_grid(
                         img = plt.imread(path)
                     except Exception:
                         img = None
-                if img is not None:
-                    if ext_crop is not None and img.ndim >= 2:
-                        y0, y1, x0, x1 = ext_crop
-                        img = img[y0:y1, x0:x1]
-                    if flip_row34:
-                        img = np.flipud(img)
+            if img is not None:
+                if ext_crop is not None and img.ndim >= 2:
+                    y0, y1, x0, x1 = ext_crop
+                    img = img[y0:y1, x0:x1]
+                # Always flip rows 3–4 vertically
+                img = np.flipud(img)
             if img is None:
                 img = np.zeros((10, 10)) if row == 2 else np.zeros((10, 10, 3))
             if row == 2:
@@ -731,7 +731,7 @@ def render_spectral_grid(
             pass
 
     # Shared coolwarm colorbar for rows 1–3
-    if (not single_colorbar) and bool(getattr(locals(), 'add_row123_shared_cbar', False)) and col_bar is not None:
+    if bool(getattr(locals(), 'add_row123_shared_cbar', False)) and col_bar is not None:
         cax123 = fig.add_subplot(gs[0:3, col_bar])
         sm123 = plt.cm.ScalarMappable(norm=shared_norm, cmap=comp_cmap)
         sm123.set_array([])
@@ -750,7 +750,7 @@ def render_spectral_grid(
             pass
 
     # Grayscale colorbar for row 4 only, fixed [0,1]
-    if (not single_colorbar) and bool(getattr(locals(), 'add_row4_colorbar', False)) and col_bar is not None:
+    if bool(getattr(locals(), 'add_row4_colorbar', False)) and col_bar is not None:
         cax4 = fig.add_subplot(gs[3, col_bar])
         from matplotlib.colors import Normalize as _Normalize
         sm4 = plt.cm.ScalarMappable(norm=_Normalize(vmin=0.0, vmax=1.0), cmap=row34_cmap_name or "gray")

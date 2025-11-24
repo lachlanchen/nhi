@@ -13,6 +13,7 @@ Environment
 - External rows (rotated, ROI-cropped):
   - Diff:  hyperspectral_data_sanqin_gt/test300_rotated_frames_137d37_roi_crops_gradient_20nm
   - Ref:   hyperspectral_data_sanqin_gt/test300_rotated_frames_137d37_roi_crops
+- Rows 3–4 (Diff/Ref) are vertically flipped in the script to match the desired orientation.
 
 Command (final, working)
 ```
@@ -69,6 +70,7 @@ Variant — Single Coolwarm Bar (Rows 1–3), Row 4 Gray
   --flip-row12 \
   --show-wavelength \
   --row123-shared-cbar \
+  --single-colorbar \
   --col-gap 0.045 --row-gap 0.006 \
   --crop-json alignment/crops/crop_metadata.json \
   --external-crop-json alignment/crops/crop_metadata.json \
