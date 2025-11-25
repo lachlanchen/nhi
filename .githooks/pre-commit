@@ -1,35 +1,47 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Block committing large/binary artifacts. Allow only code/docs/data-text by default.
-ALLOWED_EXTENSIONS_REGEX='\.(py|ipynb|md|sh|txt|csv|json)$'
+# Block only oversized or obviously bulky data; allow small files of any type.
 MAX_SIZE_MB=20
+# Paths that tend to contain raw/bulky data; keep these light or move to data storage.
+BLOCK_PATTERNS=(
+  "outputs_root/"
+  "data_filter/"
+  "scan_angle_20"
+  "led_12v"
+  "hyperspectral_data"
+  "versions/"
+)
 
 fail=false
 while IFS= read -r -d '' path; do
   # Skip deletions/renames where file no longer exists in working tree
   [ -f "$path" ] || continue
+  size_bytes=$(wc -c < "$path")
+  size_mb=$(( size_bytes / 1024 / 1024 ))
 
-  # Check extension allowlist
-  if [[ ! "$path" =~ $ALLOWED_EXTENSIONS_REGEX ]]; then
-    echo "[pre-commit] Disallowed file type staged: $path" >&2
+  # Hard block very large files
+  if (( size_bytes > MAX_SIZE_MB * 1024 * 1024 )); then
+    echo "[pre-commit] File too large (> ${MAX_SIZE_MB}MB): $path (${size_mb} MB)" >&2
     fail=true
     continue
   fi
 
-  # Check size
-  size_bytes=$(wc -c < "$path")
-  if (( size_bytes > MAX_SIZE_MB * 1024 * 1024 )); then
-    echo "[pre-commit] File too large (> ${MAX_SIZE_MB}MB): $path ($((size_bytes/1024/1024)) MB)" >&2
-    fail=true
+  # Block medium+ files inside known bulky data folders
+  if (( size_bytes > 1 * 1024 * 1024 )); then
+    for pat in "${BLOCK_PATTERNS[@]}"; do
+      if [[ "$path" == *"$pat"* ]]; then
+        echo "[pre-commit] Blocked potential data artifact in '$pat': $path (${size_mb} MB)" >&2
+        fail=true
+        break
+      fi
+    done
   fi
 done < <(git diff --cached --name-only --diff-filter=AM -z)
 
 if [ "$fail" = true ]; then
-  echo "[pre-commit] Commit aborted. Add to a versioned data store or ignore." >&2
-  echo "Allowed: .py .ipynb .md .sh .txt .csv .json (≤ ${MAX_SIZE_MB}MB each)" >&2
+  echo "[pre-commit] Commit aborted to avoid large/raw data. Keep files ≤${MAX_SIZE_MB}MB; avoid staging bulky data dirs (outputs_root, data_filter, scan_angle_20, led_12v, hyperspectral_data, versions)." >&2
   exit 1
 fi
 
 exit 0
-
