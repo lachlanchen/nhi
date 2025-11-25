@@ -17,7 +17,7 @@ When illumination sweeps across wavelengths over time, the event stream encodes 
 
 <p align="center">
   <img src="images/device_setup.png" alt="Device setup" width="20%">
-  <img src="images/data_acquisition_gui.png" alt="Acquisition GUI" width="80%">
+  <img src="images/data_acquisition_gui.png" alt="Acquisition GUI" width="78%">
 </p>
 
 *Left: modular transmission microscope with a motorised grating illumination arm and vertical detection stack. Right: data-acquisition GUI used to monitor segmentation, compensation, and reconstructions in real time.*
