@@ -13,6 +13,9 @@
 !rotor/**/*.h
 !rotor/**/*.cpp
 !*.md
+# Hardware assets
+!3D/**
+!PCB/**
 # Reference datasets and filter metadata (new paths)
 !reference_filters/**
 !reference_spectrum_2835/**
@@ -27,6 +30,7 @@ AGENTS.md
 !groundtruth_filters/*.xls
 !images/
 !images/*.png
+.DS_Store
 
 # Notebooks
 !**/*.ipynb         # track notebooks anywhere (code assets)
