@@ -1,7 +1,11 @@
 # Self-Calibrated Neuromorphic Hyperspectral Sensing
-*(Rongzhou Chen, Chutian Wang, Yuxing Li, Yuqing Cao, Shuo Zhu, and Edmund Y. Lam\*)*
-
 A comprehensive pipeline for reconstructing spectra from event cameras with dispersed light illumination (e.g., diffraction grating). The system records intensity change events $e = (x, y, t, p)$ where $p \in \{-1, +1\}$ indicates polarity of log-intensity change, and automatically infers scan timing and calibration metadata (“auto info”) directly from the event stream.
+
+Key hardware assets are kept alongside the code for quick access:
+- 3D-printed parts: `3D/` (`/home/lachlan/ProjectsLFS/nhi_reconstruction/3D`)
+- PCB layouts: `PCB/` (`/home/lachlan/ProjectsLFS/nhi_reconstruction/PCB`)
+- Microcontroller firmware: `firmware/` (`/home/lachlan/ProjectsLFS/nhi_reconstruction/firmware`)
+- Acquisition UI (desktop): `ImagingGui/` (`/home/lachlan/ProjectsLFS/nhi_reconstruction/ImagingGui`)
 
 ## Overview
 
