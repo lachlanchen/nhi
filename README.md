@@ -391,7 +391,7 @@ If this repository is useful in your research, please cite the associated manusc
 
 ## License
 
-\[License information]
+This project is released under the MIT License. See `LICENSE` for details.
 
 ## Contributing
 
