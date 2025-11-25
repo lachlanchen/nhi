@@ -38,6 +38,8 @@ AGENTS.md
 !.githooks/
 !.githooks/**
 !.lfsconfig
+__pycache__/
+*.pyc
 !publication_code/
 !publication_code/**
 # Ignore large/generated artifacts under publication_code/figures, keep a placeholder README
