@@ -6,23 +6,22 @@
 \begin{document}
 
 \begin{letter}{Editors\\Optica}
+
+\centerline{\large\textbf{Cover Letter for Manuscript:\\``Self-Calibrated Neuromorphic Hyperspectral Imaging''}}
+\vspace{1em}
+
 \opening{Dear Editor,}
 
-We are pleased to submit our manuscript \textbf{``Self-Calibrated Neuromorphic Hyperspectral Imaging''} for consideration in \textit{Optica}. The work introduces a novel event-based hyperspectral imaging system that achieves high spectral fidelity with drastically simplified hardware and algorithmic self-calibration. We believe it will be of strong interest to the optics and imaging community, especially given its emphasis on hardware simplicity, algorithmic innovation, low-light performance, and cost reduction.
 
-\textbf{Hardware simplicity and cost-effectiveness.} The scanner uses only a low-cost LED, diffraction grating, and uncalibrated miniature motor (about USD~35, excluding the event sensor). No encoders or trigger wiring are required. The modular design integrates with microscopes via a simple 4$f$ relay and beam splitter, representing a dramatic cost reduction compared with typical USD~10k--15k hyperspectral cameras.
+We are pleased to submit our manuscript entitled \textbf{``Self-Calibrated Neuromorphic Hyperspectral Imaging''} for consideration in \textit{Optica}. The work presents a neuromorphic hyperspectral imaging system that combines a minimalist optical module with a fully data-driven event-based reconstruction pipeline. The scanner operates without encoder or trigger synchronization by deriving scan timing and segmentation directly from the event stream, while a dedicated correction algorithm accommodates the non-uniform motion of a low-cost motor. Together, these elements form a compact system that performs rapid hyperspectral scans while remaining mechanically simple, inexpensive, and easy to integrate with standard microscopy.
 
-\textbf{Algorithmic novelty: self-synchronization and compensation.} We segment scanning passes using only the event data, computing the auto-correlation of millisecond-scale event activity and its correlation with the reversed trace to detect scan periods and separate forward/backward sweeps with no external timing reference. A multi-window time-warp compensation divides the scan into piecewise-linear temporal windows and optimizes their alignment, minimizing spatial variance in binned events to correct temporal shear from non-uniform motor motion. This maintains accurate wavelength alignment even with inexpensive, non-uniform actuation.
+The manuscript details two core technical components that enable this self-calibrated operation. First, we establish a self-synchronization strategy based on auto-correlation of the event activity and its correlation with a time-reversed trace, allowing precise events segmentation without auxiliary electronics. Second, we introduce a multi-window time-warp compensation that corrects shear from non-uniform motor motion by optimizing window-wise temporal slopes to improve spatial coherence in binned events. These computational steps jointly stabilize the wavelength mapping and yield spectrally meaningful reconstructions using low-cost, non-uniform actuation.
 
-\textbf{High speed and low-light performance.} A full hyperspectral scan (400--700~nm) completes in 0.6--0.8~s, versus several minutes ($\approx$300~s) for a conventional frame-based hyperspectral camera. The event sensor’s high dynamic range and microsecond responsiveness enable reliable reconstruction under dim illumination where traditional cameras require long exposures or fail.
+Together, these contributions demonstrate a practical pathway toward accessible hyperspectral imaging: scans complete in under a second, data volumes are reduced relative to frame-based systems, and event-driven sensing maintains robustness under dim illumination where conventional cameras require long exposures. We believe this combination of self-calibration, computational correction, and hardware simplicity will interest the \textit{Optica} community and broaden the range of deployable, low-cost spectral imaging platforms. The manuscript is original, not under review elsewhere, and approved by all authors.
 
-\textbf{Validated spectral fidelity.} Reconstructed spectra agree closely with a reference hyperspectral camera (e.g., plant stem cross-section absorption bands), even when the reference requires 300~s exposures and suffers low-light noise. While current results emphasize relative spectral intensity rather than absolute radiometry, the comparative agreement demonstrates the effectiveness of the self-calibration and compensation pipeline.
 
-These contributions substantially lower the cost and complexity barriers to hyperspectral imaging and open pathways for portable, real-time instruments in field or resource-limited settings. The self-synchronization via event analysis and multi-window correction should interest readers in computational imaging and sensor fusion beyond the hyperspectral domain.
+\closing{Sincerely,\\[0.5em]Edmund Y. Lam\\(on behalf of all authors)\\Department of Electrical and Electronic Engineering\\The University of Hong Kong\\\texttt{elam@eee.hku.hk}}
 
-The manuscript is original, not under consideration elsewhere, and follows the Optica short-article format. All authors have approved the submission. Thank you for your consideration; we look forward to the reviewers’ feedback.
-
-\closing{Sincerely,\\[0.5em]Edmund Y. Lam\\(on behalf of all authors)\\Department of Electrical and Electronic Engineering,\\The University of Hong Kong\\\texttt{elam@eee.hku.hk}}
 \end{letter}
 
 \end{document}
