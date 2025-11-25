@@ -39,6 +39,9 @@ publication_code/figures/**
 # Ignore local scan angle data folder
 /scan_angle_20/
 
+# Ignore local working folder
+/david-ubo359/
+
 # Ignore large data/frames directories to keep tools fast
 data_filter/
 versions/

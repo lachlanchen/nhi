@@ -237,6 +237,14 @@ where $\bar\lambda_0$ and $\bar\lambda_1$ are the mean boundary wavelengths acro
 \end{equation}
 with closed-form solution $[a^*,c^*]^\top=(X^\top X)^{-1}X^\top\mathbf{y}$, $X=[\tilde b_\lambda\;\mathbf{1}]$, $\mathbf{y}=\bar g$.
 
+\olsection{Segmentation and compensation parameters}
+For reproducibility, we summarize the operating points used in the segmentation and multi-window compensation stages. All commands were executed in the \texttt{nhi\_test} conda environment and use the forward scan \texttt{Scan\_1\_Forward\_events.npz} from the Sanqin 2835 dataset.
+\begin{itemize}
+  \item \textbf{Segmentation.} We ran \texttt{segment\_robust\_fixed.py} with automatic period estimation (\texttt{--auto\_calculate\_period}) and event segmentation enabled (\texttt{--segment\_events}). The bin width for edge finding was \SI{50}{\milli\second} (\texttt{--bin\_width\_us 50000}), and the sensor geometry was fixed to \SI{1280}{\pixel} $\times$ \SI{720}{\pixel} to match the Prophesee sensor. Outputs were written to the per-scan segment folder specified via \texttt{--output\_dir}.
+  \item \textbf{Compensation.} The compensated time stamps were learned with \texttt{compensate\_multiwindow\_train\_saved\_params.py} using the same \SI{50}{\milli\second} bin width (\texttt{--bin\_width 50000}), trainable $a$-slopes (\texttt{--a\_trainable}), and \texttt{--iterations 1000}. We kept the polarity weights at their defaults (\texttt{pos\_scale = 1.0}, negative weight auto-selected) and used a fine rescaling step of \SI{5}{\milli\second} in downstream visualization. The learned parameters were saved next to the segment NPZ and reused for all figures in this supplement.
+\end{itemize}
+These settings ensure the segmentation boundaries, compensation surfaces, and subsequent wavelength alignment are fully determined by the recorded data and the published scripts, with no manual tuning between figures.
+
 
 \bibliography{ref}
 
