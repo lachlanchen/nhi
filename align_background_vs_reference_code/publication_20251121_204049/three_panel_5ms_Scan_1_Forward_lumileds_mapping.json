@@ -1,0 +1,16 @@
+{
+  "segment_npz": "scan_angle_20_lumileds/angle_20_blank_20250922_170433/angle_20_blank_event_20250922_170433_segments/Scan_1_Forward_events.npz",
+  "gt_files": [
+    "groundtruth_spectrum_lumileds/USB2F042671_16-04-56-391.txt"
+  ],
+  "slope_nm_per_ms": 0.6520341365461847,
+  "intercept_nm": 179.51557429718878,
+  "t_window_ms": [
+    364.0,
+    862.0
+  ],
+  "lambda_window_nm": [
+    416.856,
+    741.569
+  ]
+}

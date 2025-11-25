@@ -1,0 +1,10 @@
+Dynamic sliding-window reconstruction vs. ground-truth alignment
+Neg polarity scale (auto): 1.186660
+Window width (ms): 650.000
+Reconstruction start (ms): 349.538
+Reconstruction end (ms): 852.147
+Ground-truth start (nm): 417.036
+Ground-truth end (nm): 723.185
+Mapping formula (ms → nm):
+  λ(t_ms) = 0.609120 * t_ms + 204.126
+Where t_ms is the compensated event timeline measured from the first sample.

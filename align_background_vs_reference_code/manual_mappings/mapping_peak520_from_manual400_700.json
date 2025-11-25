@@ -1,0 +1,17 @@
+{
+  "description": "Manual mapping adjusted so cumulative peak is at 520 nm",
+  "base_mapping": "align_bg_vs_gt_code/manual_mappings/mapping_400_700nm_236_821ms.json",
+  "slope_nm_per_ms": 0.5128205128205128,
+  "intercept_nm": 299.4871951372196,
+  "t_window_ms": [
+    236.0,
+    821.0
+  ],
+  "lambda_window_nm": [
+    420.5128361628606,
+    720.5128361628606
+  ],
+  "t_peak_ms": 429.9999694824219,
+  "lambda_peak_old_nm": 499.4871638371394,
+  "lambda_peak_target_nm": 520.0
+}

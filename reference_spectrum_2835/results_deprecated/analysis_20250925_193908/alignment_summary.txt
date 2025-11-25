@@ -1,0 +1,42 @@
+Reconstruction vs. ground-truth alignment summary
+Segment: /home/lachlan/ProjectsLFS/nhi_reconstruction/scan_angle_20_led_2835b/angle_20_blank_2835_20250925_184724/angle_20_blank_2835_event_20250925_184724_segments/Scan_1_Forward_events.npz
+Ground-truth directory: /home/lachlan/ProjectsLFS/nhi_reconstruction/groundtruth_spectrum_2835
+Detected blue edge: 399.896 nm
+Detected red edge: 720.819 nm
+
+Per-curve mappings (λ = slope * t_ms + intercept):
+- Cumulative (step=2.0ms):
+    Neg scale: 1.268306
+    Stride: 2.000 ms
+    Recon start/end (ms): 244.000 / 868.000
+    Mapping: λ(t_ms) = 0.514300 * t_ms + 274.407
+
+- Fixed 50ms (stride 2.0ms):
+    Neg scale: 0.100000
+    Window: 50.000 ms
+    Stride: 2.000 ms
+    Recon start/end (ms): 200.000 / 326.000
+    Mapping: λ(t_ms) = 2.547008 * t_ms + -109.506
+
+- Fixed 100ms (stride 2.0ms):
+    Neg scale: 0.100000
+    Window: 100.000 ms
+    Stride: 2.000 ms
+    Recon start/end (ms): 162.000 / 302.000
+    Mapping: λ(t_ms) = 2.292307 * t_ms + 28.542
+
+- Dynamic 100ms:
+    Neg scale: 0.100000
+    Window: 100.000 ms
+    Recon start/end (ms): 268.108 / 470.615
+    Mapping: λ(t_ms) = 1.584748 * t_ms + -24.988
+
+- Dynamic 500ms:
+    Neg scale: 0.100000
+    Window: 500.000 ms
+    Recon start/end (ms): 270.545 / 795.397
+    Mapping: λ(t_ms) = 0.611454 * t_ms + 234.470
+
+Per-ground-truth detected edges:
+  USB2F042671_16-05-20-488.txt: 399.896 nm → 720.819 nm
+  USB2F042671_16-05-22-288.txt: 399.896 nm → 720.819 nm

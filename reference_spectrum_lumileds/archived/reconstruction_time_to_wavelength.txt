@@ -1,0 +1,9 @@
+Compensated reconstruction vs. ground-truth alignment
+Neg polarity scale (auto): 1.256329
+Reconstruction start (ms): 368.820
+Reconstruction end (ms): 865.360
+Ground-truth start (nm): 417.036
+Ground-truth end (nm): 723.185
+Mapping formula (ms → nm):
+  λ(t_ms) = 0.616565 * t_ms + 189.634
+Where t_ms is compensated time measured relative to the earliest bin.

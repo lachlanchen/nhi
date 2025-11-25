@@ -1,0 +1,7 @@
+{
+  "description": "Manual linear mapping: 236-821 ms maps to 400-700 nm",
+  "slope_nm_per_ms": 0.5128205128205128,
+  "intercept_nm": 278.974358974359,
+  "t_window_ms": [236.0, 821.0],
+  "lambda_window_nm": [400.0, 700.0]
+}

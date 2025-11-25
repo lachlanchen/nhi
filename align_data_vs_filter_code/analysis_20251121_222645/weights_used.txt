@@ -1,0 +1,8 @@
+segment: data_filter_2835/pass_520/pass_520_110534/sync_recording_event_20250906_110534_segments/Scan_1_Forward_events.npz
+mapping_json: align_bg_vs_gt_code/manual_mappings/mapping_peak520_from_manual400_700.json
+bin_ms: 5.0
+pos_scale: 1.000000
+neg_scale_auto: 1.415212
+auto_neg_min: 0.100000
+auto_neg_max: 3.000000
+plateau_frac: 0.050000

@@ -13,6 +13,13 @@
 !rotor/**/*.h
 !rotor/**/*.cpp
 !*.md
+# Reference datasets and filter metadata (new paths)
+!reference_filters/**
+!reference_spectrum_2835/**
+!reference_spectrum_lumileds/**
+# Alignment helper code with JSON/TXT assets (renamed paths)
+!align_background_vs_reference_code/**
+!align_data_vs_filter_code/**
 # Ignore local agent instruction file
 AGENTS.md
 !**/*.tex
