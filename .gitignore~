@@ -1,7 +1,0 @@
-# data*/*
-# !data/*
-archived*/*
-frames*/*
-dispersed_frames*/*
-*.pt
-*.mp4
