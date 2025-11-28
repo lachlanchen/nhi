@@ -1,4 +1,4 @@
-# Self-Calibrated Neuromorphic Hyperspectral Sensing
+# Self-Calibrated Neuromorphic Hyperspectral Imaging
 A comprehensive pipeline for reconstructing spectra from event cameras with dispersed light illumination (e.g., diffraction grating). The system records intensity change events $e = (x, y, t, p)$ where $p \in \{-1, +1\}$ indicates polarity of log-intensity change, and automatically infers scan timing and calibration metadata (“auto info”) directly from the event stream.
 
 Key hardware assets are kept alongside the code for quick access:
@@ -382,7 +382,7 @@ If this repository is useful in your research, please cite the associated manusc
 
 ```bibtex
 @article{chen2025selfcalibrated,
-  title   = {Self-Calibrated Neuromorphic Hyperspectral Sensing},
+  title   = {Self-Calibrated Neuromorphic Hyperspectral Imaging},
   author  = {Chen, Rongzhou and Wang, Chutian and Li, Yuxing and Cao, Yuqing and Zhu, Shuo and Lam, Edmund Y.},
   year    = {2025},
   note    = {Manuscript under review}
